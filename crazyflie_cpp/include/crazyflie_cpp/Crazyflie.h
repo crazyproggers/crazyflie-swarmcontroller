@@ -36,8 +36,8 @@ public:
         uint8_t     id;
         ParamType   type;
         bool        readonly;
-        string 		group;
-        string 		name;
+        string      group;
+        string      name;
     };
 
     union ParamValue {
@@ -52,8 +52,8 @@ public:
 
     enum LogType {
         LogTypeUint8    = 1,
-        LogTypeUint16 	= 2,
-        LogTypeUint32 	= 3,
+        LogTypeUint16   = 2,
+        LogTypeUint32   = 3,
         LogTypeInt8     = 4,
         LogTypeInt16    = 5,
         LogTypeInt32    = 6,
@@ -62,10 +62,10 @@ public:
     };
 
     struct LogTocEntry {
-        uint8_t 	id;
+        uint8_t     id;
         LogType     type;
-        string 		group;
-        string     	name;
+        string      group;
+        string      name;
     };
 
 public:
@@ -160,14 +160,14 @@ protected:
 
 private:
     struct logInfo {
-        uint8_t 	len;
+        uint8_t     len;
         uint32_t    log_crc;
         uint8_t     log_max_packet;
         uint8_t     log_max_ops;
     };
 
     struct paramInfo {
-        uint8_t 	len;
+        uint8_t     len;
         uint32_t    crc;
     };
 
@@ -186,31 +186,31 @@ private:
     }
 
 private:
-    Crazyradio 	*m_radio;
-    int 		 m_devId;
+    Crazyradio  *m_radio;
+    int         m_devId;
 
     uint8_t      m_channel;
     uint64_t     m_address;
     Crazyradio::Datarate m_datarate;
 
-    logInfo 			m_logInfo;
+    logInfo             m_logInfo;
     vector<LogTocEntry> m_logTocEntries;
-    set<size_t> 		m_logTocEntriesRequested;
+    set<size_t>         m_logTocEntriesRequested;
 
     map<uint8_t, function<void(crtpLogDataResponse*, uint8_t)> > m_logBlockCb;
 
-    bool 			m_blockReset;
-    set<uint8_t> 	m_blockCreated;
-    set<uint8_t> 	m_blockStarted;
-    set<uint8_t> 	m_blockStopped;
+    bool            m_blockReset;
+    set<uint8_t>    m_blockCreated;
+    set<uint8_t>    m_blockStarted;
+    set<uint8_t>    m_blockStopped;
 
-    paramInfo 					m_paramInfo;
-    vector<ParamTocEntry> 		m_paramTocEntries;
-    set<size_t> 				m_paramTocEntriesRequested;
-    map<uint8_t, ParamValue> 	m_paramValues;
-    set<size_t> 				m_paramValuesRequested;
+    paramInfo                   m_paramInfo;
+    vector<ParamTocEntry>       m_paramTocEntries;
+    set<size_t>                 m_paramTocEntriesRequested;
+    map<uint8_t, ParamValue>    m_paramValues;
+    set<size_t>                 m_paramValuesRequested;
 
-    function<void(float)> 						m_linkQualityCallback;
+    function<void(float)>                       m_linkQualityCallback;
     function<void(const crtpPlatformRSSIAck*)> 	m_emptyAckCallback;
 
     template<typename T>
@@ -287,8 +287,8 @@ private:
     }
 
 private:
-    Crazyflie 	*m_cf;
-    uint8_t 	 m_id;
+    Crazyflie   *m_cf;
+    uint8_t      m_id;
 
     function<void(uint32_t, T *)> m_callback;
 };
@@ -439,10 +439,10 @@ private:
     }
 
 private:
-    Crazyflie 	*m_cf;
-    uint8_t      m_id;
-    void		*m_userData;
+    Crazyflie   *m_cf;
+    uint8_t     m_id;
+    void        *m_userData;
 
-    vector<Crazyflie::LogType> 							m_types;
-    function<void(uint32_t, vector<double> *, void *)> 	m_callback;
+    vector<Crazyflie::LogType>                          m_types;
+    function<void(uint32_t, vector<double> *, void *)>  m_callback;
 };
