@@ -4,21 +4,10 @@
 
 #include "Crazyradio.h"
 #include "crtp.h"
-#include <list>
-#include <set>
-#include <map>
+#include <std::list>
+#include <std::set>
+#include <std::map>
 #include <iostream>
-
-using std::string;
-using std::vector;
-using std::map;
-using std::set;
-using std::list;
-using std::pair;
-using std::function;
-
-using std::cerr;
-using std::endl;
 
 class Crazyflie {
 public:
@@ -33,11 +22,11 @@ public:
     };
 
     struct ParamTocEntry {
-        uint8_t     id;
-        ParamType   type;
-        bool        readonly;
-        string      group;
-        string      name;
+        uint8_t         id;
+        ParamType       type;
+        bool            readonly;
+        std::string     group;
+        std::string     name;
     };
 
     union ParamValue {
@@ -62,14 +51,14 @@ public:
     };
 
     struct LogTocEntry {
-        uint8_t     id;
-        LogType     type;
-        string      group;
-        string      name;
+        uint8_t         id;
+        LogType         type;
+        std::string     group;
+        std::string     name;
     };
 
 public:
-    Crazyflie(const string &link_uri);
+    Crazyflie(const std::string &link_uri);
 
     void logReset();
 
@@ -93,17 +82,17 @@ public:
 
     void requestParamToc();
 
-    vector<ParamTocEntry>::const_iterator paramsBegin() const {
+    std::vector<ParamTocEntry>::const_iterator paramsBegin() const {
         return m_paramTocEntries.begin();
     }
-    vector<ParamTocEntry>::const_iterator paramsEnd() const {
+    std::vector<ParamTocEntry>::const_iterator paramsEnd() const {
         return m_paramTocEntries.end();
     }
 
-    vector<LogTocEntry>::const_iterator logVariablesBegin() const {
+    std::vector<LogTocEntry>::const_iterator logVariablesBegin() const {
         return m_logTocEntries.begin();
     }
-    vector<LogTocEntry>::const_iterator logVariablesEnd() const {
+    std::vector<LogTocEntry>::const_iterator logVariablesEnd() const {
         return m_logTocEntries.end();
     }
 
@@ -121,16 +110,16 @@ public:
     }
 
     const ParamTocEntry *getParamTocEntry(
-        const string &group,
-        const string &name) const;
+        const std::string &group,
+        const std::string &name) const;
 
     void setEmptyAckCallback(
-        function<void(const crtpPlatformRSSIAck*)> cb) {
+        std::function<void(const crtpPlatformRSSIAck*)> cb) {
         m_emptyAckCallback = cb;
     }
 
     void setLinkQualityCallback(
-        function<void(float)> cb) {
+        std::function<void(float)> cb) {
         m_linkQualityCallback = cb;
     }
 
@@ -156,7 +145,7 @@ public:
 protected:
     bool sendPacket(const uint8_t *data, uint32_t length);
 
-    void handleAck(const Crazyradio::Ack& result);
+    void handleAck(const Crazyradio::Ack &result);
 
 private:
     struct logInfo {
@@ -173,10 +162,10 @@ private:
 
 private:
     const LogTocEntry *getLogTocEntry(
-        const string &group,
-        const string &name) const;
+        const std::string &group,
+        const std::string &name) const;
 
-    uint8_t registerLogBlock(function<void(crtpLogDataResponse *, uint8_t)> cb);
+    uint8_t registerLogBlock(std::function<void(crtpLogDataResponse *, uint8_t)> cb);
 
     bool unregisterLogBlock(uint8_t id);
 
@@ -187,31 +176,31 @@ private:
 
 private:
     Crazyradio  *m_radio;
-    int         m_devId;
+    int          m_devId;
 
     uint8_t      m_channel;
     uint64_t     m_address;
     Crazyradio::Datarate m_datarate;
 
-    logInfo             m_logInfo;
-    vector<LogTocEntry> m_logTocEntries;
-    set<size_t>         m_logTocEntriesRequested;
+    logInfo                     m_logInfo;
+    std::vector<LogTocEntry>    m_logTocEntries;
+    std::set<size_t>            m_logTocEntriesRequested;
 
-    map<uint8_t, function<void(crtpLogDataResponse*, uint8_t)> > m_logBlockCb;
+    std::map<uint8_t, std::function<void(crtpLogDataResponse *, uint8_t)> > m_logBlockCb;
 
-    bool            m_blockReset;
-    set<uint8_t>    m_blockCreated;
-    set<uint8_t>    m_blockStarted;
-    set<uint8_t>    m_blockStopped;
+    bool                 m_blockReset;
+    std::set<uint8_t>    m_blockCreated;
+    std::set<uint8_t>    m_blockStarted;
+    std::set<uint8_t>    m_blockStopped;
 
-    paramInfo                   m_paramInfo;
-    vector<ParamTocEntry>       m_paramTocEntries;
-    set<size_t>                 m_paramTocEntriesRequested;
-    map<uint8_t, ParamValue>    m_paramValues;
-    set<size_t>                 m_paramValuesRequested;
+    paramInfo                        m_paramInfo;
+    std::vector<ParamTocEntry>       m_paramTocEntries;
+    std::set<size_t>                 m_paramTocEntriesRequested;
+    std::map<uint8_t, ParamValue>    m_paramValues;
+    std::set<size_t>                 m_paramValuesRequested;
 
-    function<void(float)>                       m_linkQualityCallback;
-    function<void(const crtpPlatformRSSIAck*)> 	m_emptyAckCallback;
+    std::function<void(float)>                       m_linkQualityCallback;
+    std::function<void(const crtpPlatformRSSIAck*)>  m_emptyAckCallback;
 
     template<typename T>
     friend class LogBlock;
@@ -222,31 +211,31 @@ template<class T>
 class LogBlock {
 public:
     LogBlock(
-        Crazyflie* cf,
-        list<pair<string, string> > variables,
-        function<void(uint32_t, T*)>& callback)
+        Crazyflie *cf,
+        std::list<std::pair<std::string, std::string> > variables,
+        std::function<void(uint32_t, T *)>& callback)
         : m_cf(cf)
         , m_callback(callback)
         , m_id(0)
     {
-        m_id = m_cf->registerLogBlock([=](crtpLogDataResponse* r, uint8_t s) { this->handleData(r, s);});
+        m_id = m_cf->registerLogBlock([=](crtpLogDataResponse *r, uint8_t s) { this->handleData(r, s);});
         crtpLogCreateBlockRequest request;
         request.id = m_id;
         int i = 0;
 
         for (auto &&pair : variables) {
-            const Crazyflie::LogTocEntry* entry = m_cf->getLogTocEntry(pair.first, pair.second);
+            const Crazyflie::LogTocEntry *entry = m_cf->getLogTocEntry(pair.first, pair.second);
             if (entry) {
                 request.items[i].logType = entry->type;
                 request.items[i].id = entry->id;
                 ++i;
             }
-            else cerr << "Could not find " << pair.first << "." << pair.second << " in log toc!" << endl;
+            else std::cerr << "Could not find " << pair.first << "." << pair.second << " in log toc!" << std::endl;
         }
         m_cf->m_blockCreated.clear();
         do
         {
-            m_cf->sendPacket((const uint8_t*)&request, 3 + 2*i);
+            m_cf->sendPacket((const uint8_t *)&request, 3 + 2*i);
         } while(m_cf->m_blockCreated.find(m_id) == m_cf->m_blockCreated.end());
     }
 
@@ -259,7 +248,7 @@ public:
         crtpLogStartRequest request(m_id, period);
 
         while (m_cf->m_blockStarted.find(m_id) == m_cf->m_blockStarted.end())
-            m_cf->sendPacket((const uint8_t*)&request, sizeof(request));
+            m_cf->sendPacket((const uint8_t *)&request, sizeof(request));
 
         m_cf->m_blockStopped.erase(m_id);
     }
@@ -269,7 +258,7 @@ public:
         crtpLogStopRequest request(m_id);
 
         while (m_cf->m_blockStopped.find(m_id) == m_cf->m_blockStopped.end()) {
-            m_cf->sendPacket((const uint8_t*)&request, sizeof(request));
+            m_cf->sendPacket((const uint8_t *)&request, sizeof(request));
 
             if (!timeout--) break;
         }
@@ -277,20 +266,20 @@ public:
     }
 
 private:
-    void handleData(crtpLogDataResponse* response, uint8_t size) {
+    void handleData(crtpLogDataResponse *response, uint8_t size) {
         if (size == sizeof(T)) {
             uint32_t time_in_ms = ((uint32_t)response->timestampHi << 8) | (response->timestampLo);
             T *t = (T *)response->data;
             m_callback(time_in_ms, t);
         }
-        else cerr << "Size doesn't match!" << endl;
+        else std::cerr << "Size doesn't match!" << std::endl;
     }
 
 private:
     Crazyflie   *m_cf;
     uint8_t      m_id;
 
-    function<void(uint32_t, T *)> m_callback;
+    std::function<void(uint32_t, T *)> m_callback;
 };
 
 
@@ -298,9 +287,9 @@ class LogBlockGeneric {
 public:
     LogBlockGeneric(
         Crazyflie *cf,
-        const vector<string> &variables,
+        const std::vector<std::string> &variables,
         void *userData,
-        function<void(uint32_t, vector<double> *, void *userData)> &callback)
+        std::function<void(uint32_t, std::vector<double> *, void *userData)> &callback)
         : m_cf(cf)
         , m_userData(userData)
         , m_callback(callback)
@@ -314,16 +303,16 @@ public:
 
         for (auto &&var : variables) {
             auto pos = var.find(".");
-            string first = var.substr(0, pos);
-            string second = var.substr(pos+1);
+            std::string first = var.substr(0, pos);
+            std::string second = var.substr(pos+1);
             const Crazyflie::LogTocEntry *entry = m_cf->getLogTocEntry(first, second);
 
             if (entry) {
                 s += Crazyflie::size(entry->type);
 
                 if (s > 26)
-                    cerr << "Can't configure that many variables in a single log block!"
-                         << " Ignoring " << first << "." << second << endl;
+                    std::cerr << "Can't configure that many variables in a single log block!"
+                         << " Ignoring " << first << "." << second << std::endl;
                 else {
                     request.items[i].logType = entry->type;
                     request.items[i].id = entry->id;
@@ -331,13 +320,13 @@ public:
                     m_types.push_back(entry->type);
                 }
             }
-            else cerr << "Could not find " << first << "." << second << " in log toc!" << endl;
+            else std::cerr << "Could not find " << first << "." << second << " in log toc!" << std::endl;
         }
         m_cf->m_blockCreated.clear();
 
         do
         {
-            m_cf->sendPacket((const uint8_t*)&request, 3 + 2*i);
+            m_cf->sendPacket((const uint8_t *)&request, 3 + 2*i);
         } while(m_cf->m_blockCreated.find(m_id) == m_cf->m_blockCreated.end());
     }
 
@@ -351,7 +340,7 @@ public:
         crtpLogStartRequest request(m_id, period);
 
         while (m_cf->m_blockStarted.find(m_id) == m_cf->m_blockStarted.end())
-            m_cf->sendPacket((const uint8_t*)&request, sizeof(request));
+            m_cf->sendPacket((const uint8_t *)&request, sizeof(request));
 
         m_cf->m_blockStopped.erase(m_id);
     }
@@ -369,8 +358,8 @@ public:
     }
 
 private:
-    void handleData(crtpLogDataResponse* response, uint8_t size) {
-        vector<double> result;
+    void handleData(crtpLogDataResponse *response, uint8_t size) {
+        std::vector<double> result;
         size_t pos = 0;
 
         for (size_t i = 0; i < m_types.size(); ++i) {
@@ -440,9 +429,9 @@ private:
 
 private:
     Crazyflie   *m_cf;
-    uint8_t     m_id;
+    uint8_t      m_id;
     void        *m_userData;
 
-    vector<Crazyflie::LogType>                          m_types;
-    function<void(uint32_t, vector<double> *, void *)>  m_callback;
+    std::vector<Crazyflie::LogType>                               m_types;
+    std::function<void(uint32_t, std::vector<double> *, void *)>  m_callback;
 };
