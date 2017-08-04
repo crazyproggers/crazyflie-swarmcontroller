@@ -3,7 +3,6 @@
 #include <std_srvs/Empty.h>
 #include <geometry_msgs/Twist.h>
 
-
 #include "pid.hpp"
 
 double get(
@@ -14,18 +13,16 @@ double get(
     return value;
 }
 
-class Controller
-{
+class Controller {
 public:
-
     Controller(
         const std::string& worldFrame,
         const std::string& frame,
         const ros::NodeHandle& n)
-        : m_worldFrame(worldFrame)
-        , m_frame(frame)
-        , m_pubNav()
-        , m_listener()
+        : m_worldFrame  (worldFrame)
+        , m_frame       (frame)
+        , m_pubNav      ()
+        , m_listener    ()
         , m_pidX(
             get(n, "PIDs/X/kp"),
             get(n, "PIDs/X/kd"),
@@ -62,39 +59,36 @@ public:
             get(n, "PIDs/Yaw/integratorMin"),
             get(n, "PIDs/Yaw/integratorMax"),
             "yaw")
-        , m_state(Idle)
-        , m_goal()
-        , m_subscribeGoal()
-        , m_serviceTakeoff()
-        , m_serviceLand()
-        , m_thrust(0)
-        , m_startZ(0)
+        , m_state           (Idle)
+        , m_goal            ()
+        , m_subscribeGoal   ()
+        , m_serviceTakeoff  ()
+        , m_serviceLand     ()
+        , m_thrust          (0)
+        , m_startZ          (0)
     {
         ros::NodeHandle nh;
         m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(10.0)); 
-        m_pubNav = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
-        m_subscribeGoal = nh.subscribe("goal", 1, &Controller::goalChanged, this);
+        m_pubNav         = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+        m_subscribeGoal  = nh.subscribe("goal", 1, &Controller::goalChanged, this);
         m_serviceTakeoff = nh.advertiseService("takeoff", &Controller::takeoff, this);
-        m_serviceLand = nh.advertiseService("land", &Controller::land, this);
+        m_serviceLand    = nh.advertiseService("land", &Controller::land, this);
     }
 
-    void run(double frequency)
-    {
+    void run(double frequency) {
         ros::NodeHandle node;
         ros::Timer timer = node.createTimer(ros::Duration(1.0/frequency), &Controller::iteration, this);
         ros::spin();
     }
 
 private:
-    void goalChanged(
-        const geometry_msgs::PoseStamped::ConstPtr& msg)
-    {
+    void goalChanged(const geometry_msgs::PoseStamped::ConstPtr& msg) {
         m_goal = *msg;
     }
 
     bool takeoff(
-        std_srvs::Empty::Request& req,
-        std_srvs::Empty::Response& res)
+        std_srvs::Empty::Request  &req,
+        std_srvs::Empty::Response &res)
     {
         ROS_INFO("Takeoff requested!");
         m_state = TakingOff;
@@ -107,8 +101,8 @@ private:
     }
 
     bool land(
-        std_srvs::Empty::Request& req,
-        std_srvs::Empty::Response& res)
+        std_srvs::Empty::Request  &req,
+        std_srvs::Empty::Response &res)
     {
         ROS_INFO("Landing requested!");
         m_state = Landing;
@@ -117,50 +111,41 @@ private:
     }
 
     void getTransform(
-        const std::string& sourceFrame,
-        const std::string& targetFrame,
-        tf::StampedTransform& result)
+        const std::string &sourceFrame,
+        const std::string &targetFrame,
+        tf::StampedTransform &result)
     {
         m_listener.lookupTransform(sourceFrame, targetFrame, ros::Time(0), result);
     }
 
-    void pidReset()
-    {
+    void pidReset() {
         m_pidX.reset();
         m_pidZ.reset();
         m_pidZ.reset();
         m_pidYaw.reset();
     }
 
-    void iteration(const ros::TimerEvent& e)
-    {
+    void iteration(const ros::TimerEvent &e) {
         float dt = e.current_real.toSec() - e.last_real.toSec();
 
-        switch(m_state)
-        {
-        case TakingOff:
-            {
+        switch(m_state) {
+            case TakingOff: {
                 tf::StampedTransform transform;
                 m_listener.lookupTransform(m_worldFrame, m_frame, ros::Time(0), transform);
-                if (transform.getOrigin().z() > m_startZ + 0.05 || m_thrust > 50000)
-                {
+                if (transform.getOrigin().z() > m_startZ + 0.05 || m_thrust > 50000) {
                     pidReset();
                     m_pidZ.setIntegral(m_thrust / m_pidZ.ki());
                     m_state = Automatic;
                     m_thrust = 0;
-                }
-                else
-                {
+                } else {
                     m_thrust += 10000 * dt;
                     geometry_msgs::Twist msg;
                     msg.linear.z = m_thrust;
                     m_pubNav.publish(msg);
                 }
-
-            }
-            break;
-        case Landing:
-            {
+            } // case TakingOff:
+                break;
+            case Landing: {
                 m_goal.pose.position.z = m_startZ + 0.05;
                 tf::StampedTransform transform;
                 m_listener.lookupTransform(m_worldFrame, m_frame, ros::Time(0), transform);
@@ -171,8 +156,7 @@ private:
                 }
             }
             // intentional fall-thru
-        case Automatic:
-            {
+            case Automatic: {
                 tf::StampedTransform transform;
                 m_listener.lookupTransform(m_worldFrame, m_frame, ros::Time(0), transform);
 
@@ -202,59 +186,55 @@ private:
 
 
             }
-            break;
-        case Idle:
-            {
+                break;
+            case Idle: {
                 geometry_msgs::Twist msg;
                 m_pubNav.publish(msg);
             }
-            break;
-        }
+                break;
+        } // switch(m_state)
     }
 
 private:
-
-    enum State
-    {
-        Idle = 0,
+    enum State {
+        Idle      = 0,
         Automatic = 1,
         TakingOff = 2,
-        Landing = 3,
+        Landing   = 3,
     };
 
 private:
-    std::string m_worldFrame;
-    std::string m_frame;
-    ros::Publisher m_pubNav;
+    std::string           m_worldFrame;
+    std::string           m_frame;
+    ros::Publisher        m_pubNav;
     tf::TransformListener m_listener;
-    PID m_pidX;
-    PID m_pidY;
-    PID m_pidZ;
-    PID m_pidYaw;
+    PID   m_pidX;
+    PID   m_pidY;
+    PID   m_pidZ;
+    PID   m_pidYaw;
     State m_state;
     geometry_msgs::PoseStamped m_goal;
-    ros::Subscriber m_subscribeGoal;
+    ros::Subscriber    m_subscribeGoal;
     ros::ServiceServer m_serviceTakeoff;
     ros::ServiceServer m_serviceLand;
     float m_thrust;
     float m_startZ;
 };
 
-int main(int argc, char **argv)
-{
-  ros::init(argc, argv, "controller");
+int main(int argc, char **argv) {
+    ros::init(argc, argv, "controller");
 
-  // Read parameters
-  ros::NodeHandle n("~");
-  std::string worldFrame;
-  n.param<std::string>("worldFrame", worldFrame, "/world");
-  std::string frame;
-  n.getParam("frame", frame);
-  double frequency;
-  n.param("frequency", frequency, 50.0);
+    // Read parameters
+    ros::NodeHandle n("~");
+    std::string worldFrame;
+    n.param<std::string>("worldFrame", worldFrame, "/world");
+    std::string frame;
+    n.getParam("frame", frame);
+    double frequency;
+    n.param("frequency", frequency, 50.0);
 
-  Controller controller(worldFrame, frame, n);
-  controller.run(frequency);
+    Controller controller(worldFrame, frame, n);
+    controller.run(frequency);
 
-  return 0;
+    return 0;
 }

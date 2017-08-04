@@ -2,8 +2,7 @@
 
 #include <ros/ros.h>
 
-class PID
-{
+class PID {
 public:
     PID(
         float kp,
@@ -14,38 +13,32 @@ public:
         float integratorMin,
         float integratorMax,
         const std::string& name)
-        : m_kp(kp)
-        , m_kd(kd)
-        , m_ki(ki)
-        , m_minOutput(minOutput)
-        , m_maxOutput(maxOutput)
-        , m_integratorMin(integratorMin)
-        , m_integratorMax(integratorMax)
-        , m_integral(0)
-        , m_previousError(0)
-        , m_previousTime(ros::Time::now())
-    {
-    }
+        : m_kp              (kp)
+        , m_kd              (kd)
+        , m_ki              (ki)
+        , m_minOutput       (minOutput)
+        , m_maxOutput       (maxOutput)
+        , m_integratorMin   (integratorMin)
+        , m_integratorMax   (integratorMax)
+        , m_integral        (0)
+        , m_previousError   (0)
+        , m_previousTime    (ros::Time::now()) {}
 
-    void reset()
-    {
-        m_integral = 0;
+    void reset() {
+        m_integral      = 0;
         m_previousError = 0;
-        m_previousTime = ros::Time::now();
+        m_previousTime  = ros::Time::now();
     }
 
-    void setIntegral(float integral)
-    {
+    void setIntegral(float integral) {
         m_integral = integral;
     }
 
-    float ki() const
-    {
+    float ki() const {
         return m_ki;
     }
 
-    float update(float value, float targetValue)
-    {
+    float update(float value, float targetValue) {
         ros::Time time = ros::Time::now();
         float dt = time.toSec() - m_previousTime.toSec();
         float error = targetValue - value;
@@ -53,10 +46,10 @@ public:
         m_integral = std::max(std::min(m_integral, m_integratorMax), m_integratorMin);
         float p = m_kp * error;
         float d = 0;
+        
         if (dt > 0)
-        {
             d = m_kd * (error - m_previousError) / dt;
-        }
+        
         float i = m_ki * m_integral;
         float output = p + d + i;
         m_previousError = error;
