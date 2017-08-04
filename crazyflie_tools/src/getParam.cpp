@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
             return 0;
         }
     }
-    catch (po::error& e) {
+    catch (po::error &e) {
         std::cerr << e.what() << std::endl << std::endl
                   << desc << std::endl;
         return 1;
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
         cf.requestParamToc ();
 
         std::for_each (cf.paramsBegin(), cf.paramsEnd(),
-        [](const Crazyflie::ParamTocEntry& entry) {
+        [](const Crazyflie::ParamTocEntry &entry) {
             std::cout << entry.group << "." << entry.name << " (";
             switch (entry.type) {
                 case Crazyflie::ParamTypeUint8:
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
 
         return 0;
     }
-    catch(std::exception& e) {
+    catch(std::exception &e) {
         std::cerr << e.what() << std::endl;
         return 1;
     }

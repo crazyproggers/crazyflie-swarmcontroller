@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
             return 0;
         }
     }
-    catch (po::error& e) {
+    catch (po::error &e) {
         std::cerr << e.what () << std::endl << std::endl;
         std::cerr << desc << std::endl;
         return 1;
@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
         cf.requestLogToc ();
 
         std::for_each(cf.logVariablesBegin (), cf.logVariablesEnd (),
-        [](const Crazyflie::LogTocEntry& entry)
+        [](const Crazyflie::LogTocEntry &entry)
         {
             std::cout << entry.group << "." << entry.name << " (";
             switch (entry.type) {
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 
         return 0;
     }
-    catch(std::exception& e)
+    catch(std::exception &e)
     {
         std::cerr << e.what() << std::endl;
         return 1;
