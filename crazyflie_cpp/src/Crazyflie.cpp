@@ -15,8 +15,7 @@
 Crazyradio *g_crazyradios[MAX_RADIOS];
 std::mutex  g_mutex[MAX_RADIOS];
 
-Crazyflie::Crazyflie(
-    const std::string &link_uri)
+Crazyflie::Crazyflie(const std::string &link_uri)
     : m_radio(NULL)
     , m_devId(0)
     , m_channel(0)
