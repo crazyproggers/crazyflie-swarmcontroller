@@ -16,26 +16,26 @@ Crazyradio *g_crazyradios[MAX_RADIOS];
 std::mutex  g_mutex[MAX_RADIOS];
 
 Crazyflie::Crazyflie(const std::string &link_uri)
-    : m_radio(NULL)
-    , m_devId(0)
-    , m_channel(0)
-    , m_address(0)
-    , m_datarate(Crazyradio::Datarate_250KPS)
-    , m_logInfo()
-    , m_logTocEntries()
-    , m_logTocEntriesRequested()
-    , m_logBlockCb()
-    , m_blockReset(false)
-    , m_blockCreated()
-    , m_blockStarted()
-    , m_blockStopped()
-    , m_paramInfo()
-    , m_paramTocEntries()
+    : m_radio                   (NULL)
+    , m_devId                   (0)
+    , m_channel                 (0)
+    , m_address                 (0)
+    , m_datarate                (Crazyradio::Datarate_250KPS)
+    , m_logInfo                 ()
+    , m_logTocEntries           ()
+    , m_logTocEntriesRequested  ()
+    , m_logBlockCb              ()
+    , m_blockReset              (false)
+    , m_blockCreated            ()
+    , m_blockStarted            ()
+    , m_blockStopped            ()
+    , m_paramInfo               ()
+    , m_paramTocEntries         ()
     , m_paramTocEntriesRequested()
-    , m_paramValues()
-    , m_paramValuesRequested()
-    , m_emptyAckCallback(nullptr)
-    , m_linkQualityCallback(nullptr)
+    , m_paramValues             ()
+    , m_paramValuesRequested    ()
+    , m_emptyAckCallback        (nullptr)
+    , m_linkQualityCallback     (nullptr)
 {
     int  datarate;
     int  channel;
@@ -388,7 +388,6 @@ void Crazyflie::handleAck(const Crazyradio::Ack &result) {
         //     std::cout << "        " << (int)result.data[i] << std::endl;
         // }
     }
-
 }
 
 const Crazyflie::LogTocEntry *Crazyflie::getLogTocEntry(

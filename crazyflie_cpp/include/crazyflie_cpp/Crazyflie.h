@@ -214,9 +214,9 @@ public:
         Crazyflie *cf,
         std::list<std::pair<std::string, std::string> > variables,
         std::function<void(uint32_t, T *)>& callback)
-        : m_cf(cf)
-        , m_callback(callback)
-        , m_id(0)
+        : m_cf          (cf)
+        , m_callback    (callback)
+        , m_id          (0)
     {
         m_id = m_cf->registerLogBlock([=](crtpLogDataResponse *r, uint8_t s) { this->handleData(r, s);});
         crtpLogCreateBlockRequest request;
@@ -278,7 +278,6 @@ private:
 private:
     Crazyflie   *m_cf;
     uint8_t      m_id;
-
     std::function<void(uint32_t, T *)> m_callback;
 };
 
@@ -324,8 +323,7 @@ public:
         }
         m_cf->m_blockCreated.clear();
 
-        do
-        {
+        do {
             m_cf->sendPacket((const uint8_t *)&request, 3 + 2*i);
         } while(m_cf->m_blockCreated.find(m_id) == m_cf->m_blockCreated.end());
     }
@@ -431,7 +429,7 @@ private:
     Crazyflie   *m_cf;
     uint8_t      m_id;
     void        *m_userData;
-
+    
     std::vector<Crazyflie::LogType>                               m_types;
     std::function<void(uint32_t, std::vector<double> *, void *)>  m_callback;
 };
