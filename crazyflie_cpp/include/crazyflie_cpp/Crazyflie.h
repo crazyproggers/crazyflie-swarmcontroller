@@ -4,9 +4,9 @@
 
 #include "Crazyradio.h"
 #include "crtp.h"
-#include <std::list>
-#include <std::set>
-#include <std::map>
+#include <list>
+#include <set>
+#include <map>
 #include <iostream>
 
 class Crazyflie {
