@@ -6,8 +6,8 @@
 #include "pid.hpp"
 
 double get (
-    const ros::NodeHandle& n,
-    const std::string& name) {
+    const ros::NodeHandle &n,
+    const std::string &name) {
     double value;
     n.getParam (name, value);
     return value;
@@ -16,9 +16,9 @@ double get (
 class Controller {
 public:
     Controller (
-        const std::string& worldFrame,
-        const std::string& frame,
-        const ros::NodeHandle& n)
+        const std::string &worldFrame,
+        const std::string &frame,
+        const ros::NodeHandle &n)
         : m_worldFrame  (worldFrame)
         , m_frame       (frame)
         , m_pubNav      ()
@@ -179,10 +179,10 @@ private:
                     )).getRPY (roll, pitch, yaw);
 
                 geometry_msgs::Twist msg;
-                msg.linear.x  = m_pidX.update   (0,     targetDrone.pose.position.x);
-                msg.linear.y  = m_pidY.update   (0.0,   targetDrone.pose.position.y);
-                msg.linear.z  = m_pidZ.update   (0.0,   targetDrone.pose.position.z);
-                msg.angular.z = m_pidYaw.update (0.0,   yaw);
+                msg.linear.x  = m_pidX.update   (0.0, targetDrone.pose.position.x);
+                msg.linear.y  = m_pidY.update   (0.0, targetDrone.pose.position.y);
+                msg.linear.z  = m_pidZ.update   (0.0, targetDrone.pose.position.z);
+                msg.angular.z = m_pidYaw.update (0.0, yaw);
                 m_pubNav.publish (msg);
 
 
@@ -205,21 +205,21 @@ private:
     };
 
 private:
-    std::string           m_worldFrame;
-    std::string           m_frame;
-    ros::Publisher        m_pubNav;
-    tf::TransformListener m_listener;
-    PID   m_pidX;
-    PID   m_pidY;
-    PID   m_pidZ;
-    PID   m_pidYaw;
-    State m_state;
-    geometry_msgs::PoseStamped m_goal;
-    ros::Subscriber    m_subscribeGoal;
-    ros::ServiceServer m_serviceTakeoff;
-    ros::ServiceServer m_serviceLand;
-    float m_thrust;
-    float m_startZ;
+    std::string                 m_worldFrame;
+    std::string                 m_frame;
+    ros::Publisher              m_pubNav;
+    tf::TransformListener       m_listener;
+    PID                         m_pidX;
+    PID                         m_pidY;
+    PID                         m_pidZ;
+    PID                         m_pidYaw;
+    State                       m_state;
+    geometry_msgs::PoseStamped  m_goal;
+    ros::Subscriber             m_subscribeGoal;
+    ros::ServiceServer          m_serviceTakeoff;
+    ros::ServiceServer          m_serviceLand;
+    float                       m_thrust;
+    float                       m_startZ;
 };
 
 int main (int argc, char **argv) {
