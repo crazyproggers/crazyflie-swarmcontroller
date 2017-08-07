@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="joy_dev" default="/dev/input/js0" />
-  <arg name="ip" default="vicon" />
+  <arg name="server" default="vrpn" />
   <arg name="port" default="3883" />
 
-  <arg name="uri" default="radio://0/90/2M" />
+  <arg name="uri" default="radio://0/100/2M/E7E7E7E701" />
   <arg name="frame" default="crazyflie" />
-  <arg name="x" default="0" />
-  <arg name="y" default="0" />
+  <arg name="x" default="0.1" />
+  <arg name="y" default="0.1" />
   <arg name="z" default="0.5" />
 
   <include file="$(find crazyflie_driver)/launch/crazyflie_server.launch">
@@ -17,7 +17,7 @@
     <include file="$(find crazyflie_driver)/launch/crazyflie_add.launch">
       <arg name="uri" value="$(arg uri)" />
       <arg name="tf_prefix" value="crazyflie" />
-      <arg name="enable_logging" value="False" />
+      <arg name="enable_logging" value="True" />
     </include>
 
     <node name="joy" pkg="joy" type="joy_node" output="screen">
@@ -43,11 +43,17 @@
     <node pkg="tf" type="static_transform_publisher" name="baselink_broadcaster" args="0 0 0 0 0 0 1 $(arg frame) /crazyflie/base_link 100" />
 
     <!-- run vrpn client -->
-    <node pkg="ros_vrpn_client" name="vrpn" output="screen" type="ros_vrpn_client" required="true">
-      <param name="ip" value="$(arg ip)" />
-      <param name="port" value="$(arg port)" />
-      <param name="frame_id" value="/world" />
-      <param name="child_frame_id" value="$(arg frame)" />
+    <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn" output="screen" required="true">
+      <rosparam subst_value="true">
+        server: $(arg server)
+        port: $(arg port)
+        update_frequency: 50.0
+        frame_id: /world
+        child_frame_id: $(arg frame)
+        use_server_time: false
+        broadcast_tf: true
+        refresh_tracker_frequency: 1.0
+     </rosparam>
     </node>
   </group>
 
