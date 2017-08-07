@@ -55,10 +55,10 @@ Crazyradio::~Crazyradio () {
 
 bool Crazyradio::open (uint32_t devid) {
     // discover devices
-    ssize_t         cnt     = libusb_get_device_list (NULL, &list);
     libusb_device **list;
     libusb_device  *found  = NULL;
     uint32_t        foundid = 0;
+    ssize_t         cnt     = libusb_get_device_list (NULL, &list);
 
     if (cnt < 0) {
         std::cerr << "Error during get_device_list" << std::endl;
@@ -111,7 +111,7 @@ bool Crazyradio::open (uint32_t devid) {
     // configure
     if (m_handle)
     {
-        err = libusb_set_configuration (m_handle, 1);
+        int err = libusb_set_configuration (m_handle, 1);
         if (err != LIBUSB_SUCCESS) {
             std::cerr << libusb_error_name(err) << std::endl;
             return false;
