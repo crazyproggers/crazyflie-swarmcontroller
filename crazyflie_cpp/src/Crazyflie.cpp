@@ -117,18 +117,18 @@ void Crazyflie::sendPing() {
 // https://forum.bitcraze.io/viewtopic.php?f=9&t=1488
 void Crazyflie::reboot() {
     const uint8_t reboot_init[] = {0xFF, 0xFE, 0xFF};
-    while(!sendPacket(reboot_init, sizeof(reboot_init))) {}
+    while (!sendPacket(reboot_init, sizeof(reboot_init))) {}
 
     const uint8_t reboot_to_firmware[] = {0xFF, 0xFE, 0xF0, 0x01};
-    while(!sendPacket(reboot_to_firmware, sizeof(reboot_to_firmware))) {}
+    while (!sendPacket(reboot_to_firmware, sizeof(reboot_to_firmware))) {}
 }
 
 void Crazyflie::rebootToBootloader() {
     const uint8_t reboot_init[] = {0xFF, 0xFE, 0xFF};
-    while(!sendPacket(reboot_init, sizeof(reboot_init))) {}
+    while (!sendPacket(reboot_init, sizeof(reboot_init))) {}
 
     const uint8_t reboot_to_bootloader[] = {0xFF, 0xFE, 0xF0, 0x00};
-    while(!sendPacket(reboot_to_bootloader, sizeof(reboot_to_bootloader))) {}
+    while (!sendPacket(reboot_to_bootloader, sizeof(reboot_to_bootloader))) {}
 }
 
 void Crazyflie::requestLogToc() {
@@ -138,7 +138,7 @@ void Crazyflie::requestLogToc() {
     do {
         crtpLogGetInfoRequest request;
         sendPacket((const uint8_t *)&request, sizeof(request));
-    } while(m_logInfo.len == 0);
+    } while (m_logInfo.len == 0);
     std::cout << "Log: " << (int)m_logInfo.len << std::endl;
 
     // Prepare data structures to request detailed information
@@ -170,7 +170,7 @@ void Crazyflie::requestParamToc() {
     do {
         crtpParamTocGetInfoRequest request;
         sendPacket((const uint8_t *)&request, sizeof(request));
-    } while(m_paramInfo.len == 0);
+    } while (m_paramInfo.len == 0);
     std::cout << "Params: " << (int)m_paramInfo.len << std::endl;
 
     // Prepare data structures to request detailed information
@@ -384,9 +384,6 @@ void Crazyflie::handleAck(const Crazyradio::Ack &result) {
     else {
         crtp *header = (crtp *)result.data;
         std::cout << "Don't know ack: Port: " << (int)header->port << " Channel: " << (int)header->channel << " Len: " << (int)result.size << std::endl;
-        // for (size_t i = 1; i < result.size; ++i) {
-        //     std::cout << "        " << (int)result.data[i] << std::endl;
-        // }
     }
 }
 

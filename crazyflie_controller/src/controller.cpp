@@ -184,8 +184,6 @@ private:
                 msg.linear.z  = m_pidZ.update   (0.0, targetDrone.pose.position.z);
                 msg.angular.z = m_pidYaw.update (0.0, yaw);
                 m_pubNav.publish (msg);
-
-
             }
                 break;
             case Idle: {
