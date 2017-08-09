@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-    <!--arg name="crazyflieSDK" default="~/crazyflie-clients-python/lib" /-->
   <arg name="joy_dev" default="/dev/input/js0" />
   <arg name="server" default="vrpn" />
   <arg name="port" default="3883" />
@@ -17,9 +16,8 @@
   <arg name="y2" default="0" />
   <arg name="z2" default="0.5" />
 
-  <include file="$(find crazyflie_driver)/launch/crazyflie_server.launch">
-      <!--arg name="crazyflieSDK" value="$(arg crazyflieSDK)" /-->
-  </include>
+  <include file="$(find crazyflie_driver)/launch/crazyflie_server.launch" />
+
 
   <!--node name="joy" pkg="joy" type="joy_node" output="screen">
     <param name="dev" value="$(arg joy_dev)" />
@@ -37,7 +35,9 @@
       <param name="joy_topic" value="/joy" />
     </node-->
 
-    <include file="$(find crazyflie_controller)/launch/crazyflie2.launch">
+    <node name="keyboard" pkg="crazyflie_input_devices" type="keyboard" output="screen" />
+
+    <include file="$(find crazyflie_controller)/launch/controller.launch">
       <arg name="frame" value="$(arg frame1)" />
     </include>
 
@@ -49,7 +49,6 @@
       <param name="z" value="$(arg z1)" />
     </node>
 
-    <!-- run vrpn client -->
     <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn" output="screen" required="true">
       <rosparam subst_value="true">
         server: $(arg server)
@@ -76,7 +75,9 @@
       <param name="joy_topic" value="/joy" />
     </node-->
 
-    <include file="$(find crazyflie_controller)/launch/crazyflie2.launch">
+    <node name="keyboard" pkg="crazyflie_input_devices" type="keyboard" output="screen" />
+
+    <include file="$(find crazyflie_controller)/launch/controller.launch">
       <arg name="frame" value="$(arg frame2)" />
     </include>
 
@@ -88,7 +89,6 @@
       <param name="z" value="$(arg z2)" />
     </node>
 
-    <!-- run vrpn client -->
     <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn" output="screen" required="true">
       <rosparam subst_value="true">
         server: $(arg server)

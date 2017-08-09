@@ -4,13 +4,11 @@ project(crazyflie_input_devices)
 find_package(catkin REQUIRED COMPONENTS
   std_srvs
   roscpp
+
 )
 
 # Enable C++11
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
-## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS program_options REQUIRED)
 
 ###################################
 ## catkin specific configuration ##

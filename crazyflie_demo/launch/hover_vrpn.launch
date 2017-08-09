@@ -24,13 +24,13 @@
       <param name="dev" value="$(arg joy_dev)" />
     </node>
 
-    <node name="joystick_controller" pkg="crazyflie_demo" type="controller.py" output="screen">
+    <node name="joystick_controller" pkg="crazyflie_input_devices" type="joystick.py" output="screen">
       <param name="use_crazyflie_controller" value="True" />
     </node-->
 
     <node name="keyboard" pkg="crazyflie_input_devices" type="keyboard" output="screen" />
 
-    <include file="$(find crazyflie_controller)/launch/crazyflie2.launch">
+    <include file="$(find crazyflie_controller)/launch/controller.launch">
       <arg name="frame" value="$(arg frame)" />
     </include>
 
