@@ -18,7 +18,6 @@
 
   <include file="$(find crazyflie_driver)/launch/crazyflie_server.launch" />
 
-
   <!--node name="joy" pkg="joy" type="joy_node" output="screen">
     <param name="dev" value="$(arg joy_dev)" />
   </node-->
@@ -74,7 +73,7 @@
       <param name="use_crazyflie_controller" value="True" />
       <param name="joy_topic" value="/joy" />
     </node-->
-
+ 
     <node name="keyboard" pkg="crazyflie_input_devices" type="keyboard" output="screen" />
 
     <include file="$(find crazyflie_controller)/launch/controller.launch">
