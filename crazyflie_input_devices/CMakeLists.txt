@@ -4,7 +4,6 @@ project(crazyflie_input_devices)
 find_package(catkin REQUIRED COMPONENTS
   std_srvs
   roscpp
-
 )
 
 # Enable C++11
@@ -27,12 +26,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-## Declare a cpp executable
 add_executable(keyboard
   src/keyboard.cpp
 )
 
-## Specify libraries to link a library or executable target against
 target_link_libraries(keyboard
   ${catkin_LIBRARIES}
 )

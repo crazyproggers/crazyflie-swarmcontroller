@@ -12,7 +12,7 @@ class Demo():
     def __init__(self, goals):
         rospy.init_node('demo', anonymous=True)
         self.worldFrame = rospy.get_param("~worldFrame", "/world")
-        self.frame = rospy.get_param("~frame")
+        self.frame = rospy.get_param("~frames")
         self.pubGoal = rospy.Publisher('goal', PoseStamped, queue_size=1)
         self.listener = TransformListener()
         self.goals = goals

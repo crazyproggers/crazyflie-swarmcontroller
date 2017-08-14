@@ -21,6 +21,7 @@ public:
         const ros::NodeHandle &n)
         : m_worldFrame  (worldFrame)
         , m_frame       (frame)
+        , m_tf_prefix 	 (frame)
         , m_pubNav      ()
         , m_listener    ()
         , m_pidX (
@@ -69,10 +70,11 @@ public:
     {
         ros::NodeHandle nh;
         m_listener.waitForTransform (m_worldFrame, m_frame, ros::Time (0), ros::Duration (10.0));
-        m_pubNav         = nh.advertise<geometry_msgs::Twist> ("cmd_vel", 1);
-        m_subscribeGoal  = nh.subscribe         ("goal", 1, &Controller::goalChanged, this);
-        m_serviceTakeoff = nh.advertiseService  ("takeoff", &Controller::takeoff,     this);
-        m_serviceLand    = nh.advertiseService  ("land",    &Controller::land,        this);
+
+        m_pubNav         = nh.advertise<geometry_msgs::Twist> (m_tf_prefix + "/cmd_vel", 1);
+        m_subscribeGoal  = nh.subscribe        (m_tf_prefix + "/goal",    1, &Controller::goalChanged, this);
+        m_serviceTakeoff = nh.advertiseService (m_tf_prefix + "/takeoff",    &Controller::takeoff,     this);
+        m_serviceLand    = nh.advertiseService (m_tf_prefix + "/land",       &Controller::land,        this);
     }
 
     void run (double frequency) {
@@ -199,12 +201,13 @@ private:
         Idle      = 0,
         Automatic = 1,
         TakingOff = 2,
-        Landing   = 3,
+        Landing   = 3
     };
 
 private:
     std::string                 m_worldFrame;
     std::string                 m_frame;
+    std::string                 m_tf_prefix;
     ros::Publisher              m_pubNav;
     tf::TransformListener       m_listener;
     PID                         m_pidX;
@@ -227,13 +230,26 @@ int main (int argc, char **argv) {
     ros::NodeHandle n ("~");
     std::string worldFrame;
     n.param<std::string> ("worldFrame", worldFrame, "/world");
-    std::string frame;
-    n.getParam ("frame", frame);
+
+    std::string frames_str;
+    n.getParam ("frames", frames_str);
+
+    // Split frames_str by whitespace
+    std::istringstream iss (frames_str);
+    std::vector<std::string> frame {std::istream_iterator<std::string>{iss},
+                                    std::istream_iterator<std::string>{}};
+
     double frequency;
     n.param ("frequency", frequency, 50.0);
 
-    Controller controller (worldFrame, frame, n);
-    controller.run (frequency);
+    //std::vector<Controller> controller;
+    Controller *controller[frame.size()];
+    for (size_t i = 0; i < frame.size(); ++i) {
+        //controller.push_back(Controller(worldFrame, frame[i], n));
+        //controller[i].run(frequency);
+        controller[i] = new Controller (worldFrame, frame[i], n);
+        controller[i]->run (frequency);
+    }
 
     return 0;
 }
