@@ -7,6 +7,6 @@
   <node name="controller" pkg="crazyflie_controller" type="crazyflie_controller" output="screen">
     <param name="frames" value="$(arg frames)" />
     <param name="worldFrame" value="$(arg worldFrame)" />
-    <rosparam command="load" file="$(find crazyflie_controller)/config/PID_config.yaml" />
+    <rosparam command="load" file="$(find crazyflie_controller)/config/PIDs_config.yaml" />
   </node>
 </launch>
