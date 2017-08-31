@@ -32,10 +32,10 @@ public:
         double pitch,
         double yaw,
         double delay)
-        : m_roll 	(roll)
-        , m_pitch 	(pitch)
-        , m_yaw 	(yaw)
-        , m_delay 	(delay)
+        : m_roll    (roll)
+        , m_pitch   (pitch)
+        , m_yaw     (yaw)
+        , m_delay   (delay)
     {
         /*
          * roll  - angle around X
@@ -55,13 +55,13 @@ public:
         m_msg.pose.orientation.w = quaternion.w();
     }
 
-    double x()      const 	{ return m_msg.pose.position.x;    }
-    double y()      const 	{ return m_msg.pose.position.y;    }
-    double z() 	     const	{ return m_msg.pose.position.z;    }
-    double roll()   const 	{ return m_roll; 					 }
-    double pitch()  const 	{ return m_pitch; 					 }
-    double yaw()    const 	{ return m_yaw; 					 }
-    double delay()  const 	{ return m_delay;                  }
+    double x()      const   { return m_msg.pose.position.x; }
+    double y()      const   { return m_msg.pose.position.y; }
+    double z()      const   { return m_msg.pose.position.z; }
+    double roll()   const   { return m_roll;                }
+    double pitch()  const   { return m_pitch;               }
+    double yaw()    const   { return m_yaw;                 }
+    double delay()  const   { return m_delay;               }
 
     msg_t getMsg() {
         m_msg.header.seq++;
@@ -72,12 +72,12 @@ public:
 
 
 class GoalPublisher {
-    std::string 			m_worldFrame;
-    std::string 			m_frame;
-    std::vector	<Goal>		m_goal;
-    ros::Publisher 		m_publisher;
-    tf::TransformListener 	m_transformListener;
-    uint					m_publishRate;
+    std::string             m_worldFrame;
+    std::string             m_frame;
+    std::vector	<Goal>      m_goal;
+    ros::Publisher          m_publisher;
+    tf::TransformListener   m_transformListener;
+    uint                    m_publishRate;
 
 public:
     GoalPublisher(
@@ -85,17 +85,16 @@ public:
         const std::string &frame,
         const std::vector<Goal> &goal,
         uint publishRate)
-        : m_worldFrame  		(worldFrame)
-        , m_frame       		(frame)
-        , m_goal				(goal)
-        , m_publisher 			()
-        , m_transformListener 	()
-        , m_publishRate		(publishRate)
+        : m_worldFrame          (worldFrame)
+        , m_frame               (frame)
+        , m_goal                (goal)
+        , m_publisher           ()
+        , m_transformListener   ()
+        , m_publishRate         (publishRate)
     {
         ros::NodeHandle n;
         m_transformListener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
         m_publisher = n.advertise<msg_t>(m_frame + "/goal", 1);
-        ros::service::waitForService(m_frame + "/land");
     }
 
     void run() {
@@ -134,7 +133,6 @@ public:
                     }
                 } // if (canTransform(m_worldFrame, m_frame, common_time))
 
-                //ros::Rate(m_publishRate).sleep();
                 loop_rate.sleep();
             } // while (ros::ok())
 
@@ -143,8 +141,32 @@ public:
     } // run()
 };
 
+inline double fixCoordinate(double value, size_t num) {
+    bool isAngle = ((num >= 3) && (num <= 5))? true : false;
+    bool isPosition = (num < 3)? true : false;
 
-std::vector<std::vector<Goal>> readGoals(const std::string &map_path) {
+    if (isAngle) {
+        if (value > 180)
+            value -= 360;
+        else if (value < -180)
+            value += 360;
+    }
+    else if (isPosition) {
+        if (value > 2)
+            value = 2;
+        if (value < 0)
+            value = 0;
+    }
+
+    return value;
+}
+
+std::vector<std::vector<Goal>> getGoals(
+    const std::string &map_path,
+    double intermediatePointsDelay  = 0.01,
+    double distanceBetweenDots      = 0.01,
+    double angleBetweenDots         = 18.0) {
+
     std::ifstream map;
     map.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
@@ -153,25 +175,90 @@ std::vector<std::vector<Goal>> readGoals(const std::string &map_path) {
     try {
         map.open(map_path.c_str(), std::ios_base::in);
 
-        while (!map.eof()) {
-            std::vector<Goal> entry;
-            uint goalsNum;
-            map >> goalsNum;
+        std::vector<std::vector<double>> anchor;
+        std::vector<double> intermediateDots;
+        
+        const uint PARAMETERS_AMOUNT = 7;
 
-            for (size_t i = 0; i < goalsNum; ++i) {
-                double x, y, z, pitch, roll, yaw, delay;
-                map >> x >> y >> z >> roll >> pitch >> yaw >> delay;
+        while (!map.eof()) {
+            uint anchorPointsAmount;
+            map >> anchorPointsAmount;
+            
+            // Get anchor points from map-file
+            for (size_t i = 0; i < anchorPointsAmount; ++i) {
+                std::vector<double> tmp;
+                double anchorPointsValue;
+                
+                for (size_t j = 0; j < PARAMETERS_AMOUNT; ++j) {
+                    map >> anchorPointsValue;
+                    tmp.push_back(anchorPointsValue);
+                }
+                anchor.push_back(tmp);
+            }
+
+            for (size_t i = 0; i < anchor.size() - 1; ++i) {
+                double delta_x = anchor[i][0] - anchor[i+1][0];
+                double delta_y = anchor[i][1] - anchor[i+1][1];
+                double delta_z = anchor[i][2] - anchor[i+1][2];
+                double delta_yaw = abs(anchor[i][5] - anchor[i+1][5]);
+
+                double intermediatePointsAmount = std::sqrt(std::pow(delta_x, 2) 
+                                                          + std::pow(delta_y, 2) 
+                                                          + std::pow(delta_z, 2))
+                                                          / distanceBetweenDots;
+
+                double intermediateAnglesAmount = delta_yaw / angleBetweenDots;
+                uint   intermediateDotsAmount   = std::max(intermediatePointsAmount, intermediateAnglesAmount);
+                
+                if (!intermediateDotsAmount) 
+                    continue;
+
+                double distanceBetweenCordinates[PARAMETERS_AMOUNT];
+                double qurentPosition[PARAMETERS_AMOUNT];
+
+                for (size_t j = 0; j < anchor[0].size(); ++j) {
+                    distanceBetweenCordinates[j] = anchor[i+1][j] - anchor[i][j];
+                    qurentPosition[j] = anchor[i][j] + distanceBetweenCordinates[j] / intermediateDotsAmount;
+                    anchor[i][j] = fixCoordinate(anchor[i][j], j);
+                    intermediateDots.push_back(anchor[i][j]);
+                }
+
+                for (size_t k = 0; k < intermediateDotsAmount; ++k) {
+                    for (size_t j = 0; j < PARAMETERS_AMOUNT - 1; ++j) {
+                        qurentPosition[j] = fixCoordinate(qurentPosition[j], j);
+                        intermediateDots.push_back(qurentPosition[j]);
+                        qurentPosition[j] += distanceBetweenCordinates[j] / intermediateDotsAmount;
+
+                    }
+                    intermediateDots.push_back(intermediatePointsDelay);
+                }
+            } // for (size_t i = 0; i < anchor.size() - 1; ++i)
+
+            for (size_t i = 0; i < anchor[0].size(); ++i) {
+               anchor[anchor.size()-1][i] = fixCoordinate(anchor[anchor.size()-1][i], i);
+               intermediateDots.push_back(anchor[anchor.size()-1][i]);
+            }
+            
+            std::vector<Goal> entry;
+            for (size_t i = 0; i < intermediateDots.size(); i += PARAMETERS_AMOUNT) {
+                double &x     = intermediateDots[i];
+                double &y     = intermediateDots[i+1];
+                double &z     = intermediateDots[i+2];
+                double &roll  = intermediateDots[i+3];
+                double &pitch = intermediateDots[i+4];
+                double &yaw   = intermediateDots[i+5];
+                double &delay = intermediateDots[i+6];
                 entry.push_back(Goal(x, y, z, degToRad(roll), degToRad(pitch), degToRad(yaw), delay));
             }
             goals_table.push_back(entry);
-        } // while (!map.eof())
-        map.close();
-    }
-    catch (std::ifstream::failure exp) {
+       } // while ((map >> anchorPointsAmount) > 0)
+       map.close();
+   } // try
+   catch (std::ifstream::failure exp) {
         std::cerr << "Could not read/close map-file!" << std::endl;
-    }
+   }
 
-    return goals_table;
+   return goals_table;
 }
 
 
@@ -193,7 +280,16 @@ int main(int argc, char **argv) {
 
     std::string map_path;
     n.getParam("map", map_path);
-    std::vector<std::vector<Goal>> goals = readGoals(map_path);
+
+    // Read goals from map-file and to interpolate they
+    double intermediatePointsDelay;
+    double distanceBetweenDots;
+    double angleBetweenDots;
+    n.getParam("intermediatePointsDelay",   intermediatePointsDelay);
+    n.getParam("distanceBetweenDots",       distanceBetweenDots);
+    n.getParam("angleBetweenDots",          angleBetweenDots);
+
+    std::vector<std::vector<Goal>> goals = std::move(getGoals(map_path, intermediatePointsDelay, distanceBetweenDots, angleBetweenDots));
     if (!goals.size()) return -1;
 
     int rate;
