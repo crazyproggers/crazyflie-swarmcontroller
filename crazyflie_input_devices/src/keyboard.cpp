@@ -36,27 +36,39 @@ int main (int argc, char **argv) {
         KEYCODE_QUIT    = 0x71
     };
 
+    for (size_t i = 0; i < frame.size(); ++i) {
+        ROS_INFO("Waiting for takeoff services");
+        ros::service::waitForService(frame[i] + "/takeoff");
+        ROS_INFO("Found takeoff sevices");
+
+        ROS_INFO("Waiting for land services");
+        ros::service::waitForService(frame[i] + "/land");
+        ROS_INFO("Found land services");
+
+        ROS_INFO("Waiting for emergency services");
+        ros::service::waitForService(frame[i] + "/emergency");
+        ROS_INFO("Found emergency services");
+
+        ROS_INFO("Waiting for update_params services");
+        ros::service::waitForService(frame[i] + "/update_params");
+        ROS_INFO("Found update_params services");
+    }
+
     while (ros::ok()) {
         int key = getKey();
 
         switch (key) {
             case KEYCODE_UP:
-                for (size_t i = 0; i < frame.size(); ++i) {
-                    if (!ros::service::call(frame[i] + "/takeoff", empty_srv))
-                        std::cerr << "Could not call takeoff service" << std::endl;
-                }
+                for (size_t i = 0; i < frame.size(); ++i)
+                    ros::service::call(frame[i] + "/takeoff", empty_srv);
                 break;
             case KEYCODE_DOWN:
-                for (size_t i = 0; i < frame.size(); ++i) {
-                    if (!ros::service::call(frame[i] + "/land", empty_srv))
-                        std::cerr << "Could not call landing service" << std::endl;
-                }
+                for (size_t i = 0; i < frame.size(); ++i)
+                    ros::service::call(frame[i] + "/land", empty_srv);
                 break;
             case KEYCODE_LEFT:
-                for (size_t i = 0; i < frame.size(); ++i) {
-                    if (!ros::service::call(frame[i] + "/emergency", empty_srv))
-                        std::cerr << "Could not call emergency service" << std::endl;
-                }
+                for (size_t i = 0; i < frame.size(); ++i)
+                    ros::service::call(frame[i] + "/emergency", empty_srv);
                 break;
             case KEYCODE_RIGHT:
                 for (size_t i = 0; i < frame.size(); ++i) {
@@ -66,17 +78,14 @@ int main (int argc, char **argv) {
                     if (value)
                         n.setParam(frame[i] + "/ring/headlightEnable", 1);
                     else
-                        n.setParam(frame[i] + "ring/headlightEnable", 0);
+                        n.setParam(frame[i] + "/ring/headlightEnable", 0);
 
-                    if (!ros::service::call(frame[i] + "/update_params", empty_srv))
-                        std::cerr << "Could not call update_params service" << std::endl;
+                    ros::service::call(frame[i] + "/update_params", empty_srv);
                 }
                 break;
             case KEYCODE_QUIT:
-                for (size_t i = 0; i < frame.size(); ++i) {
-                    if (!ros::service::call(frame[i] + "/land", empty_srv))
-                        std::cerr << "Could not call landing service" << std::endl;
-                }
+                for (size_t i = 0; i < frame.size(); ++i)
+                    ros::service::call(frame[i] + "/land", empty_srv);
                 ros::shutdown();
                 break;
         } // switch (key)

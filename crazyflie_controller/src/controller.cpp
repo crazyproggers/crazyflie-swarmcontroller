@@ -80,8 +80,15 @@ public:
     void run(double frequency) {
         ros::NodeHandle node;
         ros::Timer timer = node.createTimer(ros::Duration(1.0/frequency),
-                                        &Controller::iteration, this);
-        ros::spin();
+                                             &Controller::iteration, this);
+
+        // TODO: this will should to change on ros::MultiThreadedSpinner or ros::AsyncSpinner
+        ros::Rate loop_rate(10);
+        while (ros::ok) {
+            ros::spinOnce();
+            //ros::Rate(10).sleep(); // 10 Hz
+            loop_rate.sleep();
+        }
     }
 
 private:
@@ -135,6 +142,7 @@ private:
             case TakingOff: {
                 tf::StampedTransform transform;
                 m_listener.lookupTransform(m_worldFrame, m_frame, ros::Time(0), transform);
+
                 if (transform.getOrigin().z() > m_startZ + 0.05 || m_thrust > 50000) {
                     pidReset();
                     m_pidZ.setIntegral(m_thrust / m_pidZ.ki());
@@ -152,6 +160,7 @@ private:
                 m_goal.pose.position.z = m_startZ + 0.05;
                 tf::StampedTransform transform;
                 m_listener.lookupTransform(m_worldFrame, m_frame, ros::Time(0), transform);
+
                 if (transform.getOrigin().z() <= m_startZ + 0.05) {
                     m_state = Idle;
                     geometry_msgs::Twist msg;
@@ -162,8 +171,8 @@ private:
             case Automatic: {
                 tf::StampedTransform transform;
                 m_listener.lookupTransform(m_worldFrame, m_frame, ros::Time(0), transform);
+                geometry_msgs::PoseStamped targetWorld;
 
-                geometry_msgs::PoseStamped  targetWorld;
                 targetWorld.header.stamp    = transform.stamp_;
                 targetWorld.header.frame_id = m_worldFrame;
                 targetWorld.pose            = m_goal.pose;
@@ -247,6 +256,11 @@ int main(int argc, char **argv) {
         controller[i] = new Controller(worldFrame, frame[i], n);
         thr[i] = new std::thread(&Controller::run, controller[i], frequency);
     }
+    /*
+    ros::AsyncSpinner spinner(frame.size());
+    spinner.start();
+    ros::waitForShutdown();
+    */
 
     for (size_t i = 0; i < frame.size(); ++i) {
         thr[i]->join();

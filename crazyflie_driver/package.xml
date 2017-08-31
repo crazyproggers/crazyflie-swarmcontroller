@@ -2,17 +2,10 @@
 <package>
   <name>crazyflie_driver</name>
   <version>0.0.1</version>
-  <description>ROS driver for Crazyflie Nano Quadcopter from Bitcraze</description>
-
-  <maintainer email="whoenig@usc.edu">Wolfgang Hoenig</maintainer>
-
+  <maintainer email="somemail@somemail.com">Crazyprogers</maintainer>
   <license>MIT</license>
 
-  <url type="website">http://ros.org/wiki/crazyflie</url>
-  <url type="bugtracker">https://github.com/whoenig/crazyflie_ros/issues</url>
-
-  <author email="whoenig@usc.edu">Wolfgang Hoenig</author>
-
+  <description>ROS driver for Crazyflie Nano Quadcopter from Bitcraze</description>
 
   <buildtool_depend>catkin</buildtool_depend>
 

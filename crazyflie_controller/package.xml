@@ -2,16 +2,10 @@
 <package>
   <name>crazyflie_controller</name>
   <version>0.0.1</version>
-  <description>Controller to fly a Crazyflie in a space with location feedback (such as motion capture).</description>
-
-  <maintainer email="whoenig@usc.edu">Wolfgang Hoenig</maintainer>
-
+  <maintainer email="somemail@somemail.com">Crazyprogers</maintainer>
   <license>MIT</license>
 
-  <url type="website">http://ros.org/wiki/crazyflie</url>
-  <url type="bugtracker">https://github.com/whoenig/crazyflie_ros/issues</url>
-
-  <author email="whoenig@usc.edu">Wolfgang Hoenig</author>
+  <description>Controller to fly a Crazyflie in a space with location feedback (such as motion capture).</description>
 
   <buildtool_depend>catkin</buildtool_depend>
 </package>

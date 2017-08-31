@@ -34,14 +34,11 @@ generate_messages(
 )
 
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES crazyflie
   CATKIN_DEPENDS
     message_runtime
     std_msgs
     tf
     crazyflie_cpp
-#  DEPENDS system_lib
 )
 
 ###########
