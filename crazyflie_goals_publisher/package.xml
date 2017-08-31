@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package>
+  <name>crazyflie_goals_publisher</name>
+  <version>0.0.1</version>
+  <maintainer email="somemail@somemail.com">Crazyprogers</maintainer>
+  <license>MIT</license>
+
+  <description>Tool for publish crazyflies goals</description>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+
+  <run_depend>roscpp</run_depend>
+</package>

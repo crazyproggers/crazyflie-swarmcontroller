@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<package>
+  <name>crazyflie_run</name>
+  <version>0.0.1</version>
+  <maintainer email="somemail@somemail.com">Crazyprogers</maintainer>
+  <license>MIT</license>
+  <description>Run crazyflies swarm</description>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

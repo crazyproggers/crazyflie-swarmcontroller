@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="server" default="10.2.16.54" />
+  <arg name="port" default="3883" />
+
+  <arg name="uri" />
+  <arg name="frames" />
+  <arg name="map" />
+
+  <include file="$(find crazyflie_driver)/launch/crazyflie_server.launch" />
+
+  <include file="$(find crazyflie_driver)/launch/crazyflie_add_group.launch">
+    <arg name="uri" value="$(arg uri)" />
+    <arg name="tf_prefixes" value="$(arg frames)" />
+    <arg name="enable_logging" value="True" />
+  </include>
+
+  <node name="keyboard" pkg="crazyflie_input_devices" type="keyboard" output="screen">
+    <param name="frames" value="$(arg frames)" />
+  </node>
+
+  <include file="$(find crazyflie_controller)/launch/controller.launch">
+    <arg name="frames" value="$(arg frames)" />
+  </include>
+
+  <node name="goals_publisher" pkg="crazyflie_goals_publisher" type="goals_publisher" output="screen">
+    <param name="name" value="goal" />
+    <param name="rate" value="10" />
+    <param name="frames" value="$(arg frames)" />
+    <param name="map" value="$(arg map)" />
+  </node>
+
+  <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn" output="screen" required="true">
+    <rosparam subst_value="true">
+      server: $(arg server)
+      port: $(arg port)
+      update_frequency: 100.0
+      frame_id: /world
+      use_server_time: false
+      broadcast_tf: true
+      refresh_tracker_frequency: 1.0
+   </rosparam>
+  </node>
+</launch>
