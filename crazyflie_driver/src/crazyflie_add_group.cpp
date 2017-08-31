@@ -3,7 +3,6 @@
 #include "crazyflie_driver/LogBlock.h"
 
 int main(int argc, char **argv) {
-    //ros::init(argc, argv, "crazyflie_add_group", ros::init_options::AnonymousName);
     ros::init(argc, argv, "crazyflie_add_group");
 
     ros::NodeHandle n("~");
@@ -89,7 +88,7 @@ int main(int argc, char **argv) {
                        "genericLogTopicFrequencies does not match!");
 
         addCrazyflieService.call(addCrazyflie);
-    } // for (auto &uri: uri_vector)
+    } // for (size_t i = 0; i < uri.size(); ++i)
 
     return 0;
 }

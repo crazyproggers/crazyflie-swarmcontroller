@@ -79,14 +79,11 @@ public:
 
     void run(double frequency) {
         ros::NodeHandle node;
-        ros::Timer timer = node.createTimer(ros::Duration(1.0/frequency),
-                                             &Controller::iteration, this);
+        ros::Timer timer = node.createTimer(ros::Duration(1.0/frequency), &Controller::iteration, this);
 
-        // TODO: this will should to change on ros::MultiThreadedSpinner or ros::AsyncSpinner
-        ros::Rate loop_rate(10);
+        ros::Rate loop_rate(10); // 10 Hz
         while (ros::ok) {
             ros::spinOnce();
-            //ros::Rate(10).sleep(); // 10 Hz
             loop_rate.sleep();
         }
     }
@@ -256,11 +253,6 @@ int main(int argc, char **argv) {
         controller[i] = new Controller(worldFrame, frame[i], n);
         thr[i] = new std::thread(&Controller::run, controller[i], frequency);
     }
-    /*
-    ros::AsyncSpinner spinner(frame.size());
-    spinner.start();
-    ros::waitForShutdown();
-    */
 
     for (size_t i = 0; i < frame.size(); ++i) {
         thr[i]->join();
