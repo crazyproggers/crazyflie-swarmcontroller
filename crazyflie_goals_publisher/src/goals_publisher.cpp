@@ -141,6 +141,7 @@ public:
     } // run()
 };
 
+
 inline double fixCoordinate(double value, size_t num) {
     bool isAngle = ((num >= 3) && (num <= 5))? true : false;
     bool isPosition = (num < 3)? true : false;
@@ -163,9 +164,7 @@ inline double fixCoordinate(double value, size_t num) {
 
 std::vector<std::vector<Goal>> getGoals(
     const std::string &map_path,
-    double intermediatePointsDelay  = 0.01,
-    double distanceBetweenDots      = 0.01,
-    double angleBetweenDots         = 18.0) {
+    double distanceBetweenDots = 0.01) {
 
     std::ifstream map;
     map.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -202,23 +201,18 @@ std::vector<std::vector<Goal>> getGoals(
                 double delta_z = anchor[i][2] - anchor[i+1][2];
                 double delta_yaw = abs(anchor[i][5] - anchor[i+1][5]);
 
-                double intermediatePointsAmount = std::sqrt(std::pow(delta_x, 2) 
+                double intermediateDotsAmount = std::sqrt(std::pow(delta_x, 2) 
                                                           + std::pow(delta_y, 2) 
                                                           + std::pow(delta_z, 2))
                                                           / distanceBetweenDots;
-
-                double intermediateAnglesAmount = delta_yaw / angleBetweenDots;
-                uint   intermediateDotsAmount   = std::max(intermediatePointsAmount, intermediateAnglesAmount);
                 
-                if (!intermediateDotsAmount) 
-                    continue;
-
                 double distanceBetweenCordinates[PARAMETERS_AMOUNT];
                 double qurentPosition[PARAMETERS_AMOUNT];
 
                 for (size_t j = 0; j < anchor[0].size(); ++j) {
                     distanceBetweenCordinates[j] = anchor[i+1][j] - anchor[i][j];
-                    qurentPosition[j] = anchor[i][j] + distanceBetweenCordinates[j] / intermediateDotsAmount;
+                    if (intermediateDotsAmount)
+                        qurentPosition[j] = anchor[i][j] + distanceBetweenCordinates[j] / intermediateDotsAmount;
                     anchor[i][j] = fixCoordinate(anchor[i][j], j);
                     intermediateDots.push_back(anchor[i][j]);
                 }
@@ -230,7 +224,7 @@ std::vector<std::vector<Goal>> getGoals(
                         qurentPosition[j] += distanceBetweenCordinates[j] / intermediateDotsAmount;
 
                     }
-                    intermediateDots.push_back(intermediatePointsDelay);
+                    intermediateDots.push_back(0.0); //delay between intermediate dots
                 }
             } // for (size_t i = 0; i < anchor.size() - 1; ++i)
 
@@ -282,14 +276,10 @@ int main(int argc, char **argv) {
     n.getParam("map", map_path);
 
     // Read goals from map-file and to interpolate they
-    double intermediatePointsDelay;
     double distanceBetweenDots;
-    double angleBetweenDots;
-    n.getParam("intermediatePointsDelay",   intermediatePointsDelay);
-    n.getParam("distanceBetweenDots",       distanceBetweenDots);
-    n.getParam("angleBetweenDots",          angleBetweenDots);
+    n.getParam("distanceBetweenDots", distanceBetweenDots);
 
-    std::vector<std::vector<Goal>> goals = std::move(getGoals(map_path, intermediatePointsDelay, distanceBetweenDots, angleBetweenDots));
+    std::vector<std::vector<Goal>> goals = std::move(getGoals(map_path, distanceBetweenDots));
     if (!goals.size()) return -1;
 
     int rate;

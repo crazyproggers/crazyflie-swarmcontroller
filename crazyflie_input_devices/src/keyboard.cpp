@@ -54,6 +54,7 @@ int main (int argc, char **argv) {
         ROS_INFO("Found update_params services");
     }
 
+    ros::Rate loop_rate(10);
     while (ros::ok()) {
         int key = getKey();
 
@@ -91,6 +92,7 @@ int main (int argc, char **argv) {
         } // switch (key)
 
         ros::spinOnce();
+        loop_rate.sleep();
     }
 
     return 0;
