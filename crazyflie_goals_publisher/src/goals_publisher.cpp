@@ -162,6 +162,7 @@ inline double fixCoordinate(double value, size_t num) {
     return value;
 }
 
+
 std::vector<std::vector<Goal>> getGoals(
     const std::string &map_path,
     double distanceBetweenDots = 0.01) {
@@ -173,16 +174,15 @@ std::vector<std::vector<Goal>> getGoals(
 
     try {
         map.open(map_path.c_str(), std::ios_base::in);
-
-        std::vector<std::vector<double>> anchor;
-        std::vector<double> intermediateDots;
-        
         const uint PARAMETERS_AMOUNT = 7;
 
         while (!map.eof()) {
+            std::vector<std::vector<double>> anchor;
+            std::vector<double> intermediateDots;
+
             uint anchorPointsAmount;
             map >> anchorPointsAmount;
-            
+
             // Get anchor points from map-file
             for (size_t i = 0; i < anchorPointsAmount; ++i) {
                 std::vector<double> tmp;
@@ -245,7 +245,7 @@ std::vector<std::vector<Goal>> getGoals(
                 entry.push_back(Goal(x, y, z, degToRad(roll), degToRad(pitch), degToRad(yaw), delay));
             }
             goals_table.push_back(entry);
-       } // while ((map >> anchorPointsAmount) > 0)
+       } // while (!map.eof()) 
        map.close();
    } // try
    catch (std::ifstream::failure exp) {
@@ -254,7 +254,6 @@ std::vector<std::vector<Goal>> getGoals(
 
    return goals_table;
 }
-
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "goals_publisher");

@@ -293,7 +293,7 @@ private:
                         {"baro", "pressure"},
                         {"pm", "vbat"},
                     }, cb2));
-                logBlock2->start(10); // 100ms
+                logBlock2->start(1); // 10ms
             }
 
             // custom log blocks
