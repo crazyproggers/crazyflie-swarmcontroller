@@ -80,6 +80,10 @@ class GoalPublisher {
     uint                    m_publishRate;
 
 public:
+    GoalPublisher() = delete;
+    GoalPublisher(const GoalPublisher &) = delete;
+    GoalPublisher & operator=(const GoalPublisher &) = delete;
+
     GoalPublisher(
         const std::string &worldFrame,
         const std::string &frame,
