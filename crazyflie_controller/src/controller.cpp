@@ -2,6 +2,7 @@
 #include <tf/transform_listener.h>
 #include <std_srvs/Empty.h>
 #include <geometry_msgs/Twist.h>
+#include <std_msgs/Float32.h>
 #include <thread>
 
 #include "pid.hpp"
@@ -63,6 +64,7 @@ public:
         , m_state           (Idle)
         , m_goal            ()
         , m_subscribeGoal   ()
+        , m_subscribeBattery()
         , m_serviceTakeoff  ()
         , m_serviceLand     ()
         , m_thrust          (0)
@@ -71,10 +73,11 @@ public:
         ros::NodeHandle nh;
         m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(10.0));
 
-        m_pubNav         = nh.advertise<geometry_msgs::Twist>(m_frame + "/cmd_vel", 1);
-        m_subscribeGoal  = nh.subscribe       (m_frame + "/goal",    1, &Controller::goalChanged, this);
-        m_serviceTakeoff = nh.advertiseService(m_frame + "/takeoff",    &Controller::takeoff,     this);
-        m_serviceLand    = nh.advertiseService(m_frame + "/land",       &Controller::land,        this);
+        m_pubNav           = nh.advertise<geometry_msgs::Twist>(m_frame + "/cmd_vel", 1);
+        m_subscribeGoal    = nh.subscribe       (m_frame + "/goal",    1, &Controller::goalChanged,  this);
+        m_subscribeBattery = nh.subscribe       (m_frame + "/battery", 1, &Controller::checkBattery, this);
+        m_serviceTakeoff   = nh.advertiseService(m_frame + "/takeoff",    &Controller::takeoff,      this);
+        m_serviceLand      = nh.advertiseService(m_frame + "/land",       &Controller::land,         this);
     }
 
     void run(double frequency) {
@@ -89,8 +92,18 @@ public:
     }
 
 private:
-    void goalChanged(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    void goalChanged(const geometry_msgs::PoseStamped::ConstPtr&msg) {
         m_goal = *msg;
+    }
+
+    void checkBattery(const std_msgs::Float32::ConstPtr &msg) {
+        float cur_lvl = msg->data;
+        float low_lvl = 2.6;
+
+        if (cur_lvl <= low_lvl) {
+            ROS_WARN("%s", std::string(m_frame + " have too low battery charge level! You should to charge it.").c_str());
+            m_state = Landing;
+        }
     }
 
     bool takeoff(
@@ -222,6 +235,7 @@ private:
     State                       m_state;
     geometry_msgs::PoseStamped  m_goal;
     ros::Subscriber             m_subscribeGoal;
+    ros::Subscriber			  m_subscribeBattery;
     ros::ServiceServer          m_serviceTakeoff;
     ros::ServiceServer          m_serviceLand;
     float                       m_thrust;
