@@ -14,6 +14,7 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ###################################
 catkin_package(
    CATKIN_DEPENDS
+   INCLUDE_DIRS include
 )
 
 ###########
@@ -22,10 +23,12 @@ catkin_package(
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  include/
 )
 
 add_executable(goals_publisher
   src/goals_publisher.cpp
+  src/goals_publisher_node.cpp
 )
 
 target_link_libraries(goals_publisher

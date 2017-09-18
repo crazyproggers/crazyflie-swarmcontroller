@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
+#include "crazyflie_driver/UpdateParams.h"
 #include <termios.h>
 
 int getKey() {
@@ -26,7 +27,9 @@ int main (int argc, char **argv) {
     std::istringstream iss(frames_str);
     std::vector<std::string> frame {std::istream_iterator<std::string>{iss},
                                     std::istream_iterator<std::string>{}};
+    
     std_srvs::Empty empty_srv;
+    crazyflie_driver::UpdateParams update_srv;
 
     enum {
         KEYCODE_UP      = 0x41,
@@ -81,7 +84,7 @@ int main (int argc, char **argv) {
                     else
                         n.setParam(frame[i] + "/ring/headlightEnable", 0);
 
-                    ros::service::call(frame[i] + "/update_params", empty_srv);
+                    ros::service::call(frame[i] + "/update_params", update_srv);
                 }
                 break;
             case KEYCODE_QUIT:
