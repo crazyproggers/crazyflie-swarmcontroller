@@ -24,12 +24,11 @@
   </include>
 
   <node name="goals_publisher" pkg="crazyflie_goals_publisher" type="goals_publisher" output="screen">
-    <param name="name" value="goal" />
+    <param name="frames" value="$(arg frames)" />
+    <param name="map" value="$(arg map)" />
     <param name="rate" value="10" />
     <param name="waitForAllAtAnchor" value="True" />
     <param name="distanceBetweenDots" value="0.01" />
-    <param name="frames" value="$(arg frames)" />
-    <param name="map" value="$(arg map)" />
   </node>
 
   <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn" output="screen" required="true">
