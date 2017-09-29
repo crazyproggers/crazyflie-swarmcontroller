@@ -92,7 +92,7 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
 
                 // Add the finishing goal in the table
                 Goal last = entry[entry.size()-1];
-                entry.push_back(Goal(lastGoal.x(), last.y(), 0.1, 0.0, 0.0, 0.0, 0.0));
+                entry.push_back(Goal(last.x(), last.y(), 0.1, 0.0, 0.0, 0.0, 0.0));
 
                 m_goalsTable.push_back(entry);
                 entry.clear();

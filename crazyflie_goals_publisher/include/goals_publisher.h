@@ -14,7 +14,6 @@ class GoalsPublisher {
     std::string              m_frame;
     ros::Publisher           m_publisher;
     tf::TransformListener    m_transformListener;
-    std::vector<Goal>        m_goals;
     ros::Rate                m_loopRate;
     std::mutex               m_errMutex;
 

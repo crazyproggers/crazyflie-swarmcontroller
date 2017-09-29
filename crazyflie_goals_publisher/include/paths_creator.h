@@ -1,5 +1,5 @@
-#ifndef PATHS_creator_H
-#define PATHS_creator_H
+#ifndef PATHS_CREATOR_H
+#define PATHS_CREATOR_H
 
 #include <goal.h>
 
