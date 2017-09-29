@@ -3,21 +3,23 @@
 
 #include <tf/transform_listener.h>
 #include <atomic>
+#include <mutex>
 #include "goal.h"
+
 
 class GoalsPublisher {
     typedef unsigned int uint;
 
     std::string              m_worldFrame;
     std::string              m_frame;
-    std::vector <Goal>       m_goal;
     ros::Publisher           m_publisher;
     tf::TransformListener    m_transformListener;
-    uint                     m_publishRate;
+    std::vector<Goal>        m_goals;
+    ros::Rate                m_loopRate;
+    std::mutex               m_errMutex;
 
-    // If the mode "wait other crazyflies in anchors points" is enabled 
-    bool                     m_waitForAllAtAnchor;
-    uint                     m_totalCrazyflies;
+    bool                     m_synchAtAnchors;
+    static uint              m_totalCrazyflies;
     static std::atomic<uint> m_amountCrazyfliesAtAnchors;
 
 public:
@@ -26,12 +28,19 @@ public:
     GoalsPublisher & operator=(const GoalsPublisher &) = delete;
 
     GoalsPublisher(const std::string &worldFrame, 
-                   const std::string &frame, 
-                   const std::vector<Goal> &goal, 
-                   uint publishRate,
-                   bool waitForAllInAnchors = false,
-                   uint totalCrazyflies = 1);
+                   const std::string &frame,
+                   uint publishRate);
 
+    /*
+     * If this mode is enabled crazyflies that are located at anchor points 
+     * begin to wait lagging copters. This method need to call before run(...)
+     */ 
+    void enableSynchAtAnchors();
+    
+    // Automatic flight
+    void run(std::vector<Goal> path);
+    
+    // Controlled flight
     void run();
 };
 
