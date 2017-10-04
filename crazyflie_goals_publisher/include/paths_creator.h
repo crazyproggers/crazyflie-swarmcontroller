@@ -11,7 +11,7 @@ class PathsCreator {
     std::vector<std::string> m_frames;
 
     bool readGoals(const std::string &mapPath);
-    void interpolate(double distanceBetweenDots, bool splinesMode);
+    void interpolate(bool splinesMode);
 
 public:
     PathsCreator() = delete;
@@ -21,7 +21,6 @@ public:
     PathsCreator(const  std::string &worldFrame,
                  const  std::vector<std::string> &frames,
                  const  std::string &mapPath,
-                 double distanceBetweenDots = 0.01,
                  bool   splinesMode = false);
 
     std::vector<Goal> getPath(const std::string &frame) const;

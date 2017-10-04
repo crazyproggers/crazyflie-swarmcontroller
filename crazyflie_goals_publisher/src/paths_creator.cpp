@@ -4,18 +4,16 @@
 #include <cmath>
 #include "paths_creator.h"
 
-
 PathsCreator::PathsCreator(
         const  std::string &worldFrame,
         const  std::vector<std::string> &frames,
         const  std::string &mapPath,
-        double distanceBetweenDots,
         bool   splinesMode)
         : m_worldFrame      (worldFrame)
         , m_frames          (frames)
 {
     if (readGoals(mapPath))
-        interpolate(distanceBetweenDots, splinesMode);
+        interpolate(splinesMode);
 }
 
 
@@ -74,9 +72,9 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
     map.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
     std::vector<Goal> entry;
-    enum {
-        COMMAND_COMPONENTS_AMOUNT  = 2,
-        PARAMETERS_AMOUNT          = 5
+    enum AMOUNT {
+        COMMAND_COMPONENTS  = 2,
+        PARAMETERS          = 5
     };
 
     try {
@@ -102,7 +100,7 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
                 std::vector<std::string> words {std::istream_iterator<std::string>{iss},
                                                 std::istream_iterator<std::string>{}};
 
-                if (words.size() == COMMAND_COMPONENTS_AMOUNT) {
+                if (words.size() == AMOUNT::COMMAND_COMPONENTS) {
                     /*
                      * COMMANDS:
                      * repeat N  -- to repeat next N goals
@@ -122,7 +120,7 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
                         return false;
                      }
                 }
-                else if (words.size() == PARAMETERS_AMOUNT) {
+                else if (words.size() == AMOUNT::PARAMETERS) {
                     double x = 0.0, y = 0.0, z = 0.0;
                     double roll = 0.0, pitch = 0.0, yaw = 0.0;
                     double delay = 0.0;
@@ -176,12 +174,13 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
 } // readGoals
 
 
-void PathsCreator::interpolate(double distanceBetweenDots, bool splinesMode) {
+void PathsCreator::interpolate(bool splinesMode) {
     if (!splinesMode) {
         for (size_t i = 0; i < m_goalsTable.size(); ++i) {
             std::vector<Goal> entry;
+            double distanceBetweenDots = 0.01;
 
-            for (size_t j = 0; j < m_goalsTable.size() - 1; ++j) {
+            for (size_t j = 0; j < m_goalsTable[i].size() - 1; ++j) {
                 double x        = m_goalsTable[i][j].x();
                 double y        = m_goalsTable[i][j].y();
                 double z        = m_goalsTable[i][j].z();
@@ -216,7 +215,60 @@ void PathsCreator::interpolate(double distanceBetweenDots, bool splinesMode) {
         } // for (size_t i = 0; i < m_goalsTable.size(); ++i)
     } // if (!splinesMode)
     else {
-    }
+        double t[5], Ax[5], Ay[5], Az[5], Bx[5], By[5], Bz[5];
+        std::vector<Goal> entry;
+        double step = 0.01;
+
+        for (size_t l = 1; l < m_goalsTable.size(); ++l){
+            for (size_t i = 1; i < m_goalsTable[l].size(); ++i){
+
+                double roll     = m_goalsTable[l][i].roll();
+                double pitch    = m_goalsTable[l][i].pitch();
+                double yaw      = m_goalsTable[l][i].yaw();
+                double delay    = 0.0;
+
+                for (int k = 0; k < 4; ++k) t[k] = k;
+
+                for (double T = 1; T < 2; T += step) {
+
+                    for (size_t j = 1; j < 4; ++j) {
+                        Ax[j-1] = (t[j] - T) / (t[j] - t[j-1]) * m_goalsTable[l][j+i-1].x() +
+                                (T - t[j-1]) / (t[j] - t[j-1]) * m_goalsTable[l][j+i].x();
+
+                        Ay[j-1] = (t[j] - T) / (t[j] - t[j-1]) * m_goalsTable[l][j+i-1].y() +
+                                (T - t[j-1]) / (t[j] - t[j-1]) * m_goalsTable[l][j+i].y();
+
+                        Az[j-1] = (t[j] - T) / (t[j] - t[j-1]) * m_goalsTable[l][j+i-1].z() +
+                                (T - t[j-1]) / (t[j] - t[j-1]) * m_goalsTable[l][j+i].z();
+                    }
+
+                    for (size_t j = 0; j < 2; ++j) {
+                        Bx[j] = (t[j+2] - T) / (t[j+2] - t[j])  * Ax[j] +
+                                  (T - t[j]) / (t[j+2] - t[j])  * Ax[j+1];
+
+                        By[j] = (t[j+2] - T) / (t[j+2] - t[j])  * Ay[j] +
+                                  (T - t[j]) / (t[j+2] - t[j])  * Ay[j+1];
+
+                        Bz[j] = (t[j+2] - T) / (t[j+2] - t[j])  * Az[j] +
+                                  (T - t[j]) / (t[j+2] - t[j])  * Az[j+1];
+                     }
+
+
+                    double Cx = ((t[2] - T) / (t[2] - t[1]) * Bx[0] +
+                             (T - t[0]) / (t[2] - t[1]) * Bx[1]) / 2;
+
+                    double Cy = ((t[2] - T) / (t[2] - t[1]) * By[0] +
+                             (T - t[0]) / (t[2] - t[1]) * By[1]) / 2;
+
+                    double Cz = ((t[2] - T) / (t[2] - t[1]) * Bz[0] +
+                             (T - t[0]) / (t[2] - t[1]) * Bz[1]) / 2;
+
+                    entry.push_back(Goal(Cx, Cy, Cz, roll, pitch, yaw, delay));
+                }
+            }// for (size_t j = 1; j < m_goalsTable[l].size(); ++j)
+            m_goalsTable[l] = entry;
+        }// for (size_t l = 1; l < m_goalsTable.size(); ++l)
+    }// else
 }
 
 

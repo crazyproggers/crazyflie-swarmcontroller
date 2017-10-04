@@ -18,23 +18,26 @@ GoalsPublisher::GoalsPublisher(
     const std::string &worldFrame,
     const std::string &frame,
     uint publishRate)
-    : m_worldFrame                (worldFrame)
+    : m_nh                        ()
+    , m_worldFrame                (worldFrame)
     , m_frame                     (frame)
     , m_publisher                 ()
+    , m_subscriber                ()
     , m_transformListener         ()
     , m_loopRate                  (publishRate)
     , m_errMutex                  ()
     , m_synchAtAnchors            (false)
 {
-    ros::NodeHandle n;
     m_transformListener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
-    m_publisher = n.advertise<msg_t>(m_frame + "/goal", 1);
+    m_publisher = m_nh.advertise<msg_t>(m_frame + "/goal", 1);
     m_totalCrazyflies++; // register new crazyflie
 }
+
 
 void GoalsPublisher::enableSynchAtAnchors() {
     m_synchAtAnchors = true;
 }
+
 
 void GoalsPublisher::run(std::vector<Goal> path) {
     for (Goal goal: path) {
@@ -92,12 +95,23 @@ void GoalsPublisher::run(std::vector<Goal> path) {
 
     std_srvs::Empty empty_srv;
     ros::service::call(m_frame + "/land", empty_srv);
-} // runAutomatic(std::vector<Goal> path)
+} // run(std::vector<Goal> path)
 
 
 void GoalsPublisher::run() {
-    while (ros::ok()) {
-        m_loopRate.sleep();
-    } // while (ros::ok())
+    m_subscriber = m_nh.subscribe("/swarm/commands", 1, &GoalsPublisher::checkCommand, this);
+}
+
+
+void GoalsPublisher::checkCommand(const std_msgs::String::ConstPtr &msg) {
+    /*
+     * COMMANDS:
+     * up           -- Z += 0.01;
+     * down         -- Z -= 0.01;
+     * left         -- X += 0.01;
+     * right        -- X -= 0.01;
+     * forward      -- Y += 0.01;
+     * backward     -- Y -= 0.01;
+     */
 }
 

@@ -22,20 +22,19 @@ int main(int argc, char **argv) {
     std::string mapPath;
     n.getParam("map", mapPath);
 
-    // Read goals from map-file and to interpolate they
-    double distanceBetweenDots;
-    n.getParam("distanceBetweenDots", distanceBetweenDots);
-
     int rate;
     n.getParam("rate", rate);
 
     bool synchAtAnchors;
     n.getParam("synchAtAnchors", synchAtAnchors);
 
+    bool splinesMode;
+    n.getParam("splinesMode", splinesMode);
+
     GoalsPublisher *goalsPublisher[frames.size()];
     std::thread    *thr[frames.size()];
 
-    PathsCreator pathsCreator(worldFrame, frames, mapPath, distanceBetweenDots);
+    PathsCreator pathsCreator(worldFrame, frames, mapPath, splinesMode);
     
     for (size_t i = 0; i < frames.size(); ++i) {
         goalsPublisher[i] = new GoalsPublisher(worldFrame, frames[i], rate);

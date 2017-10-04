@@ -2,6 +2,7 @@
 #define GOALS_PUBLISHER_H
 
 #include <tf/transform_listener.h>
+#include <std_msgs/String.h>
 #include <atomic>
 #include <mutex>
 #include "goal.h"
@@ -10,9 +11,11 @@
 class GoalsPublisher {
     typedef unsigned int uint;
 
+    ros::NodeHandle          m_nh;
     std::string              m_worldFrame;
     std::string              m_frame;
     ros::Publisher           m_publisher;
+    ros::Subscriber          m_subscriber;
     tf::TransformListener    m_transformListener;
     ros::Rate                m_loopRate;
     std::mutex               m_errMutex;
@@ -20,6 +23,8 @@ class GoalsPublisher {
     bool                     m_synchAtAnchors;
     static uint              m_totalCrazyflies;
     static std::atomic<uint> m_amountCrazyfliesAtAnchors;
+
+    void checkCommand(const std_msgs::String::ConstPtr &msg);
 
 public:
     GoalsPublisher() = delete;
