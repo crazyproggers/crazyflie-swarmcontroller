@@ -1,7 +1,9 @@
 #include <ros/ros.h>
-#include <std_srvs/Empty.h>
-#include "crazyflie_driver/UpdateParams.h"
 #include <termios.h>
+#include <std_srvs/Empty.h>
+#include <std_msgs/String.h>
+#include "crazyflie_driver/UpdateParams.h"
+
 
 int getKey() {
     static struct termios oldt, newt;
@@ -16,6 +18,7 @@ int getKey() {
     return key;
 }
 
+
 int main (int argc, char **argv) {
     ros::init(argc, argv, "keyboard");
     ros::NodeHandle n("~");
@@ -25,84 +28,130 @@ int main (int argc, char **argv) {
 
     // Split frames_str by whitespace
     std::istringstream iss(frames_str);
-    std::vector<std::string> frame {std::istream_iterator<std::string>{iss},
-                                    std::istream_iterator<std::string>{}};
+    std::vector<std::string> frames {std::istream_iterator<std::string>{iss},
+                                     std::istream_iterator<std::string>{}};
     
+    ros::Publisher commandsPublisher = n.advertise<std_msgs::String>("/swarm/commands", 1000);
+
     std_srvs::Empty empty_srv;
     crazyflie_driver::UpdateParams update_srv;
 
-    enum KEYBOARD {
-        ARROW_UP      = 0x41, // take off
-        ARROW_DOWN    = 0x42, // landing
-        ARROW_RIGHT   = 0x43, // update params
-        ARROW_LEFT    = 0x44, // emergency
-        KEY_Q         = 0x71, // quit 
-        KEY_8         = 0x38, // move forward
-        KEY_2         = 0x32, // move backward
-        KEY_4         = 0x34, // move to right
-        KEY_6         = 0x36, // move to left
-        KEY_5         = 0x35, // move up
-        KEY_0         = 0x30  // move down    
+    enum KEY {
+        // Commands:
+        TAKEOFF       = 0x41, // arrow up
+        LANDING       = 0x42, // arrow down
+        UPDATE        = 0x43, // arrow left
+        EMERGENCY     = 0x44, // arrow right
+        QUIT          = 0x71, // key q
+        // Motions:
+        FORWARD       = 0x38, // key 8
+        BACKWARD      = 0x32, // key 2
+        RIGHTWARD     = 0x36, // key 4
+        LEFTWARD      = 0x34, // key 6
+        UPWARD        = 0x35, // key 5
+        DOWNWARD      = 0x30  // key 0
     };
 
-    for (size_t i = 0; i < frame.size(); ++i) {
+    for (auto frame: frames) {
         ROS_INFO("Waiting for takeoff services");
-        ros::service::waitForService(frame[i] + "/takeoff");
+        ros::service::waitForService(frame + "/takeoff");
         ROS_INFO("Found takeoff sevices");
 
         ROS_INFO("Waiting for land services");
-        ros::service::waitForService(frame[i] + "/land");
+        ros::service::waitForService(frame + "/land");
         ROS_INFO("Found land services");
 
         ROS_INFO("Waiting for emergency services");
-        ros::service::waitForService(frame[i] + "/emergency");
+        ros::service::waitForService(frame + "/emergency");
         ROS_INFO("Found emergency services");
 
         ROS_INFO("Waiting for update_params services");
-        ros::service::waitForService(frame[i] + "/update_params");
+        ros::service::waitForService(frame + "/update_params");
         ROS_INFO("Found update_params services");
     }
 
-    ros::Rate loop_rate(10);
+
+    // Directions:
+    std_msgs::String forward;
+    forward.data = "forward";
+
+    std_msgs::String backward;
+    backward.data = "backward";
+
+    std_msgs::String rightward;
+    rightward.data = "rightward";
+
+    std_msgs::String leftward;
+    leftward.data = "leftward";
+
+    std_msgs::String upward;
+    upward.data = "upward";
+
+    std_msgs::String downward;
+    downward.data = "downward";
+
+
+    ros::Rate loopRate(10);
     while (ros::ok()) {
         int key = getKey();
 
-        switch (key) {
-            case ARROW_UP:
-                for (size_t i = 0; i < frame.size(); ++i)
-                    ros::service::call(frame[i] + "/takeoff", empty_srv);
-                break;
-            case ARROW_DOWN:
-                for (size_t i = 0; i < frame.size(); ++i)
-                    ros::service::call(frame[i] + "/land", empty_srv);
-                break;
-            case ARROW_LEFT:
-                for (size_t i = 0; i < frame.size(); ++i)
-                    ros::service::call(frame[i] + "/emergency", empty_srv);
-                break;
-            case ARROW_RIGHT:
-                for (size_t i = 0; i < frame.size(); ++i) {
-                    int value;
-                    n.getParam(frame[i] + "/ring/headlightEnable", value);
+        if (key == KEY::TAKEOFF) {
+            commandsPublisher.publish(upward);
 
-                    if (value)
-                        n.setParam(frame[i] + "/ring/headlightEnable", 1);
-                    else
-                        n.setParam(frame[i] + "/ring/headlightEnable", 0);
+            for (auto frame: frames)
+                ros::service::call(frame + "/takeoff", empty_srv);
+        }
 
-                    ros::service::call(frame[i] + "/update_params", update_srv);
-                }
-                break;
-            case KEY_Q:
-                for (size_t i = 0; i < frame.size(); ++i)
-                    ros::service::call(frame[i] + "/land", empty_srv);
-                ros::shutdown();
-                break;
-        } // switch (key)
+        else if (key == KEY::LANDING)
+            for (auto frame: frames)
+                ros::service::call(frame + "/land", empty_srv);
+
+        else if (key == KEY::EMERGENCY)
+            for (auto frame: frames)
+                ros::service::call(frame + "/emergency", empty_srv);
+
+        else if (key == KEY::UPDATE)
+            for (auto frame: frames) {
+                int value;
+                n.getParam(frame + "/ring/headlightEnable", value);
+
+                if (value)
+                    n.setParam(frame + "/ring/headlightEnable", 1);
+                else
+                    n.setParam(frame + "/ring/headlightEnable", 0);
+
+                ros::service::call(frame + "/update_params", update_srv);
+        }
+
+        else if (key == KEY::QUIT) {
+            for (auto frame: frames)
+                ros::service::call(frame + "/land", empty_srv);
+            ros::shutdown();
+        }
+
+        else if (key == KEY::FORWARD)
+            commandsPublisher.publish(forward);
+
+        else if (key == KEY::BACKWARD) 
+            commandsPublisher.publish(backward);
+
+        else if (key == KEY::RIGHTWARD) 
+            commandsPublisher.publish(rightward);
+
+        else if (key == KEY::LEFTWARD)
+            commandsPublisher.publish(leftward);
+
+        else if (key == KEY::UPWARD)
+            commandsPublisher.publish(upward);
+
+        else if (key == KEY::DOWNWARD)
+            commandsPublisher.publish(downward);
+
+        else ROS_WARN("Unknown keycode!");
 
         ros::spinOnce();
-        loop_rate.sleep();
-    }
+        loopRate.sleep();
+    } // while (ros::ok())
 
     return 0;
 }
