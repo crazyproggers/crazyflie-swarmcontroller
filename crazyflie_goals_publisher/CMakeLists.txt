@@ -27,8 +27,9 @@ include_directories(
 )
 
 add_executable(goals_publisher
-  src/goals_publisher.cpp
+  src/interpolations.cpp
   src/paths_creator.cpp
+  src/goals_publisher.cpp
   src/goals_publisher_node.cpp
 )
 
