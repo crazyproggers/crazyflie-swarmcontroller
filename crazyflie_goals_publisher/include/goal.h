@@ -1,10 +1,9 @@
 #ifndef GOAL_H
 #define GOAL_H
 
-#include <tf/tf.h>
-typedef geometry_msgs::PoseStamped msg_t;
-
 class Goal {
+    typedef geometry_msgs::PoseStamped msg_t;
+
     /*
      * roll  - angle around X
      * pitch - angle around Y
@@ -27,7 +26,7 @@ public:
         double roll,
         double pitch,
         double yaw,
-        double delay,
+        double delay = 0.0,
         bool   isAnchor = false)
         : m_roll    (roll)
         , m_pitch   (pitch)
@@ -66,7 +65,6 @@ public:
         m_msg.pose.orientation.y = quaternion.y();
         m_msg.pose.orientation.z = quaternion.z();
         m_msg.pose.orientation.w = quaternion.w();
-
     }
 
     Goal & operator=(const Goal &goal) {

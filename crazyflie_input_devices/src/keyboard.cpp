@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <termios.h>
 #include <std_srvs/Empty.h>
-#include <std_msgs/String.h>
+#include <std_msgs/Byte.h>
 #include "crazyflie_driver/UpdateParams.h"
 
 
@@ -31,7 +31,7 @@ int main (int argc, char **argv) {
     std::vector<std::string> frames {std::istream_iterator<std::string>{iss},
                                      std::istream_iterator<std::string>{}};
     
-    ros::Publisher commandsPublisher = n.advertise<std_msgs::String>("/swarm/commands", 1000);
+    ros::Publisher commandsPublisher = n.advertise<std_msgs::Byte>("/swarm/commands", 1000);
 
     std_srvs::Empty empty_srv;
     crazyflie_driver::UpdateParams update_srv;
@@ -70,26 +70,24 @@ int main (int argc, char **argv) {
         ROS_INFO("Found update_params services");
     }
 
-
     // Directions:
-    std_msgs::String forward;
-    forward.data = "forward";
+    std_msgs::Byte forward;
+    forward.data    = 1;
 
-    std_msgs::String backward;
-    backward.data = "backward";
+    std_msgs::Byte backward;
+    backward.data   = 2;
 
-    std_msgs::String rightward;
-    rightward.data = "rightward";
+    std_msgs::Byte rightward;
+    rightward.data  = 3;
 
-    std_msgs::String leftward;
-    leftward.data = "leftward";
+    std_msgs::Byte leftward;
+    leftward.data   = 4;
 
-    std_msgs::String upward;
-    upward.data = "upward";
+    std_msgs::Byte upward;
+    upward.data     = 5;
 
-    std_msgs::String downward;
-    downward.data = "downward";
-
+    std_msgs::Byte downward;
+    downward.data   = 6;
 
     ros::Rate loopRate(10);
     while (ros::ok()) {
@@ -122,7 +120,6 @@ int main (int argc, char **argv) {
 
                 ros::service::call(frame + "/update_params", update_srv);
         }
-
         else if (key == KEY::QUIT) {
             for (auto frame: frames)
                 ros::service::call(frame + "/land", empty_srv);
