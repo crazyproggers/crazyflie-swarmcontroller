@@ -1,6 +1,5 @@
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
-#include "crazyflie_driver/UpdateParams.h"
 #include <termios.h>
 
 int getKey() {
@@ -27,22 +26,14 @@ int main (int argc, char **argv) {
     std::istringstream iss(frames_str);
     std::vector<std::string> frame {std::istream_iterator<std::string>{iss},
                                     std::istream_iterator<std::string>{}};
-    
     std_srvs::Empty empty_srv;
-    crazyflie_driver::UpdateParams update_srv;
 
-    enum KEYBOARD {
-        ARROW_UP      = 0x41, // take off
-        ARROW_DOWN    = 0x42, // landing
-        ARROW_RIGHT   = 0x43, // update params
-        ARROW_LEFT    = 0x44, // emergency
-        KEY_Q         = 0x71, // quit 
-        KEY_8         = 0x38, // move forward
-        KEY_2         = 0x32, // move backward
-        KEY_4         = 0x34, // move to right
-        KEY_6         = 0x36, // move to left
-        KEY_5         = 0x35, // move up
-        KEY_0         = 0x30  // move down    
+    enum {
+        KEYCODE_UP      = 0x41,
+        KEYCODE_DOWN    = 0x42,
+        KEYCODE_RIGHT   = 0x43,
+        KEYCODE_LEFT    = 0x44,
+        KEYCODE_QUIT    = 0x71
     };
 
     for (size_t i = 0; i < frame.size(); ++i) {
@@ -68,19 +59,19 @@ int main (int argc, char **argv) {
         int key = getKey();
 
         switch (key) {
-            case ARROW_UP:
+            case KEYCODE_UP:
                 for (size_t i = 0; i < frame.size(); ++i)
                     ros::service::call(frame[i] + "/takeoff", empty_srv);
                 break;
-            case ARROW_DOWN:
+            case KEYCODE_DOWN:
                 for (size_t i = 0; i < frame.size(); ++i)
                     ros::service::call(frame[i] + "/land", empty_srv);
                 break;
-            case ARROW_LEFT:
+            case KEYCODE_LEFT:
                 for (size_t i = 0; i < frame.size(); ++i)
                     ros::service::call(frame[i] + "/emergency", empty_srv);
                 break;
-            case ARROW_RIGHT:
+            case KEYCODE_RIGHT:
                 for (size_t i = 0; i < frame.size(); ++i) {
                     int value;
                     n.getParam(frame[i] + "/ring/headlightEnable", value);
@@ -90,10 +81,10 @@ int main (int argc, char **argv) {
                     else
                         n.setParam(frame[i] + "/ring/headlightEnable", 0);
 
-                    ros::service::call(frame[i] + "/update_params", update_srv);
+                    ros::service::call(frame[i] + "/update_params", empty_srv);
                 }
                 break;
-            case KEY_Q:
+            case KEYCODE_QUIT:
                 for (size_t i = 0; i < frame.size(); ++i)
                     ros::service::call(frame[i] + "/land", empty_srv);
                 ros::shutdown();
