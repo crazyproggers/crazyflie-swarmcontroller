@@ -22,11 +22,11 @@
 
 constexpr double pi() { return 3.141592653589793238462643383279502884; }
 
-double degToRad(double deg) {
+constexpr double degToRad(double deg) {
     return deg / 180.0 * pi();
 }
 
-double radToDeg(double rad) {
+constexpr double radToDeg(double rad) {
     return rad * 180.0 / pi();
 }
 
@@ -34,7 +34,7 @@ class CrazyflieROS {
 public:
     CrazyflieROS(
         const std::string &link_uri,
-        const std::string &tf_prefix,
+        const std::string &frame,
         float roll_trim,
         float pitch_trim,
         bool  enable_logging,
@@ -47,7 +47,7 @@ public:
         bool  enable_logging_pressure,
         bool  enable_logging_battery)
         : m_cf                              (link_uri)
-        , m_tf_prefix                       (tf_prefix)
+        , m_frame                           (frame)
         , m_isEmergency                     (false)
         , m_roll_trim                       (roll_trim)
         , m_pitch_trim                      (pitch_trim)
@@ -74,29 +74,29 @@ public:
         , m_sentExternalPosition            (false)
     {
         ros::NodeHandle n;
-        m_subscribeCmdVel = n.subscribe(tf_prefix + "/cmd_vel", 1, &CrazyflieROS::cmdVelChanged, this);
-        m_subscribeExternalPosition = n.subscribe(tf_prefix + "/external_position", 1, &CrazyflieROS::positionMeasurementChanged, this);
-        m_serviceEmergency = n.advertiseService(tf_prefix + "/emergency", &CrazyflieROS::emergency, this);
+        m_subscribeCmdVel = n.subscribe(frame + "/cmd_vel", 1, &CrazyflieROS::cmdVelChanged, this);
+        m_subscribeExternalPosition = n.subscribe(frame + "/external_position", 1, &CrazyflieROS::positionMeasurementChanged, this);
+        m_serviceEmergency = n.advertiseService(frame + "/emergency", &CrazyflieROS::emergency, this);
 
         if (m_enable_logging_imu)
-            m_pubImu = n.advertise<sensor_msgs::Imu>(tf_prefix + "/imu", 10);
+            m_pubImu = n.advertise<sensor_msgs::Imu>(frame + "/imu", 10);
 
         if (m_enable_logging_temperature)
-            m_pubTemp = n.advertise<sensor_msgs::Temperature>(tf_prefix + "/temperature", 10);
+            m_pubTemp = n.advertise<sensor_msgs::Temperature>(frame + "/temperature", 10);
 
         if (m_enable_logging_magnetic_field)
-            m_pubMag = n.advertise<sensor_msgs::MagneticField>(tf_prefix + "/magnetic_field", 10);
+            m_pubMag = n.advertise<sensor_msgs::MagneticField>(frame + "/magnetic_field", 10);
 
         if (m_enable_logging_pressure)
-            m_pubPressure = n.advertise<std_msgs::Float32>(tf_prefix + "/pressure", 10);
+            m_pubPressure = n.advertise<std_msgs::Float32>(frame + "/pressure", 10);
 
         if (m_enable_logging_battery)
-            m_pubBattery = n.advertise<std_msgs::Float32>(tf_prefix + "/battery", 10);
+            m_pubBattery = n.advertise<std_msgs::Float32>(frame + "/battery", 10);
 
-        m_pubRssi = n.advertise<std_msgs::Float32>(tf_prefix + "/rssi", 10);
+        m_pubRssi = n.advertise<std_msgs::Float32>(frame + "/rssi", 10);
 
         for (auto &logBlock : m_logBlocks)
-            m_pubLogDataGeneric.push_back(n.advertise<crazyflie_driver::GenericLogData>(tf_prefix + "/" + logBlock.topic_name, 10));
+            m_pubLogDataGeneric.push_back(n.advertise<crazyflie_driver::GenericLogData>(frame + "/" + logBlock.topic_name, 10));
 
         m_thread = std::thread(&CrazyflieROS::run, this);
     }
@@ -150,7 +150,7 @@ private:
     {
         ROS_INFO("Update parameters");
         for (auto &&p : req.params) {
-            std::string ros_param = "/" + m_tf_prefix + "/" + p;
+            std::string ros_param = "/" + m_frame + "/" + p;
             size_t pos = p.find("/");
             std::string group(p.begin(), p.begin() + pos);
             std::string name(p.begin() + pos + 1, p.end());
@@ -220,7 +220,7 @@ private:
 
             for (auto iter = m_cf.paramsBegin(); iter != m_cf.paramsEnd(); ++iter) {
                 auto entry = *iter;
-                std::string paramName = "/" + m_tf_prefix + "/" + entry.group + "/" + entry.name;
+                std::string paramName = "/" + m_frame + "/" + entry.group + "/" + entry.name;
 
                 switch (entry.type) {
                     case Crazyflie::ParamTypeUint8:
@@ -248,7 +248,7 @@ private:
             } // for (auto iter = m_cf.paramsBegin(); iter != m_cf.paramsEnd(); ++iter)
 
             ros::NodeHandle n;
-            m_serviceUpdateParams = n.advertiseService(m_tf_prefix + "/update_params", &CrazyflieROS::updateParams, this);
+            m_serviceUpdateParams = n.advertiseService(m_frame + "/update_params", &CrazyflieROS::updateParams, this);
         }
 
         std::unique_ptr<LogBlock<logImu> >  logBlockImu;
@@ -350,7 +350,7 @@ private:
             else
                 msg.header.stamp = ros::Time(time_in_ms / 1000.0);
 
-            msg.header.frame_id = m_tf_prefix + "/base_link";
+            msg.header.frame_id = m_frame + "/base_link";
             msg.orientation_covariance[0] = -1;
 
             // measured in deg/s; need to convert to rad/s
@@ -375,7 +375,7 @@ private:
             else
                 msg.header.stamp = ros::Time(time_in_ms / 1000.0);
 
-            msg.header.frame_id = m_tf_prefix + "/base_link";
+            msg.header.frame_id = m_frame + "/base_link";
             // measured in degC
             msg.temperature = data->baro_temp;
             m_pubTemp.publish(msg);
@@ -389,7 +389,7 @@ private:
             else
                 msg.header.stamp = ros::Time(time_in_ms / 1000.0);
 
-            msg.header.frame_id = m_tf_prefix + "/base_link";
+            msg.header.frame_id = m_frame + "/base_link";
 
             // measured in Tesla
             msg.magnetic_field.x = data->mag_x;
@@ -422,7 +422,7 @@ private:
         else
             msg.header.stamp = ros::Time(time_in_ms / 1000.0);
 
-        msg.header.frame_id = m_tf_prefix + "/base_link";
+        msg.header.frame_id = m_frame + "/base_link";
         msg.values = *values;
 
         pub->publish(msg);
@@ -442,7 +442,7 @@ private:
 
 private:
     Crazyflie   m_cf;
-    std::string m_tf_prefix;
+    std::string m_frame;
     bool  m_isEmergency;
     float m_roll_trim;
     float m_pitch_trim;
@@ -482,7 +482,7 @@ bool add_crazyflie(
 {
     ROS_INFO("Adding %s as %s with trim(%f, %f). Logging: %d, Parameters: %d, Use ROS time: %d",
         req.uri.c_str(),
-        req.tf_prefix.c_str(),
+        req.frame.c_str(),
         req.roll_trim,
         req.pitch_trim,
         req.enable_parameters,
@@ -497,7 +497,7 @@ bool add_crazyflie(
 
     CrazyflieROS *cf = new CrazyflieROS(
         req.uri,
-        req.tf_prefix,
+        req.frame,
         req.roll_trim,
         req.pitch_trim,
         req.enable_logging,

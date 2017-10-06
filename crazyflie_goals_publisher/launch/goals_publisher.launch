@@ -1,11 +1,9 @@
 <?xml version="1.0"?>
 
 <launch>
-<arg name="frames" />
-<arg name="map" />
+  <arg name="map" />
 
   <node name="goals_publisher" pkg="crazyflie_goals_publisher" type="goals_publisher" output="screen">
-      <param name="frames" value="$(arg frames)" />
       <param name="map" value="$(arg map)" />
       <param name="rate" value="10" />
       <param name="synchAtAnchors" value="True" />
