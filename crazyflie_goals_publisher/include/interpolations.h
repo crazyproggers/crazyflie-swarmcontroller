@@ -5,7 +5,7 @@
 #include <vector>
 #include "goal.h"
 
-std::vector<Goal> interpolate(const Goal &goal1, const Goal &goal2);
+std::vector<Goal> interpolate(const Goal &goal1, const Goal &goal2, double distanceBetweenDots = 0.01);
 
 std::vector<Goal> createSpline(std::vector<Goal> goals, double step = 0.01);
 

@@ -4,10 +4,9 @@
 #include "interpolations.h"
 
 
-std::vector<Goal> interpolate(const Goal &goal1, const Goal &goal2) {
+std::vector<Goal> interpolate(const Goal &goal1, const Goal &goal2, double distanceBetweenDots) {
     std::vector<Goal> intermediateGoals;
 
-    double distanceBetweenDots = 0.01;
     double sqDifX = std::pow(goal2.x() - goal1.x(), 2);
     double sqDifY = std::pow(goal2.y() - goal1.y(), 2);
     double sqDifZ = std::pow(goal2.z() - goal1.z(), 2);
@@ -21,7 +20,7 @@ std::vector<Goal> interpolate(const Goal &goal1, const Goal &goal2) {
         double current_y = goal1.y() + k * (goal2.y() - goal1.y()) / intermediateDotsAmount;
         double current_z = goal1.z() + k * (goal2.z() - goal1.z()) / intermediateDotsAmount;
 
-        intermediateGoals.push_back(Goal(current_x, current_y, current_z, 0.0, 0.0, 0.0, 0.0));
+        intermediateGoals.push_back(Goal(current_x, current_y, current_z, 0.0, 0.0, 0.0));
     }
 
     return intermediateGoals;
@@ -34,7 +33,6 @@ std::vector<Goal> createSpline(std::vector<Goal> goals, double step) {
     double roll = goals[0].roll();
     double pitch = goals[0].roll();
     double yaw = goals[0].roll();
-    double delay = 0.0;
     goals.insert(goals.begin(), goals[0]);
     goals.insert(goals.begin(), goals[0]);
     goals.push_back(goals[goals.size()-1]);
@@ -78,7 +76,7 @@ std::vector<Goal> createSpline(std::vector<Goal> goals, double step) {
             double Cz = ((t[2] - T) / (t[2] - t[1]) * Bz[0] +
                      (T - t[0]) / (t[2] - t[1]) * Bz[1]) / 2;
 
-            intermediateGoals.push_back(Goal(Cx, Cy, Cz, roll, pitch, yaw, delay));
+            intermediateGoals.push_back(Goal(Cx, Cy, Cz, roll, pitch, yaw));
         }
     }
 
