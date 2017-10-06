@@ -28,8 +28,8 @@ int main(int argc, char **argv) {
     bool synchAtAnchors;
     n.getParam("synchAtAnchors", synchAtAnchors);
 
-    bool splinesMode;
-    n.getParam("splinesMode", splinesMode);
+    bool splinesMode = false;
+    //n.getParam("splinesMode", splinesMode);
 
     GoalsPublisher *goalsPublisher[frames.size()];
     std::thread    *thr[frames.size()];
@@ -39,12 +39,9 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < frames.size(); ++i) {
         goalsPublisher[i] = new GoalsPublisher(worldFrame, frames[i], rate);
         
-        if (synchAtAnchors)
-            goalsPublisher[i]->enableSynchAtAnchors();
-        
         // Automatic flight
-        std::vector<Goal> path = std::move(pathsCreator.getPath(frames[i]));
-        thr[i] = new std::thread([&] (GoalsPublisher *gp) { gp->run(std::move(path)); }, goalsPublisher[i]);
+        std::vector<Goal> path = std::move(pathsCreator.getPath(frames[i])); 
+        thr[i] = new std::thread([&] (GoalsPublisher *gp) { gp->run(std::move(path), synchAtAnchors); }, goalsPublisher[i]);
     }
 
     for (size_t i = 0; i < frames.size(); ++i) {

@@ -2,7 +2,7 @@
 #define GOALS_PUBLISHER_H
 
 #include <tf/transform_listener.h>
-#include <std_msgs/String.h>
+#include <std_msgs/Byte.h>
 #include <atomic>
 #include <mutex>
 #include "goal.h"
@@ -20,11 +20,36 @@ class GoalsPublisher {
     ros::Rate                m_loopRate;
     std::mutex               m_errMutex;
 
-    bool                     m_synchAtAnchors;
     static uint              m_totalCrazyflies;
     static std::atomic<uint> m_amountCrazyfliesAtAnchors;
 
-    void checkCommand(const std_msgs::String::ConstPtr &msg);
+    short                    m_direction;
+
+private:
+    enum DIRECTION {
+        forward     = 1,
+        backward    = 2,
+        rightward   = 3,
+        leftward    = 4,
+        upward      = 5,
+        downward    = 6,
+    };
+
+
+    // Get current position
+    inline Goal getPosition();
+
+    // Checking that |position - goal| < E
+    inline bool goalIsReached(const Goal &position, const Goal &goal) const;
+
+    // Create a new goal on current direction and old goal
+    inline Goal getNewGoal(const Goal &oldGoal);
+
+    // Subscriber callback
+    void directionChanged(const std_msgs::Byte::ConstPtr &direction);
+
+    // Timer callback
+    void goToGoal(const ros::TimerEvent &e);
 
 public:
     GoalsPublisher() = delete;
@@ -36,16 +61,15 @@ public:
                    uint publishRate);
 
     /*
-     * If this mode is enabled crazyflies that are located at anchor points 
-     * begin to wait lagging copters. This method need to call before run(...)
+     * Automatic flight
+     *
+     * If mode "synchronization at anchors" is enabled crazyflies that are located at anchor points
+     * begin to wait lagging copters.
      */ 
-    void enableSynchAtAnchors();
-    
-    // Automatic flight
-    void run(std::vector<Goal> path);
+    void run(std::vector<Goal> path, bool synchAtAnchors = false);
     
     // Controlled flight
-    void run();
+    void run(double frequency);
 };
 
 #endif // GOALS_PUBLISHER_H
