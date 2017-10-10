@@ -1,6 +1,9 @@
 #ifndef GOAL_H
 #define GOAL_H
 
+#include <tf/tf.h>
+
+
 class Goal {
     typedef geometry_msgs::PoseStamped msg_t;
 

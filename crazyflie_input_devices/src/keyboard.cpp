@@ -120,6 +120,7 @@ int main (int argc, char **argv) {
 
                 ros::service::call(frame + "/update_params", update_srv);
         }
+
         else if (key == KEY::QUIT) {
             for (auto frame: frames)
                 ros::service::call(frame + "/land", empty_srv);
@@ -143,8 +144,6 @@ int main (int argc, char **argv) {
 
         else if (key == KEY::DOWNWARD)
             commandsPublisher.publish(downward);
-
-        else ROS_WARN("Unknown keycode!");
 
         ros::spinOnce();
         loopRate.sleep();

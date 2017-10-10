@@ -1,7 +1,7 @@
 #ifndef PATHS_CREATOR_H
 #define PATHS_CREATOR_H
 
-#include <goal.h>
+#include "goal.h"
 
 class PathsCreator {
     typedef unsigned int uint;

@@ -91,7 +91,7 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
 
                 // Add the finishing goal in the table
                 Goal last = entry[entry.size()-1];
-                entry.push_back(Goal(last.x(), last.y(), 0.1, 0.0, 0.0, 0.0, 0.0));
+                entry.push_back(Goal(last.x(), last.y(), 0.1, 0.0, 0.0, 0.0));
 
                 m_goalsTable.push_back(entry);
                 entry.clear();
@@ -161,7 +161,7 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
             
             // Add the finishing goal in the table
             Goal last = entry[entry.size()-1];
-            entry.push_back(Goal(last.x(), last.y(), 0.1, 0.0, 0.0, 0.0, 0.0));
+            entry.push_back(Goal(last.x(), last.y(), 0.1, 0.0, 0.0, 0.0));
 
             m_goalsTable.push_back(entry);
         }
@@ -178,16 +178,16 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
 void PathsCreator::createPaths(bool splinesMode) {
     if (splinesMode) {
         for (auto entry: m_goalsTable)
-            entry = std::move(createSpline(std::move(entry)));
+            entry = createSpline(std::move(entry));
     }
     else {
         for (size_t i = 0; i < m_goalsTable.size(); ++i) {
             std::vector<Goal> tmp;
             std::vector<Goal> entry;
 
-            for (size_t j = 0; j < m_goalsTable[i].size()-1; ++j) {
+            for (size_t j = 0; j < m_goalsTable[i].size() - 1; ++j) {
                 tmp = interpolate(m_goalsTable[i][j], m_goalsTable[i][j+1]);
-                for (size_t k = 0; k < tmp.size(); ++k) entry.push_back(tmp[i]);
+                entry.insert(entry.end(), tmp.begin(), tmp.end());
             }
 
             entry.push_back(m_goalsTable[i][m_goalsTable[i].size()-1]);

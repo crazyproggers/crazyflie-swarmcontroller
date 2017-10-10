@@ -1,24 +1,22 @@
-#include <tf/transform_listener.h>
 #include <cmath>
-#include <vector>
 #include "interpolations.h"
 
 
-std::vector<Goal> interpolate(const Goal &goal1, const Goal &goal2, double distanceBetweenDots) {
+std::vector<Goal> interpolate(const Goal &goal1, const Goal &goal2, double distance) {
     std::vector<Goal> intermediateGoals;
 
     double sqDifX = std::pow(goal2.x() - goal1.x(), 2);
     double sqDifY = std::pow(goal2.y() - goal1.y(), 2);
     double sqDifZ = std::pow(goal2.z() - goal1.z(), 2);
 
-    uint intermediateDotsAmount = std::max(1.0, std::sqrt(sqDifX + sqDifY + sqDifZ) / distanceBetweenDots);
+    uint intermediateGoalsAmount = std::max(1.0, std::sqrt(sqDifX + sqDifY + sqDifZ) / distance);
 
     intermediateGoals.push_back(goal1);
-    for (size_t k = 1; k <= intermediateDotsAmount; ++k) {
+    for (uint k = 1; k <= intermediateGoalsAmount; ++k) {
 
-        double current_x = goal1.x() + k * (goal2.x() - goal1.x()) / intermediateDotsAmount;
-        double current_y = goal1.y() + k * (goal2.y() - goal1.y()) / intermediateDotsAmount;
-        double current_z = goal1.z() + k * (goal2.z() - goal1.z()) / intermediateDotsAmount;
+        double current_x = goal1.x() + k * (goal2.x() - goal1.x()) / intermediateGoalsAmount;
+        double current_y = goal1.y() + k * (goal2.y() - goal1.y()) / intermediateGoalsAmount;
+        double current_z = goal1.z() + k * (goal2.z() - goal1.z()) / intermediateGoalsAmount;
 
         intermediateGoals.push_back(Goal(current_x, current_y, current_z, 0.0, 0.0, 0.0));
     }
@@ -28,31 +26,28 @@ std::vector<Goal> interpolate(const Goal &goal1, const Goal &goal2, double dista
 
 
 std::vector<Goal> createSpline(std::vector<Goal> goals, double step) {
-
     std::vector<Goal> intermediateGoals;
-    double roll = goals[0].roll();
-    double pitch = goals[0].roll();
-    double yaw = goals[0].roll();
+
     goals.insert(goals.begin(), goals[0]);
     goals.insert(goals.begin(), goals[0]);
     goals.push_back(goals[goals.size()-1]);
 
-    double Ax[5], Ay[5], Az[5], Bx[5], By[5], Bz[5];
+    double Ax[3], Ay[3], Az[3], Bx[2], By[2], Bz[2];
     double t[4] = { 0.0, 1.0, 2.0, 3.0 };
 
     for (size_t i = 1; i < goals.size() - 2; ++i) {
 
         for (double T = 1; T < 2; T += step) {
 
-            for (size_t j = 1; j < 4; ++j) {
-                Ax[j-1] = (t[j] - T) / (t[j] - t[j-1]) * goals[j+i-1].x() +
-                        (T - t[j-1]) / (t[j] - t[j-1]) * goals[j+i].x();
+            for (size_t j = 0; j < 3; ++j) {
+                Ax[j] = (t[j+1] - T) / (t[j+1] - t[j]) * goals[j+i].x() +
+                        (T - t[j]) / (t[j+1] - t[j]) * goals[j+i+1].x();
 
-                Ay[j-1] = (t[j] - T) / (t[j] - t[j-1]) * goals[j+i-1].y() +
-                        (T - t[j-1]) / (t[j] - t[j-1]) * goals[j+i].y();
+                Ay[j] = (t[j+1] - T) / (t[j+1] - t[j]) * goals[j+i].y() +
+                        (T - t[j]) / (t[j+1] - t[j]) * goals[j+i+1].y();
 
-                Az[j-1] = (t[j] - T) / (t[j] - t[j-1]) * goals[j+i-1].z() +
-                        (T - t[j-1]) / (t[j] - t[j-1]) * goals[j+i].z();
+                Az[j] = (t[j+1] - T) / (t[j+1] - t[j]) * goals[j+i].z() +
+                        (T - t[j]) / (t[j+1] - t[j]) * goals[j+i+1].z();
             }
 
             for (size_t j = 0; j < 2; ++j) {
@@ -76,7 +71,7 @@ std::vector<Goal> createSpline(std::vector<Goal> goals, double step) {
             double Cz = ((t[2] - T) / (t[2] - t[1]) * Bz[0] +
                      (T - t[0]) / (t[2] - t[1]) * Bz[1]) / 2;
 
-            intermediateGoals.push_back(Goal(Cx, Cy, Cz, roll, pitch, yaw));
+            intermediateGoals.push_back(Goal(Cx, Cy, Cz, 0.0, 0.0, 0.0));
         }
     }
 
