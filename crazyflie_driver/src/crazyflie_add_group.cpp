@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
 
     // read paramaters
     std::string uri_str;
-    std::string tf_prefixes_str;
+    std::string frames_str;
 
     double roll_trim;
     double pitch_trim;
@@ -23,8 +23,9 @@ int main(int argc, char **argv) {
     bool enable_logging_pressure;
     bool enable_logging_battery;
 
-    n.getParam("uri",                        uri_str);
-    n.getParam("tf_prefixes",                tf_prefixes_str);
+    n.getParam("uri",       uri_str);
+    n.getParam("frames",    frames_str);
+
     n.param("roll_trim",                     roll_trim,                      0.0);
     n.param("pitch_trim",                    pitch_trim,                     0.0);
     n.param("use_ros_time",                  use_ros_time,                  true);
@@ -45,17 +46,17 @@ int main(int argc, char **argv) {
     std::istringstream iss_uri(uri_str);
     std::vector<std::string> uri {std::istream_iterator<std::string>{iss_uri},
                                   std::istream_iterator<std::string>{}};
-    // Split tf_prefixes_str by whitespace
-    std::istringstream iss_tf_prefixes(tf_prefixes_str);
-    std::vector<std::string> tf_prefix {std::istream_iterator<std::string>{iss_tf_prefixes},
-                                        std::istream_iterator<std::string>{}};
+    // Split frames_str by whitespace
+    std::istringstream iss_frames(frames_str);
+    std::vector<std::string> frames {std::istream_iterator<std::string>{iss_frames},
+                                     std::istream_iterator<std::string>{}};
 
-    // uri.size() must equal to tf_prefix.size()
+    // uri.size() must equal to frames.size()
     for (size_t i = 0; i < uri.size(); ++i) {
         crazyflie_driver::AddCrazyflie addCrazyflie;
 
         addCrazyflie.request.uri                            = uri[i];
-        addCrazyflie.request.tf_prefix                      = tf_prefix[i];
+        addCrazyflie.request.frame                          = frames[i];
         addCrazyflie.request.roll_trim                      = roll_trim;
         addCrazyflie.request.pitch_trim                     = pitch_trim;
         addCrazyflie.request.use_ros_time                   = use_ros_time;
