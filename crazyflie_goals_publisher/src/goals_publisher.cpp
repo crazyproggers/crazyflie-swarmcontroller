@@ -41,7 +41,11 @@ inline Goal GoalsPublisher::getPosition() {
 
     if (m_transformListener.canTransform(m_worldFrame, m_frame, commonTime, &errMsg))
         m_transformListener.lookupTransform(m_worldFrame, m_frame, commonTime, position);
-    else throw;
+    else {
+        std::lock_guard<std::mutex> locker(m_errMutex);
+        ROS_ERROR("%s", "Could not get current position!");
+        return Goal();
+    }
 
     if (errMsg.length()) {
         std::lock_guard<std::mutex> locker(m_errMutex);
@@ -75,17 +79,13 @@ void GoalsPublisher::run(std::vector<Goal> path) {
         while (ros::ok()) {
             m_publisher.publish(goal.getMsg());
 
-            try {
-                Goal position = getPosition();
+            Goal position = getPosition();
+            if (position.isEmpty()) continue;
             
-                if (goalIsReached(position, goal)) {
-                    ros::Duration(goal.delay()).sleep();
-                    break; // go to next goal
-                }
+            if (goalIsReached(position, goal)) {
+                ros::Duration(goal.delay()).sleep();
+                break; // go to next goal
             }
-            catch(...) {
-                ROS_ERROR("%s", "Could not get current position!");
-            } 
 
             m_loopRate.sleep();
         } // while (ros::ok())
@@ -155,14 +155,10 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
 
     // Create the path
     std::vector<Goal> path;
-    try {
-        Goal goal1 = getPosition();
-        Goal goal2 = getNewGoal(goal1);
-        //path = std::move(interpolate(goal1, goal2));
-    }
-    catch(...) {
-        ROS_ERROR("%s", "Could not get current position!");
-    } 
+
+    Goal goal1 = getPosition();
+    Goal goal2 = getNewGoal(goal1);
+    //path = std::move(interpolate(goal1, goal2));
 
     for (size_t i = 0; i < path.size() - 1; ++i) {
         Goal &goal = path[i];
@@ -172,16 +168,12 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
 
             m_publisher.publish(goal.getMsg());
             
-            try {
-                Goal position = getPosition();
+            Goal position = getPosition();
+            if (position.isEmpty()) continue;
             
-                if (goalIsReached(position, goal))
-                    break; // go to next goal
-            }
-            catch(...) {
-                ROS_ERROR("%s", "Could not get current position!");
-            } 
-         
+            if (goalIsReached(position, goal))
+                break; // go to next goal
+
             m_loopRate.sleep();
         } // while (ros::ok())
     }// for (Goal goal: path)

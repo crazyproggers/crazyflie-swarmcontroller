@@ -17,9 +17,10 @@ class Goal {
     double m_yaw;
     double m_delay;
     msg_t  m_msg;
+    bool   m_empty;
 
 public:
-    Goal() = delete;
+    Goal() : m_empty(true) {}
 
     Goal(
         double x,
@@ -33,6 +34,7 @@ public:
         , m_pitch   (pitch)
         , m_yaw     (yaw)
         , m_delay   (delay)
+        , m_empty   (false)
     {
         tf::Quaternion quaternion = tf::createQuaternionFromRPY(roll, pitch, yaw);
 
@@ -52,6 +54,7 @@ public:
         , m_pitch   (goal.m_pitch)
         , m_yaw     (goal.m_yaw)
         , m_delay   (goal.m_delay)
+        , m_empty   (false)
     {
         tf::Quaternion quaternion = tf::createQuaternionFromRPY(m_roll, m_pitch, m_yaw);
 
@@ -67,7 +70,7 @@ public:
     }
 
     Goal & operator=(const Goal &goal) {
-        if (this != &goal) {
+        if (this != &goal && !goal.m_empty) {
             this->~Goal();
             new (this) Goal(goal);
         }
@@ -81,6 +84,7 @@ public:
     double pitch()    const   { return m_pitch;               }
     double yaw()      const   { return m_yaw;                 }
     double delay()    const   { return m_delay;               }
+    bool   isEmpty()  const   { return m_empty;               }
 
     msg_t getMsg() {
         m_msg.header.seq++;
