@@ -8,9 +8,7 @@
 
 
 class GoalsPublisher {
-    typedef unsigned int uint;
-
-    ros::NodeHandle          m_nh;
+    ros::NodeHandle          m_node;
     std::string              m_worldFrame;
     std::string              m_frame;
     ros::Publisher           m_publisher;
@@ -54,14 +52,9 @@ public:
 
     GoalsPublisher(const std::string &worldFrame, 
                    const std::string &frame,
-                   uint publishRate);
+                   size_t rate);
 
-    /*
-     * Automatic flight
-     *
-     * If mode "synchronization at anchors" is enabled crazyflies that are located at anchor points
-     * begin to wait lagging copters.
-     */ 
+    // Automatic flight
     void run(std::vector<Goal> path);
     
     // Controlled flight

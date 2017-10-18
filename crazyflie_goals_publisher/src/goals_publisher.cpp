@@ -2,6 +2,7 @@
 #include <std_srvs/Empty.h>
 #include <cmath>
 #include "goals_publisher.h"
+#include "interpolations.h"
 
 
 constexpr double degToRad(double deg) {
@@ -12,18 +13,18 @@ constexpr double degToRad(double deg) {
 GoalsPublisher::GoalsPublisher(
     const std::string &worldFrame,
     const std::string &frame,
-    uint publishRate)
-    : m_nh                        ()
+    size_t rate)
+    : m_node                      ()
     , m_worldFrame                (worldFrame)
     , m_frame                     (frame)
     , m_publisher                 ()
     , m_subscriber                ()
     , m_transformListener         ()
-    , m_loopRate                  (publishRate)
+    , m_loopRate                  (rate)
     , m_errMutex                  ()
 {
     m_transformListener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
-    m_publisher = m_nh.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
+    m_publisher = m_node.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
 }
 
 
@@ -97,13 +98,12 @@ void GoalsPublisher::run(std::vector<Goal> path) {
 
 
 void GoalsPublisher::run(double frequency) {
-    m_subscriber = m_nh.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
-    ros::Timer timer = m_nh.createTimer(ros::Duration(1.0/frequency), &GoalsPublisher::goToGoal, this);
+    m_subscriber = m_node.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
+    ros::Timer timer = m_node.createTimer(ros::Duration(1.0/frequency), &GoalsPublisher::goToGoal, this);
 
-    ros::Rate loop_rate(10); // 10 Hz
     while (ros::ok) {
         ros::spinOnce();
-        loop_rate.sleep();
+        m_loopRate.sleep();
     }
 }
 
@@ -114,14 +114,16 @@ void GoalsPublisher::directionChanged(const std_msgs::Byte::ConstPtr &direction)
 
 
 Goal GoalsPublisher::getNewGoal(const Goal &oldGoal) {
-     //* Directions:
-     //* forward          -- Y += 0.01;
-     //* backward         -- Y -= 0.01;
-     //* rightward        -- X += 0.01;
-     //* leftward         -- X -= 0.01;
-     //* upward           -- Z += 0.01;
-     //* downward         -- Z -= 0.01;
-     //
+    /*
+     * Directions:
+     * forward          -- Y += 0.01;
+     * backward         -- Y -= 0.01;
+     * rightward        -- X += 0.01;
+     * leftward         -- X -= 0.01;
+     * upward           -- Z += 0.01;
+     * downward         -- Z -= 0.01;
+     */
+ 
     double x        = oldGoal.x();
     double y        = oldGoal.y();
     double z        = oldGoal.y();
@@ -154,11 +156,9 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
     if (!m_direction) return;
 
     // Create the path
-    std::vector<Goal> path;
-
     Goal goal1 = getPosition();
     Goal goal2 = getNewGoal(goal1);
-    //path = std::move(interpolate(goal1, goal2));
+    std::vector<Goal> path = interpolate(goal1, goal2);
 
     for (size_t i = 0; i < path.size() - 1; ++i) {
         Goal &goal = path[i];
