@@ -191,4 +191,3 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
         m_loopRate.sleep();
     } // while (ros::ok())
 }
-

@@ -29,9 +29,6 @@ private:
         downward    = 6,
     };
 
-    static void initWorld(double worldWidth, double worldLength, double worldHeight,
-                          double regWidth,   double regLength,   double regHeight);
-
     // Get current position
     inline Goal getPosition();
 
