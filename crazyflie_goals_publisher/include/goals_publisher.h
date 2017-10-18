@@ -5,6 +5,7 @@
 #include <std_msgs/Byte.h>
 #include <mutex>
 #include "goal.h"
+#include "world.h"
 
 
 class GoalsPublisher {
@@ -16,8 +17,7 @@ class GoalsPublisher {
     tf::TransformListener    m_transformListener;
     ros::Rate                m_loopRate;
     std::mutex               m_errMutex;
-
-    short                    m_direction;
+    int8_t                   m_direction;
 
 private:
     enum DIRECTION {
@@ -29,6 +29,8 @@ private:
         downward    = 6,
     };
 
+    static void initWorld(double worldWidth, double worldLength, double worldHeight,
+                          double regWidth,   double regLength,   double regHeight);
 
     // Get current position
     inline Goal getPosition();
@@ -53,6 +55,9 @@ public:
     GoalsPublisher(const std::string &worldFrame, 
                    const std::string &frame,
                    size_t rate);
+
+    // class World realize synchronization mode
+    static World *world;
 
     // Automatic flight
     void run(std::vector<Goal> path);

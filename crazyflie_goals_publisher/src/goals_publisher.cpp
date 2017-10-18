@@ -10,6 +10,9 @@ constexpr double degToRad(double deg) {
 }
 
 
+World *GoalsPublisher::world = nullptr;
+
+
 GoalsPublisher::GoalsPublisher(
     const std::string &worldFrame,
     const std::string &frame,
@@ -66,9 +69,9 @@ inline Goal GoalsPublisher::getPosition() {
 
 
 inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal) const {
-    return (fabs(position.x()     - goal.x()) < 0.3) &&
-           (fabs(position.y()     - goal.y()) < 0.3) &&
-           (fabs(position.z()     - goal.z()) < 0.3) &&
+    return (fabs(position.x()     - goal.x()) < 0.1) &&
+           (fabs(position.y()     - goal.y()) < 0.1) &&
+           (fabs(position.z()     - goal.z()) < 0.1) &&
            (fabs(position.roll()  - goal.roll())  < degToRad(10)) &&
            (fabs(position.pitch() - goal.pitch()) < degToRad(10)) &&
            (fabs(position.yaw()   - goal.yaw())   < degToRad(10));

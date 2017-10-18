@@ -20,7 +20,7 @@ PathsCreator::PathsCreator(
 
 bool PathsCreator::readGoals(const std::string &mapPath) {
     // #########################################################
-    // ####### TO FIND STARTING POINTS FOR ALL CRAZYFLIES ######
+    // ####### FINDING STARTING POINTS FOR ALL CRAZYFLIES ######
     // #########################################################
     const uint TOTAL_CRAZYFLIES = m_frames.size();
 
@@ -52,22 +52,22 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
         repeated_goals_count = 0;
     };
 
-    auto fixAngle = [](double degree) {
-        if (degree > 180)
-            degree -= 360;
-        else if (degree < -180)
-            degree += 360;
+    auto fixAngle = [](double degree) -> double {
+        if (degree > 180.0)
+            degree -= 360.0;
+        else if (degree < -180.0)
+            degree += 360.0;
 
         return degree;
     };
 
-    auto degToRad = [](double degree) {
+    auto degToRad = [](double degree) -> double {
         return degree / 180.0 * M_PI;
     };
 
 
     // #########################################################
-    // ########### TO READ AND TO PARSE THE MAP-FILE ###########
+    // ########### READING AND PARSING THE MAP-FILE ############
     // #########################################################
     std::ifstream map;
     map.exceptions(std::ifstream::failbit | std::ifstream::badbit);

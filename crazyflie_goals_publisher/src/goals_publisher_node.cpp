@@ -26,7 +26,20 @@ int main(int argc, char **argv) {
     n.getParam("rate", rate);
 
     bool splinesMode = false;
-    //n.getParam("splinesMode", splinesMode);
+    n.getParam("splinesMode", splinesMode);
+
+    double worldWidth, worldLength, worldHeight;
+    double regWidth,   regLength,   regHeight;
+    n.getParam("worldWidth",  worldWidth);
+    n.getParam("worldLength", worldLength);
+    n.getParam("worldHeight", worldHeight);
+    n.getParam("regWidth",    regWidth);
+    n.getParam("regLength",   regLength);
+    n.getParam("regHeight",   regHeight);
+
+    // Initialize the synchronization mode
+    GoalsPublisher::world = new World(worldWidth, worldLength, worldHeight, regWidth, regLength, regHeight);
+
 
     GoalsPublisher *goalsPublisher[frames.size()];
     std::thread    *thr[frames.size()];
@@ -46,6 +59,7 @@ int main(int argc, char **argv) {
         delete thr[i];
         delete goalsPublisher[i];
     }
+    delete GoalsPublisher::world;
 
     return 0;
 }
