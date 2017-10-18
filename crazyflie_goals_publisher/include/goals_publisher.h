@@ -3,7 +3,6 @@
 
 #include <tf/transform_listener.h>
 #include <std_msgs/Byte.h>
-#include <atomic>
 #include <mutex>
 #include "goal.h"
 
@@ -19,9 +18,6 @@ class GoalsPublisher {
     tf::TransformListener    m_transformListener;
     ros::Rate                m_loopRate;
     std::mutex               m_errMutex;
-
-    static uint              m_totalCrazyflies;
-    static std::atomic<uint> m_amountCrazyfliesAtAnchors;
 
     short                    m_direction;
 
@@ -66,7 +62,7 @@ public:
      * If mode "synchronization at anchors" is enabled crazyflies that are located at anchor points
      * begin to wait lagging copters.
      */ 
-    void run(std::vector<Goal> path, bool synchAtAnchors = false);
+    void run(std::vector<Goal> path);
     
     // Controlled flight
     void run(double frequency);

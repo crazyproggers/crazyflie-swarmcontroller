@@ -7,7 +7,7 @@
   <arg name="frames" />
   <arg name="map" />
 
-  <param name="frames" value="$(arg frames)" />
+  <param name="/swarm/frames" value="$(arg frames)" />
 
   <include file="$(find crazyflie_driver)/launch/crazyflie_server.launch" />
 
@@ -18,7 +18,7 @@
 
   <node name="keyboard" pkg="crazyflie_input_devices" type="keyboard" output="screen" />
 
-  <include file="$(find crazyflie_controller)/launch/controller.launch"/>
+  <include file="$(find crazyflie_controller)/launch/controller.launch" />
 
   <include file="$(find crazyflie_goals_publisher)/launch/goals_publisher.launch">
     <arg name="map" value="$(arg map)" />

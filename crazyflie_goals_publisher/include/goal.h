@@ -16,7 +16,6 @@ class Goal {
     double m_pitch;
     double m_yaw;
     double m_delay;
-    bool   m_isAnchor;
     msg_t  m_msg;
 
 public:
@@ -29,13 +28,11 @@ public:
         double roll,
         double pitch,
         double yaw,
-        double delay = 0.0,
-        bool   isAnchor = false)
+        double delay = 0.0)
         : m_roll    (roll)
         , m_pitch   (pitch)
         , m_yaw     (yaw)
         , m_delay   (delay)
-        , m_isAnchor(isAnchor)
     {
         tf::Quaternion quaternion = tf::createQuaternionFromRPY(roll, pitch, yaw);
 
@@ -55,7 +52,6 @@ public:
         , m_pitch   (goal.m_pitch)
         , m_yaw     (goal.m_yaw)
         , m_delay   (goal.m_delay)
-        , m_isAnchor(goal.m_isAnchor)
     {
         tf::Quaternion quaternion = tf::createQuaternionFromRPY(m_roll, m_pitch, m_yaw);
 
@@ -85,7 +81,6 @@ public:
     double pitch()    const   { return m_pitch;               }
     double yaw()      const   { return m_yaw;                 }
     double delay()    const   { return m_delay;               }
-    bool   isAnchor() const   { return m_isAnchor;            }
 
     msg_t getMsg() {
         m_msg.header.seq++;

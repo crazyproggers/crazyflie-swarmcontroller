@@ -6,7 +6,6 @@
   <node name="goals_publisher" pkg="crazyflie_goals_publisher" type="goals_publisher" output="screen">
       <param name="map" value="$(arg map)" />
       <param name="rate" value="10" />
-      <param name="synchAtAnchors" value="True" />
       <param name="splinesMode" value="False" />
   </node>
 </launch>

@@ -23,8 +23,8 @@ int main(int argc, char **argv) {
     bool enable_logging_pressure;
     bool enable_logging_battery;
 
-    n.getParam("uri",       uri_str);
-    n.getParam("frames",    frames_str);
+    n.getParam("uri",              uri_str);
+    n.getParam("/swarm/frames",    frames_str);
 
     n.param("roll_trim",                     roll_trim,                      0.0);
     n.param("pitch_trim",                    pitch_trim,                     0.0);

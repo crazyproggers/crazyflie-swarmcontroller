@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
     n.param<std::string>("worldFrame", worldFrame, "/world");
 
     std::string frames_str;
-    n.getParam("frames", frames_str);
+    n.getParam("/swarm/frames", frames_str);
 
     // Split frames_str by whitespace
     std::istringstream iss(frames_str);
@@ -24,9 +24,6 @@ int main(int argc, char **argv) {
 
     int rate;
     n.getParam("rate", rate);
-
-    bool synchAtAnchors;
-    n.getParam("synchAtAnchors", synchAtAnchors);
 
     bool splinesMode = false;
     //n.getParam("splinesMode", splinesMode);
@@ -41,7 +38,7 @@ int main(int argc, char **argv) {
         
         // Automatic flight
         std::vector<Goal> path = std::move(pathsCreator.getPath(frames[i])); 
-        thr[i] = new std::thread([&] (GoalsPublisher *gp) { gp->run(std::move(path), synchAtAnchors); }, goalsPublisher[i]);
+        thr[i] = new std::thread([&] (GoalsPublisher *gp) { gp->run(std::move(path)); }, goalsPublisher[i]);
     }
 
     for (size_t i = 0; i < frames.size(); ++i) {

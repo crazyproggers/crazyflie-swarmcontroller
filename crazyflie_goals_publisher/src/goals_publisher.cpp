@@ -8,10 +8,6 @@ constexpr double degToRad(double deg) {
     return deg / 180.0 * M_PI;
 }
 
-// Static variables
-std::atomic<uint> GoalsPublisher::m_amountCrazyfliesAtAnchors(0);
-uint GoalsPublisher::m_totalCrazyflies = 0;
-
 
 GoalsPublisher::GoalsPublisher(
     const std::string &worldFrame,
@@ -28,7 +24,6 @@ GoalsPublisher::GoalsPublisher(
 {
     m_transformListener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
     m_publisher = m_nh.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
-    m_totalCrazyflies++; // register new crazyflie
 }
 
 
@@ -75,7 +70,7 @@ inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal
 }
 
 
-void GoalsPublisher::run(std::vector<Goal> path, bool synchAtAnchors) {
+void GoalsPublisher::run(std::vector<Goal> path) {
     for (Goal goal: path) {
         while (ros::ok()) {
             m_publisher.publish(goal.getMsg());
@@ -94,18 +89,6 @@ void GoalsPublisher::run(std::vector<Goal> path, bool synchAtAnchors) {
 
             m_loopRate.sleep();
         } // while (ros::ok())
-
-        if (synchAtAnchors && goal.isAnchor()) {
-            if (m_amountCrazyfliesAtAnchors == m_totalCrazyflies)
-                m_amountCrazyfliesAtAnchors = 0;
-            m_amountCrazyfliesAtAnchors++;
-
-            while (ros::ok()) {
-                m_publisher.publish(goal.getMsg());
-                if (m_amountCrazyfliesAtAnchors == m_totalCrazyflies) break;
-                m_loopRate.sleep();
-            }
-        } // if (synchAtAnchors && goal.isAnchor())
     } // for (Goal goal: path)
 
     std_srvs::Empty empty_srv;

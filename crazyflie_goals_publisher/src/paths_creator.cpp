@@ -125,7 +125,6 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
                     double x = 0.0, y = 0.0, z = 0.0;
                     double roll = 0.0, pitch = 0.0, yaw = 0.0;
                     double delay = 0.0;
-                    bool   isAnchor = true;
 
                     // Add the starting goal in the table
                     if (!entry.size()) {
@@ -145,7 +144,7 @@ bool PathsCreator::readGoals(const std::string &mapPath) {
                         yaw   = degToRad(fixAngle(yaw));
                     }
 
-                    entry.push_back(Goal(x, y, z, roll, pitch, yaw, delay, isAnchor));
+                    entry.push_back(Goal(x, y, z, roll, pitch, yaw, delay));
                     if (repeat_number) repeated_goals_count++;
                 }
                 else {
