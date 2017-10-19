@@ -24,7 +24,7 @@ int main (int argc, char **argv) {
     ros::NodeHandle n("~");
 
     std::string frames_str;
-    n.getParam("frames", frames_str);
+    n.getParam("/swarm/frames", frames_str);
 
     // Split frames_str by whitespace
     std::istringstream iss(frames_str);
