@@ -4,13 +4,11 @@
 #include "goal.h"
 
 class PathsCreator {
-    typedef unsigned int uint;
-
-    std::vector<std::vector<Goal>> m_goalsTable;
+    std::vector<std::list<Goal>> m_goalsTable;
     std::string m_worldFrame;
     std::vector<std::string> m_frames;
 
-    bool readGoals(const std::string &mapPath);
+    bool readTable(const std::string &mapPath);
     void createPaths(bool splinesMode);
 
 public:
@@ -23,7 +21,7 @@ public:
                  const  std::string &mapPath,
                  bool   splinesMode = false);
 
-    std::vector<Goal> getPath(const std::string &frame) const;
+    std::list<Goal> getPath(const std::string &frame) const;
     ~PathsCreator();
 };
 

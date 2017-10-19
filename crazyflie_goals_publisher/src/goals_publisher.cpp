@@ -78,7 +78,7 @@ inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal
 }
 
 
-void GoalsPublisher::run(std::vector<Goal> path) {
+void GoalsPublisher::run(std::list<Goal> path) {
     for (Goal goal: path) {
         while (ros::ok()) {
             m_publisher.publish(goal.getMsg());
@@ -161,11 +161,9 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
     // Create the path
     Goal goal1 = getPosition();
     Goal goal2 = getNewGoal(goal1);
-    std::vector<Goal> path = interpolate(goal1, goal2);
+    std::list<Goal> path = interpolate(goal1, goal2);
 
-    for (size_t i = 0; i < path.size() - 1; ++i) {
-        Goal &goal = path[i];
-
+    for (Goal goal: path) {
         while (ros::ok()) {
             if (m_direction != 0) return; // interupt from world
 
@@ -182,7 +180,7 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
     }// for (Goal goal: path)
     
     // Hovering at last goal
-    Goal &goal = path[path.size()-1];
+    Goal goal = path.back();
     while (ros::ok()) {
         // interupt from world or path does not exist
         if (m_direction != 0 || !path.size()) return;

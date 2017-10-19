@@ -57,7 +57,7 @@ public:
     static World *world;
 
     // Automatic flight
-    void run(std::vector<Goal> path);
+    void run(std::list<Goal> path);
     
     // Controlled flight
     void run(double frequency);
