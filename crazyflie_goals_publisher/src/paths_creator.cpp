@@ -200,7 +200,8 @@ void PathsCreator::createPaths(bool splinesMode) {
             for (auto it = m_goalsTable[i].begin(); it != finish; ++it) {
                 Goal curr = *it;
                 auto it_next = it;
-                Goal next = *(it_next++);
+                it_next++;
+                Goal next = *it_next;
 
                 tmp = interpolate(curr, next);
                 entry.insert(entry.end(), tmp.begin(), tmp.end());
