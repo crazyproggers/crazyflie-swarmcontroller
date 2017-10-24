@@ -13,7 +13,7 @@ std::list<Goal> interpolate(const Goal &goal1, const Goal &goal2, double distanc
     uint intermediateGoalsAmount = std::max(1.0, std::sqrt(sqDifX + sqDifY + sqDifZ) / distance);
 
     intermediateGoals.push_back(goal1);
-    for (uint k = 1; k <= intermediateGoalsAmount; ++k) {
+    for (uint k = 1; k < intermediateGoalsAmount; ++k) {
 
         double current_x = goal1.x() + k * (goal2.x() - goal1.x()) / intermediateGoalsAmount;
         double current_y = goal1.y() + k * (goal2.y() - goal1.y()) / intermediateGoalsAmount;
@@ -37,8 +37,7 @@ std::list<Goal> createSpline(std::list<Goal> goals, double step) {
     std::array<double, 2> Bx, By, Bz;
     std::array<double, 4> t = { 0.0, 1.0, 2.0, 3.0 };
 
-    auto finish = goals.end();
-    for (size_t i = 0; i < t.size(); ++i, --finish);
+    auto finish = std::prev(goals.end(), t.size());
 
     for (auto goal = goals.begin(); goal != finish; ++goal) {
 

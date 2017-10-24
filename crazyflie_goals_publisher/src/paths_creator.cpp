@@ -115,13 +115,14 @@ bool PathsCreator::readTable(const std::string &mapPath) {
 
                      if (command == "repeat") {
                          if (arg < 0) {
-                             std::cerr << "Wrong arg for command \"repeat\": " << arg << std::endl;
+
+                             ROS_ERROR("Wrong arg for command \"repeat\": %d", arg);
                              return false;
                          }
                          repeat_number = arg;
                      }
                      else {
-                        std::cerr << "Wrong command: " << command << std::endl;
+                        ROS_ERROR("Wrong command: %s", command.c_str());
                         return false;
                      }
                 }
@@ -152,7 +153,7 @@ bool PathsCreator::readTable(const std::string &mapPath) {
                     if (repeat_number) repeated_goals_count++;
                 }
                 else {
-                    std::cerr << "It's wrong map-file!" << std::endl;
+                    ROS_ERROR("It's wrong map-file!");
                     return false;
                 }
             } // else
@@ -174,7 +175,7 @@ bool PathsCreator::readTable(const std::string &mapPath) {
     //} // try
     /*
     catch (std::ifstream::failure exp) {
-        std::cerr << "Could not read/close map-file!" << std::endl;
+        ROS_ERROR("Could not read/close map-file!");
         return false;
     }
     */
@@ -193,15 +194,11 @@ void PathsCreator::createPaths(bool splinesMode) {
             std::list<Goal> tmp;
             std::list<Goal> entry;
 
-            auto finish = m_goalsTable[i].end();
-            finish--;
-            finish--;
+            auto finish = std::prev(m_goalsTable[i].end());
 
             for (auto it = m_goalsTable[i].begin(); it != finish; ++it) {
                 Goal curr = *it;
-                auto it_next = it;
-                it_next++;
-                Goal next = *it_next;
+                Goal next = *(std::next(it));
 
                 tmp = interpolate(curr, next);
                 entry.insert(entry.end(), tmp.begin(), tmp.end());
@@ -218,8 +215,8 @@ std::list<Goal> PathsCreator::getPath(const std::string &frame) const {
     for (size_t i = 0; i < m_frames.size(); ++i)
         if (m_frames[i] == frame) 
             return m_goalsTable[i];
-        else 
-            std::cerr << "Unknown frame: " << frame << std::endl;
+        else
+            ROS_ERROR("Unknown frame: %s", frame.c_str());
  
     return std::list<Goal>();
 }
