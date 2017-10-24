@@ -10,10 +10,10 @@ std::list<Goal> interpolate(const Goal &goal1, const Goal &goal2, double distanc
     double sqDifY = std::pow(goal2.y() - goal1.y(), 2);
     double sqDifZ = std::pow(goal2.z() - goal1.z(), 2);
 
-    uint intermediateGoalsAmount = std::max(1.0, std::sqrt(sqDifX + sqDifY + sqDifZ) / distance);
+    size_t intermediateGoalsAmount = std::max(1.0, std::sqrt(sqDifX + sqDifY + sqDifZ) / distance);
 
     intermediateGoals.push_back(goal1);
-    for (uint k = 1; k < intermediateGoalsAmount; ++k) {
+    for (size_t k = 1; k < intermediateGoalsAmount; ++k) {
 
         double current_x = goal1.x() + k * (goal2.x() - goal1.x()) / intermediateGoalsAmount;
         double current_y = goal1.y() + k * (goal2.y() - goal1.y()) / intermediateGoalsAmount;

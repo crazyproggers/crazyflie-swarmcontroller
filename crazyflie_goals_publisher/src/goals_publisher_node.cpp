@@ -7,12 +7,12 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "goals_publisher");
 
     // Read parameters
-    ros::NodeHandle n("~");
+    ros::NodeHandle nh("~");
     std::string worldFrame;
-    n.param<std::string>("worldFrame", worldFrame, "/world");
+    nh.param<std::string>("worldFrame", worldFrame, "/world");
 
     std::string frames_str;
-    n.getParam("/swarm/frames", frames_str);
+    nh.getParam("/swarm/frames", frames_str);
 
     // Split frames_str by whitespace
     std::istringstream iss(frames_str);
@@ -20,22 +20,22 @@ int main(int argc, char **argv) {
                                      std::istream_iterator<std::string>{}};
 
     std::string mapPath;
-    n.getParam("map", mapPath);
+    nh.getParam("map", mapPath);
 
     int rate;
-    n.getParam("rate", rate);
+    nh.getParam("rate", rate);
 
     bool splinesMode = false;
-    n.getParam("splinesMode", splinesMode);
+    nh.getParam("splinesMode", splinesMode);
 
     double worldWidth, worldLength, worldHeight;
     double regWidth,   regLength,   regHeight;
-    n.getParam("worldWidth",  worldWidth);
-    n.getParam("worldLength", worldLength);
-    n.getParam("worldHeight", worldHeight);
-    n.getParam("regWidth",    regWidth);
-    n.getParam("regLength",   regLength);
-    n.getParam("regHeight",   regHeight);
+    nh.getParam("worldWidth",  worldWidth);
+    nh.getParam("worldLength", worldLength);
+    nh.getParam("worldHeight", worldHeight);
+    nh.getParam("regWidth",    regWidth);
+    nh.getParam("regLength",   regLength);
+    nh.getParam("regHeight",   regHeight);
 
     // Initialize the synchronization mode
     GoalsPublisher::world = new World(worldWidth, worldLength, worldHeight, regWidth, regLength, regHeight);

@@ -44,14 +44,10 @@ bool PathsCreator::readTable(const std::string &mapPath) {
     size_t repeated_goals_count = 0;
 
     auto repeat = [&](std::list<Goal> &entry) mutable {
-        auto begin = entry.end();
-        for (; repeated_goals_count > 0; --repeated_goals_count, --begin);
-
-        auto end = entry.end();
-        std::list<Goal> tmp(begin, end);
+        std::list<Goal> tmp(std::prev(entry.end(), repeated_goals_count), entry.end());
 
         for (; repeat_number > 0; --repeat_number)
-            entry.insert(std::end(entry), std::begin(tmp), std::end(tmp));
+            entry.insert(entry.end(), tmp.begin(), tmp.end());
         repeated_goals_count = 0;
     };
 
