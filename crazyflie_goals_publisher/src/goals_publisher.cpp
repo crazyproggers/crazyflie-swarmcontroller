@@ -47,7 +47,7 @@ inline Goal GoalsPublisher::getPosition() {
         m_transformListener.lookupTransform(m_worldFrame, m_frame, commonTime, position);
     else {
         std::lock_guard<std::mutex> locker(m_errMutex);
-        ROS_ERROR("%s", "Could not get current position!");
+        ROS_ERROR("%s%s", m_frame.c_str(), " could not get current position!");
         return Goal();
     }
 
@@ -69,25 +69,25 @@ inline Goal GoalsPublisher::getPosition() {
 
 
 inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal) const {
-    return (fabs(position.x()     - goal.x()) < 0.1) &&
-           (fabs(position.y()     - goal.y()) < 0.1) &&
-           (fabs(position.z()     - goal.z()) < 0.1) &&
+    return (fabs(position.x()     - goal.x()) < 0.2) &&
+           (fabs(position.y()     - goal.y()) < 0.2) &&
+           (fabs(position.z()     - goal.z()) < 0.2) &&
            (fabs(position.roll()  - goal.roll())  < degToRad(10)) &&
            (fabs(position.pitch() - goal.pitch()) < degToRad(10)) &&
            (fabs(position.yaw()   - goal.yaw())   < degToRad(10));
 }
 
 
-void GoalsPublisher::run(std::list<Goal> path) {
-    for (Goal goal: path) {
+void GoalsPublisher::run(std::list<Goal> &path) {
+    for (auto goal = path.begin(); goal != path.end(); ++goal) {
         while (ros::ok()) {
-            m_publisher.publish(goal.getMsg());
+            m_publisher.publish(goal->getMsg());
 
             Goal position = getPosition();
             if (position.isEmpty()) continue;
             
-            if (goalIsReached(position, goal)) {
-                ros::Duration(goal.delay()).sleep();
+            if (goalIsReached(position, *goal)) {
+                ros::Duration(goal->delay()).sleep();
                 break; // go to next goal
             }
 

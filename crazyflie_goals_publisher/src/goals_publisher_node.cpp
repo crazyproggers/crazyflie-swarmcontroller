@@ -19,8 +19,8 @@ int main(int argc, char **argv) {
     std::vector<std::string> frames {std::istream_iterator<std::string>{iss},
                                      std::istream_iterator<std::string>{}};
 
-    std::string mapPath;
-    nh.getParam("map", mapPath);
+    std::string pathToMap;
+    nh.getParam("map", pathToMap);
 
     int rate;
     nh.getParam("rate", rate);
@@ -42,14 +42,13 @@ int main(int argc, char **argv) {
 
     GoalsPublisher *goalsPublisher[frames.size()];
     std::thread    *thr[frames.size()];
-    PathsCreator pathsCreator(worldFrame, frames, mapPath, splinesMode);
+    PathsCreator pathsCreator(worldFrame, frames, pathToMap, splinesMode);
     
     for (size_t i = 0; i < frames.size(); ++i) {
         goalsPublisher[i] = new GoalsPublisher(worldFrame, frames[i], rate);
         
         // Automatic flight
-        std::list<Goal> path = std::move(pathsCreator.getPath(frames[i])); 
-        thr[i] = new std::thread([&] (GoalsPublisher *gp) { gp->run(std::move(path)); }, goalsPublisher[i]);
+        thr[i] = new std::thread([&] (GoalsPublisher *gp) { gp->run(pathsCreator.paths[i]); }, goalsPublisher[i]);
     }
 
     for (size_t i = 0; i < frames.size(); ++i) {
