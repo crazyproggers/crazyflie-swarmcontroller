@@ -10,6 +10,7 @@ constexpr double degToRad(double deg) {
 }
 
 
+std::mutex GoalsPublisher::m_errMutex;
 World *GoalsPublisher::world = nullptr;
 
 
@@ -24,7 +25,6 @@ GoalsPublisher::GoalsPublisher(
     , m_subscriber                ()
     , m_transformListener         ()
     , m_loopRate                  (rate)
-    , m_errMutex                  ()
 {
     m_transformListener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
     m_publisher = m_node.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
@@ -78,7 +78,7 @@ inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal
 }
 
 
-void GoalsPublisher::run(std::list<Goal> &path) {
+void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
         while (ros::ok()) {
             m_publisher.publish(goal->getMsg());
@@ -97,10 +97,11 @@ void GoalsPublisher::run(std::list<Goal> &path) {
 
     std_srvs::Empty empty_srv;
     ros::service::call(m_frame + "/land", empty_srv);
+   
 } // run(std::vector<Goal> path)
 
 
-void GoalsPublisher::run(double frequency) {
+void GoalsPublisher::runControlled(double frequency) {
     m_subscriber = m_node.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
     ros::Timer timer = m_node.createTimer(ros::Duration(1.0/frequency), &GoalsPublisher::goToGoal, this);
 
@@ -162,6 +163,7 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
     Goal goal1 = getPosition();
     Goal goal2 = getNewGoal(goal1);
     std::list<Goal> path = interpolate(goal1, goal2);
+    if (path.empty()) return;
 
     for (Goal goal: path) {
         while (ros::ok()) {
@@ -182,8 +184,8 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
     // Hovering at last goal
     Goal goal = path.back();
     while (ros::ok()) {
-        // interupt from world or path does not exist
-        if (m_direction != 0 || !path.size()) return;
+        // Interupt from world
+        if (m_direction != 0) return;
 
         m_publisher.publish(goal.getMsg());
         m_loopRate.sleep();

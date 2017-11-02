@@ -11,40 +11,32 @@ PathsCreator::PathsCreator(
         const  std::vector<std::string> &frames,
         const  std::string &pathToMap,
         bool   splinesMode)
-        : m_worldFrame      (worldFrame)
-        , m_frames          (frames)
 {
-    if (readTable(pathToMap))
+    if (readTable(pathToMap, worldFrame, frames))
         createPaths(splinesMode);
-
-    /*
-    for (auto path: paths) {
-        for (auto goal: path) {
-            std::cout << goal.x() << ' ' << goal.y() << ' ' <<  goal.z() << ' ' <<  std::endl;
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-    */
 }
 
 
-bool PathsCreator::readTable(const std::string &pathToMap) {
+bool PathsCreator::readTable(
+        const std::string &pathToMap,
+        const std::string &worldFrame,
+        const std::vector<std::string> &frames)
+{
     // #########################################################
     // ####### FINDING STARTING POINTS FOR ALL CRAZYFLIES ######
     // #########################################################
-    const size_t TOTAL_CRAZYFLIES = m_frames.size();
+    const size_t TOTAL_CRAZYFLIES = frames.size();
 
-    tf::TransformListener transformListeners[TOTAL_CRAZYFLIES];
-    ros::Time             common_times[TOTAL_CRAZYFLIES];
-    tf::StampedTransform  startingPoints[TOTAL_CRAZYFLIES];
+    tf::TransformListener listeners[TOTAL_CRAZYFLIES];
+    ros::Time             commonTimes[TOTAL_CRAZYFLIES];
+    tf::StampedTransform  startPoints[TOTAL_CRAZYFLIES];
 
     for (size_t i = 0; i < TOTAL_CRAZYFLIES; ++i) {
-        transformListeners[i].waitForTransform(m_worldFrame, m_frames[i], ros::Time(0), ros::Duration(5.0));
-        transformListeners[i].getLatestCommonTime(m_worldFrame, m_frames[i], common_times[i], NULL);
+        listeners[i].waitForTransform(worldFrame, frames[i], ros::Time(0), ros::Duration(5.0));
+        listeners[i].getLatestCommonTime(worldFrame, frames[i], commonTimes[i], NULL);
 
-        if (transformListeners[i].canTransform(m_worldFrame, m_frames[i], common_times[i]))
-            transformListeners[i].lookupTransform(m_worldFrame, m_frames[i], common_times[i], startingPoints[i]);
+        if (listeners[i].canTransform(worldFrame, frames[i], commonTimes[i]))
+            listeners[i].lookupTransform(worldFrame, frames[i], commonTimes[i], startPoints[i]);
     }
 
     // #########################################################
@@ -57,7 +49,7 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
         std::list<Goal> tmp(std::prev(path.end(), repeated_goals_count), path.end());
 
         for (; repeat_number > 0; --repeat_number)
-            path.insert(path.end(), tmp.begin(), tmp.end());
+            path.splice(path.end(), tmp);
         repeated_goals_count = 0;
     };
 
@@ -74,33 +66,36 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
         return degree / 180.0 * M_PI;
     };
 
-
     // #########################################################
     // ########### READING AND PARSING THE MAP-FILE ############
     // #########################################################
-    std::ifstream map;
-    map.exceptions(std::ifstream::badbit);
-
     std::list<Goal> path;
+
     enum AMOUNT {
         COMMAND_COMPONENTS  = 2,
         PARAMETERS          = 5
     };
 
     try {
-        map.open(pathToMap.c_str(), std::ios_base::in);
-        std::string line;
+        std::ifstream map(pathToMap.c_str());
+        map.exceptions(std::ifstream::badbit);
 
-        while (std::getline(map, line)) {
+        while (!map.eof()) {
+            std::string line;
+            std::getline(map, line);
+
             if ((line == "") && (path.size())) {
                 if (repeat_number > 0)
                     repeat(path);
 
                 // Add the finishing goal in the table
-                Goal last = path.back();
-                double last_z = 0.1;
+                Goal   last       = path.back();
+                double last_z     = 0.1;
+                double last_roll  = 0.0;
+                double last_pitch = 0.0;
+                double last_yaw   = 0.0;
 
-                path.push_back(Goal(last.x(), last.y(), last_z, 0.0, 0.0, 0.0));
+                path.push_back(Goal(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw));
                 paths.push_back(path);
                 path.clear();
             }
@@ -132,13 +127,13 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
                 else if (words.size() == AMOUNT::PARAMETERS) {
                     // Add the starting goal in the table
                     double roll = 0.0, pitch = 0.0;
- 
-                    if (!path.size()) {
+
+                    if (path.empty()) {
                         size_t num = paths.size();
 
-                        double x = startingPoints[num].getOrigin().x();
-                        double y = startingPoints[num].getOrigin().y();
-                        double z = startingPoints[num].getOrigin().z() + 0.2;
+                        double x = startPoints[num].getOrigin().x();
+                        double y = startPoints[num].getOrigin().y();
+                        double z = startPoints[num].getOrigin().z() + 0.2;
                         double yaw = 0.0;
 
                         path.push_back(Goal(x, y, z, roll, pitch, yaw));
@@ -162,22 +157,25 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
             } // else
         } // while (!map.eof())
 
-        if (path.size()) {
+        if (!path.empty()) {
             if (repeat_number > 0)
                 repeat(path);
             
             // Add the finishing goal in the table
-            Goal last = path.back();
-            double last_z = 0.1;
+            Goal   last       = path.back();
+            double last_z     = 0.1;
+            double last_roll  = 0.0;
+            double last_pitch = 0.0;
+            double last_yaw   = 0.0;
 
-            path.push_back(Goal(last.x(), last.y(), last_z, 0.0, 0.0, 0.0));
+            path.push_back(Goal(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw));
             paths.push_back(path);
         }
 
         map.close();
     } // try
     catch (const std::ifstream::failure  &exc) {
-        ROS_ERROR("Could not read/close map-file: %s", pathToMap.c_str());
+        ROS_ERROR("There was an error in %s%s%s", pathToMap.c_str(), ": ", exc.what());
         return false;
     }
 
@@ -202,7 +200,7 @@ void PathsCreator::createPaths(bool splinesMode) {
                 Goal next = *(std::next(it));
 
                 tmp = interpolate(curr, next);
-                path.insert(path.end(), tmp.begin(), tmp.end());
+                path.splice(path.end(), tmp);
             }
 
             path.push_back(paths[i].back());

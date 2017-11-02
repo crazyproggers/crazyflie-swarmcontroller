@@ -16,8 +16,8 @@ class GoalsPublisher {
     ros::Subscriber          m_subscriber;
     tf::TransformListener    m_transformListener;
     ros::Rate                m_loopRate;
-    std::mutex               m_errMutex;
     int8_t                   m_direction;
+    static std::mutex        m_errMutex;
 
 private:
     enum DIRECTION {
@@ -57,10 +57,10 @@ public:
     static World *world;
 
     // Automatic flight
-    void run(std::list<Goal> &path);
+    void runAutomatic(std::list<Goal> path);
     
     // Controlled flight
-    void run(double frequency);
+    void runControlled(double frequency);
 };
 
 #endif // GOALS_PUBLISHER_H
