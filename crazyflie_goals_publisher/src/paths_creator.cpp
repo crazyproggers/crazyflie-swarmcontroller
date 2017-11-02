@@ -17,6 +17,11 @@ PathsCreator::PathsCreator(
 }
 
 
+PathsCreator::~PathsCreator() {
+    paths.clear();
+}
+
+
 bool PathsCreator::readTable(
         const std::string &pathToMap,
         const std::string &worldFrame,
@@ -209,7 +214,3 @@ void PathsCreator::createPaths(bool splinesMode) {
     }
 }
 
-
-PathsCreator::~PathsCreator() {
-    paths.clear();
-}

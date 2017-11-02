@@ -41,22 +41,14 @@ int main(int argc, char **argv) {
     GoalsPublisher::world = new World(worldWidth, worldLength, worldHeight,
                                       regWidth,   regLength,   regHeight);
 
-    GoalsPublisher *goalsPublisher[frames.size()];
-    std::thread    *thr[frames.size()];
-    PathsCreator pathsCreator(worldFrame, frames, pathToMap, splinesMode);
+    GoalsPublisher *publishers[frames.size()];
+    PathsCreator    creator(worldFrame, frames, pathToMap, splinesMode);
 
-    for (size_t i = 0; i < frames.size(); ++i) {
-        goalsPublisher[i] = new GoalsPublisher(worldFrame, frames[i], rate);
-        
-        // Automatic flight
-        thr[i] = new std::thread(&GoalsPublisher::runAutomatic, goalsPublisher[i], pathsCreator.paths[i]);
-    }
+    for (size_t i = 0; i < frames.size(); ++i)
+        publishers[i] = new GoalsPublisher(worldFrame, frames[i], rate, creator.paths[i]);
 
-    for (size_t i = 0; i < frames.size(); ++i) {
-        thr[i]->join();
-        delete thr[i];
-        delete goalsPublisher[i];
-    }
+    for (size_t i = 0; i < frames.size(); ++i)
+        delete publishers[i];
     delete GoalsPublisher::world;
 
     return 0;

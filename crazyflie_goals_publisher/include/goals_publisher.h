@@ -3,6 +3,7 @@
 
 #include <tf/transform_listener.h>
 #include <std_msgs/Byte.h>
+#include <thread>
 #include <mutex>
 #include "goal.h"
 #include "world.h"
@@ -17,6 +18,8 @@ class GoalsPublisher {
     tf::TransformListener    m_transformListener;
     ros::Rate                m_loopRate;
     int8_t                   m_direction;
+
+    std::thread              m_runThread;
     static std::mutex        m_errMutex;
 
 private:
@@ -49,16 +52,18 @@ public:
     GoalsPublisher(const GoalsPublisher &) = delete;
     GoalsPublisher & operator=(const GoalsPublisher &) = delete;
 
-    GoalsPublisher(const std::string &worldFrame, 
+    GoalsPublisher(const std::string &worldFrame,
                    const std::string &frame,
-                   size_t rate);
+                   size_t rate,
+                   std::list<Goal> path);
+    ~GoalsPublisher();
 
     // class World realize synchronization mode
     static World *world;
 
     // Automatic flight
     void runAutomatic(std::list<Goal> path);
-    
+
     // Controlled flight
     void runControlled(double frequency);
 };

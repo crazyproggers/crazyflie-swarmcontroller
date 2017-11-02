@@ -17,7 +17,8 @@ World *GoalsPublisher::world = nullptr;
 GoalsPublisher::GoalsPublisher(
     const std::string &worldFrame,
     const std::string &frame,
-    size_t rate)
+    size_t rate,
+    std::list<Goal> path)
     : m_node                      ()
     , m_worldFrame                (worldFrame)
     , m_frame                     (frame)
@@ -28,6 +29,16 @@ GoalsPublisher::GoalsPublisher(
 {
     m_transformListener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
     m_publisher = m_node.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
+
+    if (!path.empty())
+        m_runThread = std::thread(&GoalsPublisher::runAutomatic,  this, path);
+    else
+        m_runThread = std::thread(&GoalsPublisher::runControlled, this, 50.0);
+}
+
+
+GoalsPublisher::~GoalsPublisher() {
+    m_runThread.join();
 }
 
 
