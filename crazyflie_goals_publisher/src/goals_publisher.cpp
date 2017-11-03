@@ -10,8 +10,14 @@ constexpr double degToRad(double deg) {
 }
 
 
+template<typename T, typename ...Args>
+std::unique_ptr<T> make_unique( Args&& ...args ) {
+    return std::unique_ptr<T>(new T( std::forward<Args>(args)... ));
+}
+
+
 std::mutex GoalsPublisher::m_errMutex;
-World *GoalsPublisher::world = nullptr;
+std::unique_ptr<World> GoalsPublisher::m_world;
 
 
 GoalsPublisher::GoalsPublisher(
@@ -24,10 +30,10 @@ GoalsPublisher::GoalsPublisher(
     , m_frame                     (frame)
     , m_publisher                 ()
     , m_subscriber                ()
-    , m_transformListener         ()
+    , m_listener                  ()
     , m_loopRate                  (rate)
 {
-    m_transformListener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
+    m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
     m_publisher = m_node.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
 
     if (!path.empty())
@@ -42,20 +48,28 @@ GoalsPublisher::~GoalsPublisher() {
 }
 
 
+void GoalsPublisher::initWorld(
+    double worldWidth, double worldLength, double worldHeight,
+    double regWidth, double regLength, double regHeight)
+{
+    m_world = make_unique<World>(worldWidth, worldLength, worldHeight, regWidth, regLength, regHeight);
+}
+
+
 inline Goal GoalsPublisher::getPosition() {
     ros::Time commonTime;
     tf::StampedTransform position;
     std::string errMsg;
     
-    m_transformListener.getLatestCommonTime(m_worldFrame, m_frame, commonTime, &errMsg);
+    m_listener.getLatestCommonTime(m_worldFrame, m_frame, commonTime, &errMsg);
 
     if (errMsg.length()) {
         std::lock_guard<std::mutex> locker(m_errMutex);
         ROS_ERROR("%s", errMsg.c_str());
     }
 
-    if (m_transformListener.canTransform(m_worldFrame, m_frame, commonTime, &errMsg))
-        m_transformListener.lookupTransform(m_worldFrame, m_frame, commonTime, position);
+    if (m_listener.canTransform(m_worldFrame, m_frame, commonTime, &errMsg))
+        m_listener.lookupTransform(m_worldFrame, m_frame, commonTime, position);
     else {
         std::lock_guard<std::mutex> locker(m_errMutex);
         ROS_ERROR("%s%s", m_frame.c_str(), " could not get current position!");

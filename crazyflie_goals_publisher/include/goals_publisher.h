@@ -10,17 +10,20 @@
 
 
 class GoalsPublisher {
-    ros::NodeHandle          m_node;
-    std::string              m_worldFrame;
-    std::string              m_frame;
-    ros::Publisher           m_publisher;
-    ros::Subscriber          m_subscriber;
-    tf::TransformListener    m_transformListener;
-    ros::Rate                m_loopRate;
-    int8_t                   m_direction;
+    ros::NodeHandle               m_node;
+    std::string                   m_worldFrame;
+    std::string                   m_frame;
+    ros::Publisher                m_publisher;
+    ros::Subscriber               m_subscriber;
+    tf::TransformListener         m_listener;
+    ros::Rate                     m_loopRate;
+    int8_t                        m_direction;
 
-    std::thread              m_runThread;
-    static std::mutex        m_errMutex;
+    std::thread                   m_runThread;
+    static std::mutex             m_errMutex;
+
+    // class World realize synchronization mode
+    static std::unique_ptr<World> m_world;
 
 private:
     enum DIRECTION {
@@ -31,6 +34,12 @@ private:
         upward      = 5,
         downward    = 6,
     };
+
+    // Automatic flight
+    void runAutomatic(std::list<Goal> path);
+
+    // Controlled flight
+    void runControlled(double frequency);
 
     // Get current position
     inline Goal getPosition();
@@ -58,14 +67,8 @@ public:
                    std::list<Goal> path);
     ~GoalsPublisher();
 
-    // class World realize synchronization mode
-    static World *world;
-
-    // Automatic flight
-    void runAutomatic(std::list<Goal> path);
-
-    // Controlled flight
-    void runControlled(double frequency);
+    static void initWorld(double worldWidth, double worldLength, double worldHeight,
+                          double regWidth,   double regLength,   double regHeight);
 };
 
 #endif // GOALS_PUBLISHER_H

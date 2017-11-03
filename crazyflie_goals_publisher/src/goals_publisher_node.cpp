@@ -38,8 +38,7 @@ int main(int argc, char **argv) {
     nh.getParam("regHeight",   regHeight);
 
     // Initialize the synchronization mode
-    GoalsPublisher::world = new World(worldWidth, worldLength, worldHeight,
-                                      regWidth,   regLength,   regHeight);
+    GoalsPublisher::initWorld(worldWidth, worldLength, worldHeight, regWidth, regLength, regHeight);
 
     GoalsPublisher *publishers[frames.size()];
     PathsCreator    creator(worldFrame, frames, pathToMap, splinesMode);
@@ -49,7 +48,6 @@ int main(int argc, char **argv) {
 
     for (size_t i = 0; i < frames.size(); ++i)
         delete publishers[i];
-    delete GoalsPublisher::world;
 
     return 0;
 }
