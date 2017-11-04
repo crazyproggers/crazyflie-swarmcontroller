@@ -163,28 +163,28 @@ std::vector<double> World::nearestRegion(double x, double y, double z) const {
 
 
 bool World::occupyRegion(double x, double y, double z, size_t id) {
-    Region *ptrToNewReg = region(x, y, z);
-    std::lock_guard<std::mutex> locker(ptrToNewReg->m_occupationMutex);
+    Region *newReg = region(x, y, z);
+    std::lock_guard<std::mutex> locker(newReg->m_occupationMutex);
 
-    if (!ptrToNewReg->m_owner.id) {
-        Region *ptrToOldReg = m_regionsInOwnership[id];
+    if (!newReg->m_owner.id) {
+        Region *oldReg = m_regionsInOwnership[id];
 
         // free old region
-        ptrToOldReg->m_owner.id = 0;
-        ptrToOldReg->m_owner.x = 0.0;
-        ptrToOldReg->m_owner.y = 0.0;
-        ptrToOldReg->m_owner.z = 0.0;
+        oldReg->m_owner.id = 0;
+        oldReg->m_owner.x  = 0.0;
+        oldReg->m_owner.y  = 0.0;
+        oldReg->m_owner.z  = 0.0;
 
         // occupy new region
-        ptrToNewReg->m_owner.id = id;
-        ptrToNewReg->m_owner.x  = x;
-        ptrToNewReg->m_owner.y  = y;
-        ptrToNewReg->m_owner.z  = z;
-        m_regionsInOwnership[id] = ptrToNewReg;
+        newReg->m_owner.id = id;
+        newReg->m_owner.x  = x;
+        newReg->m_owner.y  = y;
+        newReg->m_owner.z  = z;
+        m_regionsInOwnership[id] = newReg;
 
         return true;
     }
-    else if (ptrToNewReg->m_owner.id == id)
+    else if (newReg->m_owner.id == id)
         return true;
 
     return false;
