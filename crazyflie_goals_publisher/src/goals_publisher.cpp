@@ -63,22 +63,22 @@ inline Goal GoalsPublisher::getPosition() {
     
     m_listener.getLatestCommonTime(m_worldFrame, m_frame, commonTime, &errMsg);
 
-    if (errMsg.length()) {
+    if (!errMsg.empty()) {
         std::lock_guard<std::mutex> locker(m_errMutex);
-        ROS_ERROR("%s", errMsg.c_str());
+        ROS_ERROR("%s%s%s", m_frame.c_str(), ": ", errMsg.c_str());
     }
 
     if (m_listener.canTransform(m_worldFrame, m_frame, commonTime, &errMsg))
         m_listener.lookupTransform(m_worldFrame, m_frame, commonTime, position);
     else {
         std::lock_guard<std::mutex> locker(m_errMutex);
-        ROS_ERROR("%s%s", m_frame.c_str(), " could not get current position!");
+        ROS_ERROR("%s%s", m_frame.c_str(), ": could not get current position!");
         return Goal();
     }
 
-    if (errMsg.length()) {
+    if (!errMsg.empty()) {
         std::lock_guard<std::mutex> locker(m_errMutex);
-        ROS_ERROR("%s", errMsg.c_str());
+        ROS_ERROR("%s%s%s", m_frame.c_str(), ": ", errMsg.c_str());
     }
 
     double x = position.getOrigin().x();
