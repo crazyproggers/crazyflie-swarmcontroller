@@ -1,4 +1,4 @@
-﻿#include <ros/ros.h>
+#include <ros/ros.h>
 #include <cmath>
 #include "world.h"
 
@@ -11,22 +11,22 @@ World::World(
     , m_regHeight           (regHeight)
     , m_regionsInOwnership  ()
 {
-    size_t dim1 = std::ceil(worldWidth  / m_regWidth)  + 1;
+    size_t dim1 = std::ceil(worldHeight / m_regHeight) + 1;
     size_t dim2 = std::ceil(worldLength / m_regLength) + 1;
-    size_t dim3 = std::ceil(worldHeight / m_regHeight) + 1;
+    size_t dim3 = std::ceil(worldWidth  / m_regWidth)  + 1;
 
     // Fill the world
     for (size_t i = 0; i < dim1; ++i) {
-        std::vector<std::vector<Region *>> tmp1;
+        std::vector<std::vector<Region *>> vecOY;
 
         for (size_t j = 0; j < dim2; ++j) {
-            std::vector<Region *> tmp2;
+            std::vector<Region *> vecOX;
 
             for (size_t k = 0; k < dim3; ++k)
-                tmp2.push_back(new Region);
-            tmp1.push_back(tmp2);
+                vecOX.push_back(new Region);
+            vecOY.push_back(vecOX);
         }
-        m_regions.push_back(tmp1);
+        m_regions.push_back(vecOY);
     }
 
     /*
