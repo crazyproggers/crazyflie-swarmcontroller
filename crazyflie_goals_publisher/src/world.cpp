@@ -28,13 +28,6 @@ World::World(
         }
         m_regions.push_back(vecOY);
     }
-
-    /*
-    for (size_t i = 0; i < dim1; ++i)
-        for (size_t j = 0; j < dim2; ++j)
-            for (size_t k = 0; k < dim3; ++k)
-                m_regions[i][j][k] = new Region;
-    */
 }
 
 
