@@ -169,11 +169,13 @@ bool World::occupyRegion(double x, double y, double z, size_t id) {
     if (!newReg->m_owner.id) {
         Region *oldReg = m_regionsInOwnership[id];
 
-        // free old region
-        oldReg->m_owner.id = 0;
-        oldReg->m_owner.x  = 0.0;
-        oldReg->m_owner.y  = 0.0;
-        oldReg->m_owner.z  = 0.0;
+        // if id already has a region, need to free it
+        if (oldReg) {
+            oldReg->m_owner.id = 0;
+            oldReg->m_owner.x  = 0.0;
+            oldReg->m_owner.y  = 0.0;
+            oldReg->m_owner.z  = 0.0;
+        }
 
         // occupy new region
         newReg->m_owner.id = id;
