@@ -13,6 +13,7 @@ class GoalsPublisher {
     ros::NodeHandle               m_node;
     std::string                   m_worldFrame;
     std::string                   m_frame;
+    size_t                        m_id;
     ros::Publisher                m_publisher;
     ros::Subscriber               m_subscriber;
     tf::TransformListener         m_listener;
@@ -41,8 +42,8 @@ private:
     // Controlled flight
     void runControlled(double frequency);
 
-    // Get current position
-    inline Goal getPosition();
+    // Get current position at the space
+    inline Goal getPosition() const;
 
     // Checking that |position - goal| < E
     inline bool goalIsReached(const Goal &position, const Goal &goal) const;

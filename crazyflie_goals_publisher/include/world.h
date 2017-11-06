@@ -2,7 +2,6 @@
 #define WORLD_H
 
 #include <mutex>
-#include <memory>
 #include <map>
 #include <vector>
 
@@ -49,6 +48,7 @@ public:
 
     // Return distances from point (x, y, z) to nearest regions owners
     std::vector<double> distancesToNearestOwners(double x, double y, double z) const;
+
     // Return a center of the nearest region
     std::vector<double> nearestRegion(double x, double y, double z) const;
 

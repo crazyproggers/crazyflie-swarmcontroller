@@ -28,6 +28,7 @@ GoalsPublisher::GoalsPublisher(
     : m_node                      ()
     , m_worldFrame                (worldFrame)
     , m_frame                     (frame)
+    , m_id                        (std::hash<std::string>()(frame))
     , m_publisher                 ()
     , m_subscriber                ()
     , m_listener                  ()
@@ -50,17 +51,17 @@ GoalsPublisher::~GoalsPublisher() {
 
 void GoalsPublisher::initWorld(
     double worldWidth, double worldLength, double worldHeight,
-    double regWidth, double regLength, double regHeight)
+    double regWidth,   double regLength,   double regHeight)
 {
     m_world = make_unique<World>(worldWidth, worldLength, worldHeight, regWidth, regLength, regHeight);
 }
 
 
-inline Goal GoalsPublisher::getPosition() {
+inline Goal GoalsPublisher::getPosition() const {
     ros::Time commonTime;
     tf::StampedTransform position;
     std::string errMsg;
-    
+
     m_listener.getLatestCommonTime(m_worldFrame, m_frame, commonTime, &errMsg);
 
     if (!errMsg.empty()) {
@@ -105,24 +106,57 @@ inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal
 
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
-        while (ros::ok()) {
-            m_publisher.publish(goal->getMsg());
+        std::vector<double> distances = m_world->distancesToNearestOwners(goal->x(), goal->y(), goal->z());
 
-            Goal position = getPosition();
-            if (position.isEmpty()) continue;
-            
-            if (goalIsReached(position, *goal)) {
-                ros::Duration(goal->delay()).sleep();
-                break; // go to next goal
+        // Checking that distance from current crazyflie to the nearest ones to it is ok
+        auto distancesAreOk = [&](double E = 0.2) -> bool {
+            for (double d: distances)
+                if (d <= E) return false;
+
+            return true;
+        };
+
+        Goal position = getPosition();
+        Goal tmpGoal;
+
+        ros::Duration duration(5.0);
+        ros::Time begin = ros::Time::now();
+
+        while (!m_world->occupyRegion(goal->x(), goal->y(), goal->z(), m_id) && !distancesAreOk()) {
+            m_publisher.publish(position.getMsg());
+
+            ros::Time end = ros::Time::now();
+
+            // If happened deadlock or we wait too long
+            if ((end - begin) >= duration) {
+                // tmpGoal = correct(goal);
+                break;
             }
+        }
 
-            m_loopRate.sleep();
-        } // while (ros::ok())
+        if (tmpGoal.empty()) {
+            while (ros::ok()) {
+                m_publisher.publish(goal->getMsg());
+
+                Goal position = getPosition();
+                if (position.empty()) continue;
+
+                if (goalIsReached(position, *goal)) {
+                    ros::Duration(goal->delay()).sleep();
+                    break; // go to next goal
+                }
+                m_loopRate.sleep();
+            }
+        }
+        else {
+            // here need to interpolate from position to tmpGoal
+            // std::list<Goal> tmpPath = interpolation(position, tmpGoal);
+            // path.splice(goal, tmpPath);
+        }
     } // for (Goal goal: path)
 
     std_srvs::Empty empty_srv;
     ros::service::call(m_frame + "/land", empty_srv);
-   
 } // run(std::vector<Goal> path)
 
 
@@ -187,6 +221,7 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
     // Create the path
     Goal goal1 = getPosition();
     Goal goal2 = getNewGoal(goal1);
+
     std::list<Goal> path = interpolate(goal1, goal2);
     if (path.empty()) return;
 
@@ -197,7 +232,7 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
             m_publisher.publish(goal.getMsg());
             
             Goal position = getPosition();
-            if (position.isEmpty()) continue;
+            if (position.empty()) continue;
             
             if (goalIsReached(position, goal))
                 break; // go to next goal

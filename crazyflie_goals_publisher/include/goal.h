@@ -84,7 +84,7 @@ public:
     double pitch()    const   { return m_pitch;               }
     double yaw()      const   { return m_yaw;                 }
     double delay()    const   { return m_delay;               }
-    bool   isEmpty()  const   { return m_empty;               }
+    bool   empty()    const   { return m_empty;               }
 
     msg_t getMsg() {
         m_msg.header.seq++;
