@@ -4,6 +4,7 @@
 #include <mutex>
 #include <map>
 #include <vector>
+#include <tf/tf.h>
 
 
 class World {
@@ -50,7 +51,7 @@ public:
     std::vector<double> distancesToNearestOwners(double x, double y, double z) const;
 
     // Return a center of the nearest region
-    std::vector<double> nearestRegion(double x, double y, double z) const;
+    tf::Vector3 nearestRegion(double x, double y, double z) const;
 
     // Try occupy a region that contains point (x, y, z)
     bool occupyRegion(double x, double y, double z, size_t id);

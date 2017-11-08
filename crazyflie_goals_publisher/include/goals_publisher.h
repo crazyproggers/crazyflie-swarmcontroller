@@ -17,7 +17,7 @@ class GoalsPublisher {
     ros::Publisher                m_publisher;
     ros::Subscriber               m_subscriber;
     tf::TransformListener         m_listener;
-    ros::Rate                     m_loopRate;
+    ros::Rate                     m_publishRate;
     int8_t                        m_direction;
 
     std::thread                   m_runThread;

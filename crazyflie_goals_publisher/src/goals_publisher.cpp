@@ -32,7 +32,7 @@ GoalsPublisher::GoalsPublisher(
     , m_publisher                 ()
     , m_subscriber                ()
     , m_listener                  ()
-    , m_loopRate                  (rate)
+    , m_publishRate               (rate)
 {
     m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
     m_publisher = m_node.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
@@ -109,7 +109,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         std::vector<double> distances = m_world->distancesToNearestOwners(goal->x(), goal->y(), goal->z());
 
         // Checking that distance from current crazyflie to the nearest ones to it is ok
-        auto distancesAreOk = [&](double E = 0.2) -> bool {
+        auto distancesAreOk = [&](double E = 0.25) -> bool {
             for (double d: distances)
                 if (d <= E) return false;
 
@@ -122,16 +122,23 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         ros::Duration duration(5.0);
         ros::Time begin = ros::Time::now();
 
-        while (!m_world->occupyRegion(goal->x(), goal->y(), goal->z(), m_id) && !distancesAreOk()) {
+        ros::Rate loop(2);
+        while (!m_world->occupyRegion(goal->x(), goal->y(), goal->z(), m_id) || !distancesAreOk()) {
+            ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(position.getMsg());
 
             ros::Time end = ros::Time::now();
 
             // If happened deadlock or we wait too long
             if ((end - begin) >= duration) {
-                // tmpGoal = correct(goal);
+                /*
+                tf::Vector3 nearest = m_world->nearestRegion(position.x(), position.y(), position.z());
+                tmpGoal = Goal(nearest.x(), nearest.y(), nearest.z(), 0.0, 0.0, 0.0);
+                */
                 break;
             }
+
+            loop.sleep();
         }
 
         if (tmpGoal.empty()) {
@@ -145,13 +152,16 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                     ros::Duration(goal->delay()).sleep();
                     break; // go to next goal
                 }
-                m_loopRate.sleep();
+                m_publishRate.sleep();
             }
         }
         else {
-            // here need to interpolate from position to tmpGoal
-            // std::list<Goal> tmpPath = interpolation(position, tmpGoal);
-            // path.splice(goal, tmpPath);
+            // Interpolating from position to tmpGoal
+            std::list<Goal> tmpPath = interpolate(position, tmpGoal);
+            /*
+            tmpPath.push_back(*goal);
+            path.splice(std::next(goal), tmpPath);
+            */
         }
     } // for (Goal goal: path)
 
@@ -161,13 +171,15 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
 
 void GoalsPublisher::runControlled(double frequency) {
+    /*
     m_subscriber = m_node.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
     ros::Timer timer = m_node.createTimer(ros::Duration(1.0/frequency), &GoalsPublisher::goToGoal, this);
 
     while (ros::ok) {
         ros::spinOnce();
-        m_loopRate.sleep();
+        m_publishRate.sleep();
     }
+    */
 }
 
 
@@ -237,7 +249,7 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
             if (goalIsReached(position, goal))
                 break; // go to next goal
 
-            m_loopRate.sleep();
+            m_publishRate.sleep();
         } // while (ros::ok())
     }// for (Goal goal: path)
     
@@ -248,6 +260,6 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
         if (m_direction != 0) return;
 
         m_publisher.publish(goal.getMsg());
-        m_loopRate.sleep();
+        m_publishRate.sleep();
     } // while (ros::ok())
 }

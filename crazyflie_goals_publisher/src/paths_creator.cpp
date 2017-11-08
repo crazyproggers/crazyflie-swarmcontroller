@@ -89,7 +89,7 @@ bool PathsCreator::readTable(
             std::string line;
             std::getline(map, line);
 
-            if ((line == "") && (path.size())) {
+            if ((line == "") && (!path.empty())) {
                 if (repeat_number > 0)
                     repeat(path);
 
@@ -104,7 +104,7 @@ bool PathsCreator::readTable(
                 paths.push_back(path);
                 path.clear();
             }
-            else {
+            else if (line != "") {
                 std::istringstream iss(line);
                 std::vector<std::string> words {std::istream_iterator<std::string>{iss},
                                                 std::istream_iterator<std::string>{}};
@@ -138,7 +138,7 @@ bool PathsCreator::readTable(
 
                         double x = startPoints[num].getOrigin().x();
                         double y = startPoints[num].getOrigin().y();
-                        double z = startPoints[num].getOrigin().z() + 0.2;
+                        double z = startPoints[num].getOrigin().z() + 0.5;
                         double yaw = 0.0;
 
                         path.push_back(Goal(x, y, z, roll, pitch, yaw));

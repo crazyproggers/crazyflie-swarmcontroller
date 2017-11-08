@@ -114,11 +114,12 @@ std::vector<double> World::distancesToNearestOwners(double x, double y, double z
     reg = m_regions[newZ][newY][newX];
     if (isNewZ && isNewY && isNewX && !reg->isFree())
         distances.push_back(dist(x, y, z, reg));
-
+    
     return distances;
 }
 
-std::vector<double> World::nearestRegion(double x, double y, double z) const {
+
+tf::Vector3 World::nearestRegion(double x, double y, double z) const {
     struct Step {
         short x, y;
         Step(short x, short y) : x(x), y(y) {}
@@ -130,26 +131,27 @@ std::vector<double> World::nearestRegion(double x, double y, double z) const {
     size_t currX = x / m_regWidth;
     size_t currY = y / m_regLength;
 
-    std::vector<double> nearestCenter;
+    tf::Vector3 nearestCenter;
+    bool isEmpty = true;
 
     for (size_t i = 0; i < step.size(); ++i) {
         bool freeRegion = true;
+        double newX = currX + step[i].x;
+        double newY = currY + step[i].y;
+
         for (size_t j = 0; j < m_regions.size(); ++j)
-            if (!m_regions[i][currY + step[i].y][currX + step[i].x]->isFree()) {
+            if (!m_regions[i][newY][newX]->isFree()) {
                 freeRegion = false;
                 break;
             }
         if (freeRegion) {
-            nearestCenter.push_back(z);
-            nearestCenter.push_back((currY + step[i].y + 0.5) * m_regLength);
-            nearestCenter.push_back((currX + step[i].x + 0.5) * m_regWidth);
+            nearestCenter = tf::Vector3((newX + 0.5) * m_regWidth, (newY + 0.5) * m_regLength, z);
+            isEmpty = false;
         }
     }
-    if (!nearestCenter.size()){
-        nearestCenter.push_back(z);
-        nearestCenter.push_back(y);
-        nearestCenter.push_back(x);
-    }
+
+    if (isEmpty)
+        nearestCenter = tf::Vector3(x, y, z);
 
    return nearestCenter;
 }

@@ -70,7 +70,7 @@ public:
     }
 
     Goal & operator=(const Goal &goal) {
-        if (this != &goal && !goal.m_empty) {
+        if (this != &goal) {
             this->~Goal();
             new (this) Goal(goal);
         }

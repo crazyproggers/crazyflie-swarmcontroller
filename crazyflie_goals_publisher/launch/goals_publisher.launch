@@ -9,12 +9,12 @@
       <param name="splinesMode" value="False" />
 
       <!--All params are measured in meters-->
-      <param name="worldWidth" value="2.0" />
-      <param name="worldLength" value="2.0" />
-      <param name="worldHeight" value="2.0" />
+      <param name="worldWidth" value="2.4" />
+      <param name="worldLength" value="2.4" />
+      <param name="worldHeight" value="2.4" />
 
-      <param name="regWidth" value="0.4" />
-      <param name="regLength" value="0.4" />
-      <param name="regHeight" value="0.4" />
+      <param name="regWidth" value="0.3" />
+      <param name="regLength" value="0.3" />
+      <param name="regHeight" value="0.3" />
   </node>
 </launch>
