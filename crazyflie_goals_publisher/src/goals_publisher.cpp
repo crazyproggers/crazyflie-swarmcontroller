@@ -106,10 +106,11 @@ inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal
 
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
-        std::vector<double> distances = m_world->distancesToNearestOwners(goal->x(), goal->y(), goal->z());
 
         // Checking that distance from current crazyflie to the nearest ones to it is ok
         auto distancesAreOk = [&](double E = 0.25) -> bool {
+            std::vector<double> distances = m_world->getDistancesToNeighbors(goal->x(), goal->y(), goal->z());
+
             for (double d: distances)
                 if (d <= E) return false;
 
@@ -121,8 +122,8 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
         ros::Duration duration(5.0);
         ros::Time begin = ros::Time::now();
-
         ros::Rate loop(2);
+
         while (!m_world->occupyRegion(goal->x(), goal->y(), goal->z(), m_id) || !distancesAreOk()) {
             ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(position.getMsg());
@@ -131,10 +132,9 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
             // If happened deadlock or we wait too long
             if ((end - begin) >= duration) {
-                /*
-                tf::Vector3 nearest = m_world->nearestRegion(position.x(), position.y(), position.z());
-                tmpGoal = Goal(nearest.x(), nearest.y(), nearest.z(), 0.0, 0.0, 0.0);
-                */
+                // Searching the nearest free region center
+                tf::Vector3 freeCenter = m_world->getFreeCenter(position.x(), position.y(), position.z());
+                tmpGoal = Goal(freeCenter.x(), freeCenter.y(), freeCenter.z(), 0.0, 0.0, 0.0);
                 break;
             }
 

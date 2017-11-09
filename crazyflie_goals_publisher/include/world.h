@@ -37,7 +37,7 @@ class World {
     std::map<size_t, Region *> m_regionsInOwnership;
 
     // Return a pointer to region that contains a point (x, y, z)
-    inline Region * region(double x, double y, double z);
+    inline Region *region(double x, double y, double z);
 
 public:
     World(double worldWidth, double worldLenght, double worldHeight,
@@ -47,11 +47,15 @@ public:
     World(const World &) = delete;
     World(World &&) = delete;
 
-    // Return distances from point (x, y, z) to nearest regions owners
-    std::vector<double> distancesToNearestOwners(double x, double y, double z) const;
+    /* 
+     * Return distances from point (x, y, z) to nearest regions owners
+     * Max size of result is 7 (when robot placed at something corner)
+     * Min size of result is 0 (when robot placed at center of region)
+     */
+    std::vector<double> getDistancesToNeighbors(double x, double y, double z) const;
 
-    // Return a center of the nearest region
-    tf::Vector3 nearestRegion(double x, double y, double z) const;
+    // Return the center of the nearest free region
+    tf::Vector3 getFreeCenter(double x, double y, double z) const;
 
     // Try occupy a region that contains point (x, y, z)
     bool occupyRegion(double x, double y, double z, size_t id);
