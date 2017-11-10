@@ -54,7 +54,10 @@ public:
      */
     std::vector<double> getDistancesToNeighbors(double x, double y, double z) const;
 
-    // Return the center of the nearest free region
+    /* 
+     * Return the center of the nearest free region.
+     * If there is no free center then return the point itself
+     */
     tf::Vector3 getFreeCenter(double x, double y, double z) const;
 
     // Try occupy a region that contains point (x, y, z)

@@ -97,7 +97,7 @@ inline Goal GoalsPublisher::getPosition() const {
 inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal) const {
     return (fabs(position.x()     - goal.x()) < 0.2) &&
            (fabs(position.y()     - goal.y()) < 0.2) &&
-           (fabs(position.z()     - goal.z()) < 0.2) &&
+           (fabs(position.z()     - goal.z()) < 0.1) &&
            (fabs(position.roll()  - goal.roll())  < degToRad(10)) &&
            (fabs(position.pitch() - goal.pitch()) < degToRad(10)) &&
            (fabs(position.yaw()   - goal.yaw())   < degToRad(10));
@@ -135,7 +135,10 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 // Searching the nearest free region center
                 tf::Vector3 freeCenter = m_world->getFreeCenter(position.x(), position.y(), position.z());
                 tmpGoal = Goal(freeCenter.x(), freeCenter.y(), freeCenter.z(), 0.0, 0.0, 0.0);
-                break;
+
+                if (tmpGoal.x() != position.x() && tmpGoal.y() != position.y() && tmpGoal.z() != position.z())
+                    break;
+                else begin = ros::Time::now();
             }
 
             loop.sleep();
@@ -156,14 +159,19 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
             }
         }
         else {
-            // Interpolating from position to tmpGoal
-            std::list<Goal> tmpPath = interpolate(position, tmpGoal);
             /*
-            tmpPath.push_back(*goal);
-            path.splice(std::next(goal), tmpPath);
+            // Interpolating from position to tmpGoal and backward
+            std::list<Goal> tmpPath  = interpolate(position, tmpGoal);
+            std::list<Goal> backPath = interpolate(tmpGoal, *goal);
+
+            auto posTmpPath  = std::next(goal);
+            auto posBackPath = std::next(goal, 2);
+
+            path.splice(posTmpPath,  tmpPath);
+            path.splice(posBackPath, backPath);
             */
         }
-    } // for (Goal goal: path)
+    } // for (goal = path.begin(); goal != path.end(); ++goal)
 
     std_srvs::Empty empty_srv;
     ros::service::call(m_frame + "/land", empty_srv);
