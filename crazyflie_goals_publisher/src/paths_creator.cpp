@@ -33,15 +33,19 @@ bool PathsCreator::readTable(
     const size_t TOTAL_CRAZYFLIES = frames.size();
 
     tf::TransformListener listeners[TOTAL_CRAZYFLIES];
-    ros::Time             commonTimes[TOTAL_CRAZYFLIES];
     tf::StampedTransform  startPoints[TOTAL_CRAZYFLIES];
 
     for (size_t i = 0; i < TOTAL_CRAZYFLIES; ++i) {
         listeners[i].waitForTransform(worldFrame, frames[i], ros::Time(0), ros::Duration(5.0));
-        listeners[i].getLatestCommonTime(worldFrame, frames[i], commonTimes[i], NULL);
 
-        if (listeners[i].canTransform(worldFrame, frames[i], commonTimes[i]))
-            listeners[i].lookupTransform(worldFrame, frames[i], commonTimes[i], startPoints[i]);
+        try {
+            listeners[i].lookupTransform(worldFrame, frames[i], ros::Time(0), startPoints[i]);
+        }
+        catch (tf::TransformException &exc) {
+            ROS_ERROR("%s%s", frames[i].c_str(), ": could not get current position!");
+            ROS_ERROR("An exception was caught: %s", exc.what());
+            return false;
+        }
     }
 
     // #########################################################

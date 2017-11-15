@@ -46,8 +46,8 @@ int main (int argc, char **argv) {
         // Motions:
         FORWARD       = 0x38, // key 8
         BACKWARD      = 0x32, // key 2
-        RIGHTWARD     = 0x36, // key 4
-        LEFTWARD      = 0x34, // key 6
+        RIGHTWARD     = 0x34, // key 6
+        LEFTWARD      = 0x36, // key 4
         UPWARD        = 0x35, // key 5
         DOWNWARD      = 0x30  // key 0
     };

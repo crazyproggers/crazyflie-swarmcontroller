@@ -39,12 +39,18 @@ int main(int argc, char **argv) {
 
     // Initialize the synchronization mode
     GoalsPublisher::initWorld(worldWidth, worldLength, worldHeight, regWidth, regLength, regHeight);
-
     GoalsPublisher *publishers[frames.size()];
-    PathsCreator    creator(worldFrame, frames, pathToMap, splinesMode);
 
-    for (size_t i = 0; i < frames.size(); ++i)
-        publishers[i] = new GoalsPublisher(worldFrame, frames[i], rate, creator.paths[i]);
+    if (!pathToMap.empty()) {
+        PathsCreator creator(worldFrame, frames, pathToMap, splinesMode);
+
+        for (size_t i = 0; i < frames.size(); ++i)
+            publishers[i] = new GoalsPublisher(worldFrame, frames[i], rate, creator.paths[i]);
+    }
+    else {
+        for (size_t i = 0; i < frames.size(); ++i)
+            publishers[i] = new GoalsPublisher(worldFrame, frames[i], rate);
+    }
 
     for (size_t i = 0; i < frames.size(); ++i)
         delete publishers[i];

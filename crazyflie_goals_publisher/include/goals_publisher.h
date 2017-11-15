@@ -49,7 +49,7 @@ private:
     inline bool goalIsReached(const Goal &position, const Goal &goal) const;
 
     // Create a new goal on current direction and old goal
-    inline Goal getNewGoal(const Goal &oldGoal);
+    inline Goal getNextGoal(const Goal &goal);
 
     // Subscriber callback
     void directionChanged(const std_msgs::Byte::ConstPtr &direction);
@@ -65,7 +65,7 @@ public:
     GoalsPublisher(const std::string &worldFrame,
                    const std::string &frame,
                    size_t rate,
-                   std::list<Goal> path);
+                   std::list<Goal> path = {});
     ~GoalsPublisher();
 
     static void initWorld(double worldWidth, double worldLength, double worldHeight,

@@ -5,7 +5,7 @@
 
   <arg name="uri" />
   <arg name="frames" />
-  <arg name="map" />
+  <arg name="map" default="" />
 
   <param name="/swarm/frames" value="$(arg frames)" />
 

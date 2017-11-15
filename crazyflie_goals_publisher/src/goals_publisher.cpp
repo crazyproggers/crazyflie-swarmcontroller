@@ -58,28 +58,15 @@ void GoalsPublisher::initWorld(
 
 
 inline Goal GoalsPublisher::getPosition() const {
-    ros::Time commonTime;
     tf::StampedTransform position;
-    std::string errMsg;
 
-    m_listener.getLatestCommonTime(m_worldFrame, m_frame, commonTime, &errMsg);
-
-    if (!errMsg.empty()) {
-        std::lock_guard<std::mutex> locker(m_errMutex);
-        ROS_ERROR("%s%s%s", m_frame.c_str(), ": ", errMsg.c_str());
+    try {
+        m_listener.lookupTransform(m_worldFrame, m_frame, ros::Time(0), position);
     }
-
-    if (m_listener.canTransform(m_worldFrame, m_frame, commonTime, &errMsg))
-        m_listener.lookupTransform(m_worldFrame, m_frame, commonTime, position);
-    else {
-        std::lock_guard<std::mutex> locker(m_errMutex);
+    catch (tf::TransformException &exc) {
         ROS_ERROR("%s%s", m_frame.c_str(), ": could not get current position!");
+        ROS_ERROR("An exception was caught: %s", exc.what());
         return Goal();
-    }
-
-    if (!errMsg.empty()) {
-        std::lock_guard<std::mutex> locker(m_errMutex);
-        ROS_ERROR("%s%s%s", m_frame.c_str(), ": ", errMsg.c_str());
     }
 
     double x = position.getOrigin().x();
@@ -97,7 +84,7 @@ inline Goal GoalsPublisher::getPosition() const {
 inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal) const {
     return (fabs(position.x()     - goal.x()) < 0.2) &&
            (fabs(position.y()     - goal.y()) < 0.2) &&
-           (fabs(position.z()     - goal.z()) < 0.1) &&
+           (fabs(position.z()     - goal.z()) < 0.2) &&
            (fabs(position.roll()  - goal.roll())  < degToRad(10)) &&
            (fabs(position.pitch() - goal.pitch()) < degToRad(10)) &&
            (fabs(position.yaw()   - goal.yaw())   < degToRad(10));
@@ -106,9 +93,8 @@ inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal
 
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
-
         // Checking that distance from current crazyflie to the nearest ones to it is ok
-        auto distancesAreOk = [&](double E = 0.25) -> bool {
+        auto distancesAreOk = [&](double E = 0.4) -> bool {
             std::vector<double> distances = m_world->getDistancesToNeighbors(goal->x(), goal->y(), goal->z());
 
             for (double d: distances)
@@ -121,8 +107,8 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         Goal tmpGoal;
 
         ros::Duration duration(5.0);
-        ros::Time begin = ros::Time::now();
         ros::Rate loop(2);
+        ros::Time begin = ros::Time::now();
 
         while (!m_world->occupyRegion(goal->x(), goal->y(), goal->z(), m_id) || !distancesAreOk()) {
             ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
@@ -159,11 +145,18 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
             }
         }
         else {
-            /*
             // Interpolating from position to tmpGoal and backward
+            /*
             std::list<Goal> tmpPath  = interpolate(position, tmpGoal);
             std::list<Goal> backPath = interpolate(tmpGoal, *goal);
 
+            auto pos = std::next(goal);
+
+            path.splice(pos, tmpPath);
+            path.splice(pos, backPath);
+            */
+
+            /*
             auto posTmpPath  = std::next(goal);
             auto posBackPath = std::next(goal, 2);
 
@@ -179,15 +172,14 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
 
 void GoalsPublisher::runControlled(double frequency) {
-    /*
     m_subscriber = m_node.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
     ros::Timer timer = m_node.createTimer(ros::Duration(1.0/frequency), &GoalsPublisher::goToGoal, this);
 
+    ros::Rate loop(10);
     while (ros::ok) {
         ros::spinOnce();
-        m_publishRate.sleep();
+        loop.sleep();
     }
-    */
 }
 
 
@@ -196,38 +188,28 @@ void GoalsPublisher::directionChanged(const std_msgs::Byte::ConstPtr &direction)
 }
 
 
-Goal GoalsPublisher::getNewGoal(const Goal &oldGoal) {
-    /*
-     * Directions:
-     * forward          -- Y += 0.01;
-     * backward         -- Y -= 0.01;
-     * rightward        -- X += 0.01;
-     * leftward         -- X -= 0.01;
-     * upward           -- Z += 0.01;
-     * downward         -- Z -= 0.01;
-     */
- 
-    double x        = oldGoal.x();
-    double y        = oldGoal.y();
-    double z        = oldGoal.y();
-    double roll     = oldGoal.roll();
-    double pitch    = oldGoal.pitch();
-    double yaw      = oldGoal.yaw();
+Goal GoalsPublisher::getNextGoal(const Goal &goal) {
+    double x        = goal.x();
+    double y        = goal.y();
+    double z        = goal.y();
+    double roll     = goal.roll();
+    double pitch    = goal.pitch();
+    double yaw      = goal.yaw();
 
-    double step     = 0.1;
+    double step     = 0.05;
 
     if (m_direction == DIRECTION::forward)
-        ;
+        y += step;
     else if (m_direction == DIRECTION::backward)
-        ;
+        y = ((y - step) > 0)? y : y - step;
     else if (m_direction == DIRECTION::rightward)
-        ;
+        x += step;
     else if (m_direction == DIRECTION::leftward)
-        ;
+        x = ((x - step) > 0)? x : x - step;
     else if (m_direction == DIRECTION::upward)
         z += step;
     else if (m_direction == DIRECTION::downward)
-        z = (z - step)? z : z - step;
+        z = ((z - step) > 0)? z : z - step;
 
     m_direction = 0;
     
@@ -240,34 +222,44 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
 
     // Create the path
     Goal goal1 = getPosition();
-    Goal goal2 = getNewGoal(goal1);
+    Goal goal2 = getNextGoal(goal1);
 
     std::list<Goal> path = interpolate(goal1, goal2);
     if (path.empty()) return;
 
-    for (Goal goal: path) {
-        while (ros::ok()) {
-            if (m_direction != 0) return; // interupt from world
+    for (auto goal = path.begin(); goal != path.end(); ++goal) {
+        // Checking that distance from current crazyflie to the nearest ones to it is ok
+        auto distancesAreOk = [&](double E = 0.4) -> bool {
+            std::vector<double> distances = m_world->getDistancesToNeighbors(goal->x(), goal->y(), goal->z());
 
-            m_publisher.publish(goal.getMsg());
-            
+            for (double d: distances)
+                if (d <= E) return false;
+
+            return true;
+        };
+
+        Goal position = getPosition();
+        ros::Rate loop(2);
+
+        while (!m_world->occupyRegion(goal->x(), goal->y(), goal->z(), m_id) || !distancesAreOk()) {
+            if (m_direction != 0) return;
+            ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
+            m_publisher.publish(position.getMsg());
+            loop.sleep();
+        }
+
+        while (ros::ok()) {
+            if (m_direction != 0) return;
+            m_publisher.publish(goal->getMsg());
+
             Goal position = getPosition();
             if (position.empty()) continue;
-            
-            if (goalIsReached(position, goal))
+
+            if (goalIsReached(position, *goal)) {
+                ros::Duration(goal->delay()).sleep();
                 break; // go to next goal
-
+            }
             m_publishRate.sleep();
-        } // while (ros::ok())
-    }// for (Goal goal: path)
-    
-    // Hovering at last goal
-    Goal goal = path.back();
-    while (ros::ok()) {
-        // Interupt from world
-        if (m_direction != 0) return;
-
-        m_publisher.publish(goal.getMsg());
-        m_publishRate.sleep();
-    } // while (ros::ok())
+        }
+    }// for (auto goal = path.begin(); goal != path.end(); ++goal)
 }

@@ -71,7 +71,7 @@ public:
         , m_startZ          (0)
     {
         ros::NodeHandle nh;
-        m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(10.0));
+        m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
 
         m_pubNav           = nh.advertise<geometry_msgs::Twist>(m_frame + "/cmd_vel", 1);
         m_subscribeGoal    = nh.subscribe       (m_frame + "/goal",    1, &Controller::goalChanged,  this);
@@ -84,7 +84,7 @@ public:
         ros::NodeHandle node;
         ros::Timer timer = node.createTimer(ros::Duration(1.0/frequency), &Controller::iteration, this);
 
-        ros::Rate loop_rate(10); // 10 Hz
+        ros::Rate loop_rate(10);
         while (ros::ok) {
             ros::spinOnce();
             loop_rate.sleep();
@@ -101,7 +101,7 @@ private:
         float low_lvl = 2.6;
 
         if (cur_lvl <= low_lvl) {
-            ROS_WARN("%s", std::string(m_frame + " have too low battery charge level! You should to charge it.").c_str());
+            ROS_WARN("%s%s", m_frame.c_str(), " have too low battery charge level! You should to charge it.");
             m_state = Landing;
         }
     }
@@ -130,17 +130,9 @@ private:
         return true;
     }
 
-    void getTransform(
-        const std::string &sourceFrame,
-        const std::string &targetFrame,
-        tf::StampedTransform &result)
-    {
-        m_listener.lookupTransform(sourceFrame, targetFrame, ros::Time(0), result);
-    }
-
     void pidReset() {
         m_pidX.reset();
-        m_pidZ.reset();
+        m_pidY.reset();
         m_pidZ.reset();
         m_pidYaw.reset();
     }
@@ -165,7 +157,8 @@ private:
                     m_pubNav.publish(msg);
                 }
             } // case TakingOff:
-                break;
+            break;
+
             case Landing: {
                 m_goal.pose.position.z = m_startZ + 0.05;
                 tf::StampedTransform transform;
@@ -177,6 +170,8 @@ private:
                     m_pubNav.publish(msg);
                 }
             }
+            break;
+
             // intentional fall-thru
             case Automatic: {
                 tf::StampedTransform transform;
@@ -206,12 +201,13 @@ private:
                 msg.angular.z = m_pidYaw.update(0.0, yaw);
                 m_pubNav.publish(msg);
             }
-                break;
+            break;
+
             case Idle: {
                 geometry_msgs::Twist msg;
                 m_pubNav.publish(msg);
             }
-                break;
+            break;
         } // switch (m_state)
     }
 
@@ -235,7 +231,7 @@ private:
     State                       m_state;
     geometry_msgs::PoseStamped  m_goal;
     ros::Subscriber             m_subscribeGoal;
-    ros::Subscriber			  m_subscribeBattery;
+    ros::Subscriber             m_subscribeBattery;
     ros::ServiceServer          m_serviceTakeoff;
     ros::ServiceServer          m_serviceLand;
     float                       m_thrust;
