@@ -47,12 +47,8 @@ public:
     World(const World &) = delete;
     World(World &&) = delete;
 
-    /* 
-     * Return distances from point (x, y, z) to nearest regions owners
-     * Max size of result is 7 (when robot placed at something corner)
-     * Min size of result is 0 (when robot placed at center of region)
-     */
-    std::vector<double> getDistancesToNeighbors(double x, double y, double z) const;
+    // Checks if there are other robots nearby point (x, y, z)
+    bool isSafePosition(double x, double y, double z, double eps = 0.4) const;
 
     /* 
      * Return the center of the nearest free region.

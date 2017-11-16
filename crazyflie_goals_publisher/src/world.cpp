@@ -52,7 +52,7 @@ inline World::Region *World::region(double x, double y, double z) {
 }
 
 
-std::vector<double> World::getDistancesToNeighbors(double x, double y, double z) const {
+bool World::isSafePosition(double x, double y, double z, double eps) const {
     size_t oldX = x / m_regWidth;
     size_t oldY = y / m_regLength;
     size_t oldZ = z / m_regHeight;
@@ -67,8 +67,6 @@ std::vector<double> World::getDistancesToNeighbors(double x, double y, double z)
     size_t newX = oldX + ((oldX < regX && oldX > 0)? -1 : 0) + ((oldX > 2 * regX && oldX + 1 < dim3)? 1 : 0);
     size_t newY = oldY + ((oldY < regY && oldY > 0)? -1 : 0) + ((oldY > 2 * regY && oldY + 1 < dim2)? 1 : 0);
     size_t newZ = oldZ + ((oldZ < regZ && oldZ > 0)? -1 : 0) + ((oldZ > 2 * regZ && oldZ + 1 < dim1)? 1 : 0);
-
-    std::vector<double> distances;
 
     // Calculate distance between point (x, y, z) and selected region
     auto dist = [](double x, double y, double z, const Region *region) -> double {
@@ -89,33 +87,40 @@ std::vector<double> World::getDistancesToNeighbors(double x, double y, double z)
 
     reg = m_regions[oldZ][oldY][newX];
     if (!isNewZ && !isNewY && isNewX && !reg->isFree())
-        distances.push_back(dist(x, y, z, reg));
+        if (dist(x, y, z, reg) > eps)
+            return false;
 
     reg = m_regions[oldZ][newY][oldX];
     if (!isNewZ && isNewY && !isNewX && !reg->isFree())
-        distances.push_back(dist(x, y, z, reg));
+        if (dist(x, y, z, reg) > eps)
+            return false;
 
     reg = m_regions[oldZ][newY][newX];
     if (!isNewZ && isNewY && isNewX && !reg->isFree())
-        distances.push_back(dist(x, y, z, reg));
+        if (dist(x, y, z, reg) > eps)
+            return false;
 
     reg = m_regions[newZ][oldY][oldX];
     if (isNewZ && !isNewY && !isNewX && !reg->isFree())
-        distances.push_back(dist(x, y, z, reg));
+        if (dist(x, y, z, reg) > eps)
+            return false;
 
     reg = m_regions[newZ][oldY][newX];
     if (isNewZ && !isNewY && isNewX && !reg->isFree())
-        distances.push_back(dist(x, y, z, reg));
+        if (dist(x, y, z, reg) > eps)
+            return false;
 
     reg = m_regions[newZ][newY][oldX];
     if (isNewZ && isNewY && !isNewX && !reg->isFree())
-        distances.push_back(dist(x, y, z, reg));
+        if (dist(x, y, z, reg) > eps)
+            return false;
 
     reg = m_regions[newZ][newY][newX];
     if (isNewZ && isNewY && isNewX && !reg->isFree())
-        distances.push_back(dist(x, y, z, reg));
-    
-    return distances;
+        if (dist(x, y, z, reg) > eps)
+            return false;
+
+    return true;
 }
 
 

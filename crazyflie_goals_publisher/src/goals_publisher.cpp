@@ -93,16 +93,6 @@ inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal
 
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
-        // Checking that distance from current crazyflie to the nearest ones to it is ok
-        auto distancesAreOk = [&](double E = 0.4) -> bool {
-            std::vector<double> distances = m_world->getDistancesToNeighbors(goal->x(), goal->y(), goal->z());
-
-            for (double d: distances)
-                if (d <= E) return false;
-
-            return true;
-        };
-
         Goal position = getPosition();
         Goal tmpGoal;
 
@@ -110,7 +100,9 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         ros::Rate loop(2);
         ros::Time begin = ros::Time::now();
 
-        while (!m_world->occupyRegion(goal->x(), goal->y(), goal->z(), m_id) || !distancesAreOk()) {
+        while (!m_world->occupyRegion  (goal->x(), goal->y(), goal->z(), m_id) ||
+               !m_world->isSafePosition(goal->x(), goal->y(), goal->z()))
+        {
             ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(position.getMsg());
 
@@ -228,20 +220,12 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
     if (path.empty()) return;
 
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
-        // Checking that distance from current crazyflie to the nearest ones to it is ok
-        auto distancesAreOk = [&](double E = 0.4) -> bool {
-            std::vector<double> distances = m_world->getDistancesToNeighbors(goal->x(), goal->y(), goal->z());
-
-            for (double d: distances)
-                if (d <= E) return false;
-
-            return true;
-        };
-
         Goal position = getPosition();
         ros::Rate loop(2);
 
-        while (!m_world->occupyRegion(goal->x(), goal->y(), goal->z(), m_id) || !distancesAreOk()) {
+        while (!m_world->occupyRegion  (goal->x(), goal->y(), goal->z(), m_id) ||
+               !m_world->isSafePosition(goal->x(), goal->y(), goal->z()))
+        {
             if (m_direction != 0) return;
             ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(position.getMsg());
