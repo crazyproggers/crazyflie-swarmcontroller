@@ -9,20 +9,19 @@ World::World(
     : m_regWidth            (regWidth)
     , m_regLength           (regLength)
     , m_regHeight           (regHeight)
+    , m_dimZ                (std::ceil(worldHeight / regHeight) + 1)
+    , m_dimY                (std::ceil(worldLength / regLength) + 1)
+    , m_dimX                (std::ceil(worldWidth  / regWidth)  + 1)
     , m_regionsInOwnership  ()
 {
-    size_t dim1 = std::ceil(worldHeight / m_regHeight) + 1;
-    size_t dim2 = std::ceil(worldLength / m_regLength) + 1;
-    size_t dim3 = std::ceil(worldWidth  / m_regWidth)  + 1;
-
     // Fill the world
-    for (size_t i = 0; i < dim1; ++i) {
+    for (size_t i = 0; i < m_dimZ; ++i) {
         std::vector<std::vector<Region *>> vecOY;
 
-        for (size_t j = 0; j < dim2; ++j) {
+        for (size_t j = 0; j < m_dimY; ++j) {
             std::vector<Region *> vecOX;
 
-            for (size_t k = 0; k < dim3; ++k)
+            for (size_t k = 0; k < m_dimX; ++k)
                 vecOX.push_back(new Region);
             vecOY.push_back(vecOX);
         }
@@ -32,13 +31,9 @@ World::World(
 
 
 World::~World() {
-    size_t dim1 = m_regions.size();
-    size_t dim2 = m_regions[0].size();
-    size_t dim3 = m_regions[0][0].size();
-
-    for (size_t i = 0; i < dim1; ++i)
-        for (size_t j = 0; j < dim2; ++j)
-            for (size_t k = 0; k < dim3; ++k)
+    for (size_t i = 0; i < m_dimZ; ++i)
+        for (size_t j = 0; j < m_dimY; ++j)
+            for (size_t k = 0; k < m_dimX; ++k)
                 delete m_regions[i][j][k];
 }
 
@@ -60,13 +55,9 @@ bool World::isSafePosition(double x, double y, double z, double eps) const {
     size_t regY = m_regLength / 3;
     size_t regZ = m_regHeight / 3;
 
-    size_t dim1 = m_regions.size();
-    size_t dim2 = m_regions[0].size();
-    size_t dim3 = m_regions[0][0].size();
-
-    size_t newX = oldX + ((oldX < regX && oldX > 0)? -1 : 0) + ((oldX > 2 * regX && oldX + 1 < dim3)? 1 : 0);
-    size_t newY = oldY + ((oldY < regY && oldY > 0)? -1 : 0) + ((oldY > 2 * regY && oldY + 1 < dim2)? 1 : 0);
-    size_t newZ = oldZ + ((oldZ < regZ && oldZ > 0)? -1 : 0) + ((oldZ > 2 * regZ && oldZ + 1 < dim1)? 1 : 0);
+    size_t newX = oldX + ((oldX < regX && oldX > 0)? -1 : 0) + ((oldX > 2 * regX && oldX + 1 < m_dimX)? 1 : 0);
+    size_t newY = oldY + ((oldY < regY && oldY > 0)? -1 : 0) + ((oldY > 2 * regY && oldY + 1 < m_dimY)? 1 : 0);
+    size_t newZ = oldZ + ((oldZ < regZ && oldZ > 0)? -1 : 0) + ((oldZ > 2 * regZ && oldZ + 1 < m_dimZ)? 1 : 0);
 
     // Calculate distance between point (x, y, z) and selected region
     auto dist = [](double x, double y, double z, const Region *region) -> double {
@@ -87,37 +78,37 @@ bool World::isSafePosition(double x, double y, double z, double eps) const {
 
     reg = m_regions[oldZ][oldY][newX];
     if (!isNewZ && !isNewY && isNewX && !reg->isFree())
-        if (dist(x, y, z, reg) > eps)
+        if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[oldZ][newY][oldX];
     if (!isNewZ && isNewY && !isNewX && !reg->isFree())
-        if (dist(x, y, z, reg) > eps)
+        if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[oldZ][newY][newX];
     if (!isNewZ && isNewY && isNewX && !reg->isFree())
-        if (dist(x, y, z, reg) > eps)
+        if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[newZ][oldY][oldX];
     if (isNewZ && !isNewY && !isNewX && !reg->isFree())
-        if (dist(x, y, z, reg) > eps)
+        if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[newZ][oldY][newX];
     if (isNewZ && !isNewY && isNewX && !reg->isFree())
-        if (dist(x, y, z, reg) > eps)
+        if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[newZ][newY][oldX];
     if (isNewZ && isNewY && !isNewX && !reg->isFree())
-        if (dist(x, y, z, reg) > eps)
+        if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[newZ][newY][newX];
     if (isNewZ && isNewY && isNewX && !reg->isFree())
-        if (dist(x, y, z, reg) > eps)
+        if (dist(x, y, z, reg) < eps)
             return false;
 
     return true;
@@ -130,35 +121,31 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
         Step(short x, short y) : x(x), y(y) {}
     };
 
-    std::vector<Step> step = {Step(0,  1), Step( 1,  1), Step( 1, 0), Step( 1, -1),
-                              Step(0, -1), Step(-1, -1), Step(-1, 0), Step(-1,  1)};
+    std::vector<Step> steps = {Step(0, -1), Step(-1, -1), Step(-1, 0), Step(-1,  1),
+                               Step(0,  1), Step( 1,  1), Step( 1, 0), Step( 1, -1)};
 
     size_t currX = x / m_regWidth;
     size_t currY = y / m_regLength;
 
-    tf::Vector3 nearestFreeCenter;
-    bool isEmpty = true;
+    for (auto step: steps) {
+        double newX = currX + step.x;
+        double newY = currY + step.y;
 
-    for (size_t i = 0; i < step.size(); ++i) {
+        if (newX > m_dimX || newX < 0 || newY > m_dimY || newY < 0)
+            continue;
+
         bool freeRegion = true;
-        double newX = currX + step[i].x;
-        double newY = currY + step[i].y;
-
-        for (size_t j = 0; j < m_regions.size(); ++j)
+        for (size_t i = 0; i < m_regions.size(); ++i) {
             if (!m_regions[i][newY][newX]->isFree()) {
                 freeRegion = false;
                 break;
             }
-        if (freeRegion) {
-            nearestFreeCenter = tf::Vector3((newX + 0.5) * m_regWidth, (newY + 0.5) * m_regLength, z);
-            isEmpty = false;
         }
+        if (freeRegion)
+            return tf::Vector3((newX + 0.5) * m_regWidth, (newY + 0.5) * m_regLength, z);
     }
 
-    if (isEmpty)
-        nearestFreeCenter = tf::Vector3(x, y, z);
-
-   return nearestFreeCenter;
+   return tf::Vector3(x, y, z);
 }
 
 
@@ -186,8 +173,13 @@ bool World::occupyRegion(double x, double y, double z, size_t id) {
 
         return true;
     }
-    else if (newReg->m_owner.id == id)
+    else if (newReg->m_owner.id == id) {
+        newReg->m_owner.x = x;
+        newReg->m_owner.y = y;
+        newReg->m_owner.z = z;
+
         return true;
+    }
 
     return false;
 }
@@ -205,5 +197,5 @@ World::Region::~Region() {}
 
 
 inline bool World::Region::isFree() const {
-    return m_owner.id;
+    return !m_owner.id;
 }

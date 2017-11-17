@@ -33,6 +33,11 @@ class World {
     double m_regLength;
     double m_regHeight;
 
+    // Number of blocks of the world
+    size_t m_dimZ;
+    size_t m_dimY;
+    size_t m_dimX;
+
     std::vector<std::vector<std::vector<Region *>>> m_regions;
     std::map<size_t, Region *> m_regionsInOwnership;
 

@@ -1,6 +1,8 @@
 #include <tf/transform_listener.h>
 #include <std_srvs/Empty.h>
 #include <cmath>
+#include <cstdlib>
+#include <ctime>
 #include "goals_publisher.h"
 #include "interpolations.h"
 
@@ -36,6 +38,7 @@ GoalsPublisher::GoalsPublisher(
 {
     m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
     m_publisher = m_node.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
+    srand(time(NULL));
 
     if (!path.empty())
         m_runThread = std::thread(&GoalsPublisher::runAutomatic,  this, path);
@@ -92,34 +95,49 @@ inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal
 
 
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {
+    // Get an extra waiting time in case of deadlock
+    auto getExtraWaitingTime = [](double maxWaiting = 3.0) {
+        return (rand() % 2)? maxWaiting : 0.0;
+    };
+    ros::Rate waitLoop(2);
+
+
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
         Goal position = getPosition();
         Goal tmpGoal;
 
         ros::Duration duration(5.0);
-        ros::Rate loop(2);
+        bool participatedInToss = false;
         ros::Time begin = ros::Time::now();
 
         while (!m_world->occupyRegion  (goal->x(), goal->y(), goal->z(), m_id) ||
                !m_world->isSafePosition(goal->x(), goal->y(), goal->z()))
         {
-            ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
+            //ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(position.getMsg());
 
             ros::Time end = ros::Time::now();
 
             // If happened deadlock or we wait too long
             if ((end - begin) >= duration) {
+                double extraTime = getExtraWaitingTime();
+
+                if (extraTime && !participatedInToss) {
+                    participatedInToss = true;
+                    duration += ros::Duration(extraTime);
+                    continue;
+                }
+
                 // Searching the nearest free region center
                 tf::Vector3 freeCenter = m_world->getFreeCenter(position.x(), position.y(), position.z());
                 tmpGoal = Goal(freeCenter.x(), freeCenter.y(), freeCenter.z(), 0.0, 0.0, 0.0);
 
-                if (tmpGoal.x() != position.x() && tmpGoal.y() != position.y() && tmpGoal.z() != position.z())
+                if (tmpGoal.x() != position.x() || tmpGoal.y() != position.y() || tmpGoal.z() != position.z())
                     break;
                 else begin = ros::Time::now();
             }
 
-            loop.sleep();
+            waitLoop.sleep();
         }
 
         if (tmpGoal.empty()) {
@@ -138,7 +156,6 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         }
         else {
             // Interpolating from position to tmpGoal and backward
-            /*
             std::list<Goal> tmpPath  = interpolate(position, tmpGoal);
             std::list<Goal> backPath = interpolate(tmpGoal, *goal);
 
@@ -146,15 +163,6 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
             path.splice(pos, tmpPath);
             path.splice(pos, backPath);
-            */
-
-            /*
-            auto posTmpPath  = std::next(goal);
-            auto posBackPath = std::next(goal, 2);
-
-            path.splice(posTmpPath,  tmpPath);
-            path.splice(posBackPath, backPath);
-            */
         }
     } // for (goal = path.begin(); goal != path.end(); ++goal)
 

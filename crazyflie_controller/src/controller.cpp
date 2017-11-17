@@ -170,7 +170,7 @@ private:
                     m_pubNav.publish(msg);
                 }
             }
-            break;
+            //break;
 
             // intentional fall-thru
             case Automatic: {
