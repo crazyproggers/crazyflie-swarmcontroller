@@ -31,7 +31,7 @@ int main (int argc, char **argv) {
     std::vector<std::string> frames {std::istream_iterator<std::string>{iss},
                                      std::istream_iterator<std::string>{}};
     
-    ros::Publisher commandsPublisher = n.advertise<std_msgs::Byte>("/swarm/commands", 1000);
+    ros::Publisher commandsPublisher = n.advertise<std_msgs::Byte>("/swarm/commands", 10);
 
     std_srvs::Empty empty_srv;
     crazyflie_driver::UpdateParams update_srv;
@@ -43,13 +43,16 @@ int main (int argc, char **argv) {
         UPDATE        = 0x43, // arrow left
         EMERGENCY     = 0x44, // arrow right
         QUIT          = 0x71, // key q
-        // Motions:
+
+        // Motions (using numpad keys):
         FORWARD       = 0x38, // key 8
         BACKWARD      = 0x32, // key 2
         RIGHTWARD     = 0x34, // key 6
         LEFTWARD      = 0x36, // key 4
         UPWARD        = 0x35, // key 5
-        DOWNWARD      = 0x30  // key 0
+        DOWNWARD      = 0x30, // key 0
+        YAWLEFT       = 0x37, // key 7
+        YAWRIGHT      = 0x39  // key 9
     };
 
     for (auto frame: frames) {
@@ -89,7 +92,13 @@ int main (int argc, char **argv) {
     std_msgs::Byte downward;
     downward.data   = 6;
 
-    ros::Rate loopRate(10);
+    std_msgs::Byte yawright;
+    yawright.data   = 7;
+
+    std_msgs::Byte yawleft;
+    yawleft.data   = 8;
+
+    ros::Rate loop(10);
     while (ros::ok()) {
         int key = getKey();
 
@@ -145,8 +154,14 @@ int main (int argc, char **argv) {
         else if (key == KEY::DOWNWARD)
             commandsPublisher.publish(downward);
 
+        else if (key == KEY::YAWRIGHT)
+            commandsPublisher.publish(yawright);
+
+        else if (key == KEY::YAWLEFT)
+            commandsPublisher.publish(yawleft);
+
         ros::spinOnce();
-        loopRate.sleep();
+        loop.sleep();
     } // while (ros::ok())
 
     return 0;
