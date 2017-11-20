@@ -5,7 +5,7 @@
 int main(int argc, char **argv) {
     ros::init(argc, argv, "crazyflie_add_group");
 
-    ros::NodeHandle n("~");
+    ros::NodeHandle node("~");
 
     // read paramaters
     std::string uri_str;
@@ -23,22 +23,22 @@ int main(int argc, char **argv) {
     bool enable_logging_pressure;
     bool enable_logging_battery;
 
-    n.getParam("uri",              uri_str);
-    n.getParam("/swarm/frames",    frames_str);
+    node.getParam("uri",              uri_str);
+    node.getParam("/swarm/frames",    frames_str);
 
-    n.param("roll_trim",                     roll_trim,                      0.0);
-    n.param("pitch_trim",                    pitch_trim,                     0.0);
-    n.param("use_ros_time",                  use_ros_time,                  true);
-    n.param("enable_logging",                enable_logging,                true);
-    n.param("enable_parameters",             enable_parameters,             true);
-    n.param("enable_logging_imu",            enable_logging_imu,            true);
-    n.param("enable_logging_temperature",    enable_logging_temperature,    true);
-    n.param("enable_logging_magnetic_field", enable_logging_magnetic_field, true);
-    n.param("enable_logging_pressure",       enable_logging_pressure,       true);
-    n.param("enable_logging_battery",        enable_logging_battery,        true);
+    node.param("roll_trim",                     roll_trim,                      0.0);
+    node.param("pitch_trim",                    pitch_trim,                     0.0);
+    node.param("use_ros_time",                  use_ros_time,                  true);
+    node.param("enable_logging",                enable_logging,                true);
+    node.param("enable_parameters",             enable_parameters,             true);
+    node.param("enable_logging_imu",            enable_logging_imu,            true);
+    node.param("enable_logging_temperature",    enable_logging_temperature,    true);
+    node.param("enable_logging_magnetic_field", enable_logging_magnetic_field, true);
+    node.param("enable_logging_pressure",       enable_logging_pressure,       true);
+    node.param("enable_logging_battery",           enable_logging_battery,        true);
 
     ROS_INFO("wait_for_service /add_crazyflie");
-    ros::ServiceClient addCrazyflieService = n.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
+    ros::ServiceClient addCrazyflieService = node.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
     addCrazyflieService.waitForExistence();
     ROS_INFO("found /add_crazyflie");
 
@@ -69,9 +69,9 @@ int main(int argc, char **argv) {
         addCrazyflie.request.enable_logging_battery         = enable_logging_battery;
 
         std::vector<std::string> genericLogTopics;
-        n.param("genericLogTopics", genericLogTopics, std::vector<std::string>());
+        node.param("genericLogTopics", genericLogTopics, std::vector<std::string>());
         std::vector<int> genericLogTopicFrequencies;
-        n.param("genericLogTopicFrequencies", genericLogTopicFrequencies, std::vector<int>());
+        node.param("genericLogTopicFrequencies", genericLogTopicFrequencies, std::vector<int>());
 
         if (genericLogTopics.size() == genericLogTopicFrequencies.size()) {
             size_t k = 0;
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
                 crazyflie_driver::LogBlock logBlock;
                 logBlock.topic_name = topic;
                 logBlock.frequency  = genericLogTopicFrequencies[k];
-                n.getParam("genericLogTopic_" + topic + "_Variables", logBlock.variables);
+                node.getParam("genericLogTopic_" + topic + "_Variables", logBlock.variables);
                 addCrazyflie.request.log_blocks.push_back(logBlock);
                 ++k;
             }
