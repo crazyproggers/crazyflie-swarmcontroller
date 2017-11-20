@@ -30,7 +30,7 @@ public:
             get(node, "PIDs/X/kp"),
             get(node, "PIDs/X/kd"),
             get(node, "PIDs/X/ki"),
-            get(node, "PIDs/X/minodeOutput"),
+            get(node, "PIDs/X/minOutput"),
             get(node, "PIDs/X/maxOutput"),
             get(node, "PIDs/X/integratorMin"),
             get(node, "PIDs/X/integratorMax"),
