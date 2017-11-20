@@ -8,58 +8,59 @@
 #include "pid.hpp"
 
 double get(
-    const ros::NodeHandle &n,
+    const ros::NodeHandle &node,
     const std::string &name) {
     double value;
-    n.getParam(name, value);
+    node.getParam(name, value);
     return value;
 }
 
 class Controller {
 public:
     Controller(
-        const std::string &worldFrame,
-        const std::string &frame,
-        const ros::NodeHandle &n)
+        const  std::string &worldFrame,
+        const  std::string &frame,
+        const  ros::NodeHandle &node,
+        double frequency = 50.0)
         : m_worldFrame  (worldFrame)
         , m_frame       (frame)
         , m_pubNav      ()
         , m_listener    ()
         , m_pidX(
-            get(n, "PIDs/X/kp"),
-            get(n, "PIDs/X/kd"),
-            get(n, "PIDs/X/ki"),
-            get(n, "PIDs/X/minOutput"),
-            get(n, "PIDs/X/maxOutput"),
-            get(n, "PIDs/X/integratorMin"),
-            get(n, "PIDs/X/integratorMax"),
+            get(node, "PIDs/X/kp"),
+            get(node, "PIDs/X/kd"),
+            get(node, "PIDs/X/ki"),
+            get(node, "PIDs/X/minodeOutput"),
+            get(node, "PIDs/X/maxOutput"),
+            get(node, "PIDs/X/integratorMin"),
+            get(node, "PIDs/X/integratorMax"),
             "x")
         , m_pidY(
-            get(n, "PIDs/Y/kp"),
-            get(n, "PIDs/Y/kd"),
-            get(n, "PIDs/Y/ki"),
-            get(n, "PIDs/Y/minOutput"),
-            get(n, "PIDs/Y/maxOutput"),
-            get(n, "PIDs/Y/integratorMin"),
-            get(n, "PIDs/Y/integratorMax"),
+            get(node, "PIDs/Y/kp"),
+            get(node, "PIDs/Y/kd"),
+            get(node, "PIDs/Y/ki"),
+            get(node, "PIDs/Y/minOutput"),
+            get(node, "PIDs/Y/maxOutput"),
+            get(node, "PIDs/Y/integratorMin"),
+            get(node, "PIDs/Y/integratorMax"),
             "y")
         , m_pidZ(
-            get(n, "PIDs/Z/kp"),
-            get(n, "PIDs/Z/kd"),
-            get(n, "PIDs/Z/ki"),
-            get(n, "PIDs/Z/minOutput"),
-            get(n, "PIDs/Z/maxOutput"),
-            get(n, "PIDs/Z/integratorMin"),
-            get(n, "PIDs/Z/integratorMax"),
+            get(node, "PIDs/Z/kp"),
+            get(node, "PIDs/Z/kd"),
+            get(node, "PIDs/Z/ki"),
+            get(node, "PIDs/Z/minOutput"),
+            get(node, "PIDs/Z/maxOutput"),
+            get(node, "PIDs/Z/integratorMin"),
+            get(node, "PIDs/Z/integratorMax"),
             "z")
         , m_pidYaw(
-            get(n, "PIDs/Yaw/kp"),
-            get(n, "PIDs/Yaw/kd"),
-            get(n, "PIDs/Yaw/ki"),
-            get(n, "PIDs/Yaw/minOutput"),
-            get(n, "PIDs/Yaw/maxOutput"),
-            get(n, "PIDs/Yaw/integratorMin"),
-            get(n, "PIDs/Yaw/integratorMax"),
+            get(node, "PIDs/Yaw/kp"),
+            get(node, "PIDs/Yaw/kd"),
+            get(node, "PIDs/Yaw/ki"),
+            get(node, "PIDs/Yaw/minOutput"),
+            get(node, "PIDs/Yaw/maxOutput"),
+            get(node, "PIDs/Yaw/integratorMin"),
+            get(node, "PIDs/Yaw/integratorMax"),
             "yaw")
         , m_state           (Idle)
         , m_goal            ()
@@ -78,19 +79,24 @@ public:
         m_subscribeBattery = nh.subscribe       (m_frame + "/battery", 1, &Controller::checkBattery, this);
         m_serviceTakeoff   = nh.advertiseService(m_frame + "/takeoff",    &Controller::takeoff,      this);
         m_serviceLand      = nh.advertiseService(m_frame + "/land",       &Controller::land,         this);
+
+        m_runThread = std::thread(&Controller::run, this, frequency);
+    }
+
+    ~Controller() {
+        m_runThread.join();
     }
 
     void run(double frequency) {
         ros::NodeHandle node;
-        ros::Timer timer = node.createTimer(ros::Duration(1.0/frequency), &Controller::iteration, this);
+        ros::Timer timer = node.createTimer(ros::Duration(1.0 / frequency), &Controller::iteration, this);
 
-        ros::Rate loop_rate(10);
+        ros::Rate loop(10);
         while (ros::ok) {
             ros::spinOnce();
-            loop_rate.sleep();
+            loop.sleep();
         }
     }
-
 private:
     void goalChanged(const geometry_msgs::PoseStamped::ConstPtr&msg) {
         m_goal = *msg;
@@ -110,7 +116,7 @@ private:
         std_srvs::Empty::Request  &req,
         std_srvs::Empty::Response &res)
     {
-        ROS_INFO("Takeoff requested!");
+        ROS_INFO("%s%s", m_frame.c_str(), ": takeoff requested!");
         m_state = TakingOff;
 
         tf::StampedTransform transform;
@@ -124,7 +130,7 @@ private:
         std_srvs::Empty::Request  &req,
         std_srvs::Empty::Response &res)
     {
-        ROS_INFO("Landing requested!");
+        ROS_INFO("%s%s", m_frame.c_str(), ": landing requested!");
         m_state = Landing;
 
         return true;
@@ -170,9 +176,7 @@ private:
                     m_pubNav.publish(msg);
                 }
             }
-            //break;
 
-            // intentional fall-thru
             case Automatic: {
                 tf::StampedTransform transform;
                 m_listener.lookupTransform(m_worldFrame, m_frame, ros::Time(0), transform);
@@ -224,6 +228,7 @@ private:
     std::string                 m_frame;
     ros::Publisher              m_pubNav;
     tf::TransformListener       m_listener;
+    std::thread                 m_runThread;
     PID                         m_pidX;
     PID                         m_pidY;
     PID                         m_pidZ;
@@ -242,33 +247,28 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "controller");
 
     // Read parameters
-    ros::NodeHandle n("~");
+    ros::NodeHandle node("~");
     std::string worldFrame;
-    n.param<std::string>("worldFrame", worldFrame, "/world");
+    node.param<std::string>("worldFrame", worldFrame, "/world");
 
     std::string frames_str;
-    n.getParam("/swarm/frames", frames_str);
+    node.getParam("/swarm/frames", frames_str);
 
     // Split frames_str by whitespace
     std::istringstream iss(frames_str);
-    std::vector<std::string> frame {std::istream_iterator<std::string>{iss},
-                                    std::istream_iterator<std::string>{}};
+    std::vector<std::string> frames {std::istream_iterator<std::string>{iss},
+                                     std::istream_iterator<std::string>{}};
 
     double frequency;
-    n.param("frequency", frequency, 50.0);
+    node.param("frequency", frequency, 50.0);
 
-    Controller  *controller[frame.size()];
-    std::thread *thr[frame.size()];
-    for (size_t i = 0; i < frame.size(); ++i) {
-        controller[i] = new Controller(worldFrame, frame[i], n);
-        thr[i] = new std::thread(&Controller::run, controller[i], frequency);
-    }
+    Controller *controllers[frames.size()];
 
-    for (size_t i = 0; i < frame.size(); ++i) {
-        thr[i]->join();
-        delete thr[i];
-        delete controller[i];
-    }
+    for (size_t i = 0; i < frames.size(); ++i)
+        controllers[i] = new Controller(worldFrame, frames[i], node, frequency);
+
+    for (size_t i = 0; i < frames.size(); ++i)
+        delete controllers[i];
 
     return 0;
 }
