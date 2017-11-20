@@ -87,6 +87,7 @@ public:
         m_runThread.join();
     }
 
+private:
     void run(double frequency) {
         ros::NodeHandle node;
         ros::Timer timer = node.createTimer(ros::Duration(1.0 / frequency), &Controller::iteration, this);
@@ -97,7 +98,7 @@ public:
             loop.sleep();
         }
     }
-private:
+
     void goalChanged(const geometry_msgs::PoseStamped::ConstPtr&msg) {
         m_goal = *msg;
     }

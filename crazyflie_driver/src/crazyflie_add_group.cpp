@@ -23,8 +23,8 @@ int main(int argc, char **argv) {
     bool enable_logging_pressure;
     bool enable_logging_battery;
 
-    node.getParam("uri",              uri_str);
-    node.getParam("/swarm/frames",    frames_str);
+    node.getParam("uri",           uri_str);
+    node.getParam("/swarm/frames", frames_str);
 
     node.param("roll_trim",                     roll_trim,                      0.0);
     node.param("pitch_trim",                    pitch_trim,                     0.0);
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
     node.param("enable_logging_temperature",    enable_logging_temperature,    true);
     node.param("enable_logging_magnetic_field", enable_logging_magnetic_field, true);
     node.param("enable_logging_pressure",       enable_logging_pressure,       true);
-    node.param("enable_logging_battery",           enable_logging_battery,        true);
+    node.param("enable_logging_battery",        enable_logging_battery,        true);
 
     ROS_INFO("wait_for_service /add_crazyflie");
     ros::ServiceClient addCrazyflieService = node.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");

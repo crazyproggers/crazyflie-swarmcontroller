@@ -39,7 +39,7 @@ class World {
     size_t m_dimX;
 
     std::vector<std::vector<std::vector<Region *>>> m_regions;
-    std::map<size_t, Region *> m_regionsInOwnership;
+    std::map<size_t, Region *> m_regionInOwnership;
 
     // Return a pointer to region that contains a point (x, y, z)
     inline Region *region(double x, double y, double z);

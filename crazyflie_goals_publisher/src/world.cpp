@@ -1,4 +1,3 @@
-#include <ros/ros.h>
 #include <cmath>
 #include "world.h"
 
@@ -12,7 +11,7 @@ World::World(
     , m_dimZ                (std::ceil(worldHeight / regHeight) + 1)
     , m_dimY                (std::ceil(worldLength / regLength) + 1)
     , m_dimX                (std::ceil(worldWidth  / regWidth)  + 1)
-    , m_regionsInOwnership  ()
+    , m_regionInOwnership  ()
 {
     // Fill the world
     for (size_t i = 0; i < m_dimZ; ++i) {
@@ -150,33 +149,33 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
 
 
 bool World::occupyRegion(double x, double y, double z, size_t id) {
-    Region *newReg = region(x, y, z);
-    std::lock_guard<std::mutex> locker(newReg->m_occupationMutex);
+    Region *selectedReg = region(x, y, z);
+    std::lock_guard<std::mutex> locker(selectedReg->m_occupationMutex);
 
-    if (!newReg->m_owner.id) {
-        Region *oldReg = m_regionsInOwnership[id];
+    if (!selectedReg->m_owner.id) {
+        Region *regInOwn = m_regionInOwnership[id];
 
         // if id already has a region, need to free it
-        if (oldReg) {
-            oldReg->m_owner.id = 0;
-            oldReg->m_owner.x  = 0.0;
-            oldReg->m_owner.y  = 0.0;
-            oldReg->m_owner.z  = 0.0;
+        if (regInOwn) {
+            regInOwn->m_owner.id = 0;
+            regInOwn->m_owner.x  = 0.0;
+            regInOwn->m_owner.y  = 0.0;
+            regInOwn->m_owner.z  = 0.0;
         }
 
         // occupy new region
-        newReg->m_owner.id = id;
-        newReg->m_owner.x  = x;
-        newReg->m_owner.y  = y;
-        newReg->m_owner.z  = z;
-        m_regionsInOwnership[id] = newReg;
+        selectedReg->m_owner.id = id;
+        selectedReg->m_owner.x  = x;
+        selectedReg->m_owner.y  = y;
+        selectedReg->m_owner.z  = z;
+        m_regionInOwnership[id] = selectedReg;
 
         return true;
     }
-    else if (newReg->m_owner.id == id) {
-        newReg->m_owner.x = x;
-        newReg->m_owner.y = y;
-        newReg->m_owner.z = z;
+    else if (selectedReg->m_owner.id == id) {
+        selectedReg->m_owner.x = x;
+        selectedReg->m_owner.y = y;
+        selectedReg->m_owner.z = z;
 
         return true;
     }
