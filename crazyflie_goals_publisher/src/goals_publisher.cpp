@@ -25,16 +25,16 @@ std::unique_ptr<World> GoalsPublisher::m_world;
 GoalsPublisher::GoalsPublisher(
     const std::string &worldFrame,
     const std::string &frame,
-    size_t rate,
+    size_t publishRate,
     std::list<Goal> path)
     : m_node                      ()
     , m_worldFrame                (worldFrame)
     , m_frame                     (frame)
-    , m_id                        (std::hash<std::string>()(frame))
+    , m_robot_id                  (std::hash<std::string>()(frame))
     , m_publisher                 ()
     , m_subscriber                ()
     , m_listener                  ()
-    , m_publishRate               (rate)
+    , m_publishRate               (publishRate)
 {
     m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
     m_publisher = m_node.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
@@ -110,7 +110,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         bool participatedInToss = false;
         ros::Time begin = ros::Time::now();
 
-        while (!m_world->occupyRegion  (goal->x(), goal->y(), goal->z(), m_id) ||
+        while (!m_world->occupyRegion  (goal->x(), goal->y(), goal->z(), m_robot_id) ||
                !m_world->isSafePosition(goal->x(), goal->y(), goal->z()))
         {
             //ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
@@ -188,13 +188,15 @@ void GoalsPublisher::directionChanged(const std_msgs::Byte::ConstPtr &direction)
 }
 
 
-Goal GoalsPublisher::getNextGoal(const Goal &goal) {
-    double x        = goal.x();
-    double y        = goal.y();
-    double z        = goal.y();
-    double roll     = goal.roll();
-    double pitch    = goal.pitch();
-    double yaw      = goal.yaw();
+inline Goal GoalsPublisher::getGoal() const {
+    Goal position   = getPosition();
+
+    double x        = position.x();
+    double y        = position.y();
+    double z        = position.y();
+    double roll     = position.roll();
+    double pitch    = position.pitch();
+    double yaw      = position.yaw();
 
     double step     = 0.05;
 
@@ -217,41 +219,24 @@ Goal GoalsPublisher::getNextGoal(const Goal &goal) {
 }
 
 
-void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
+void GoalsPublisher::goToGoal(const ros::TimerEvent &event) {
     if (!m_direction) return;
 
-    // Create the path
-    Goal goal1 = getPosition();
-    Goal goal2 = getNextGoal(goal1);
+    Goal position = getPosition();
+    Goal goal = getGoal();
 
-    std::list<Goal> path = interpolate(goal1, goal2);
-    if (path.empty()) return;
+    while (!m_world->occupyRegion  (goal.x(), goal.y(), goal.z(), m_robot_id) ||
+           !m_world->isSafePosition(goal.x(), goal.y(), goal.z()))
+    {
+        if (m_direction != 0) return; // interrupt from world
+        ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
+        m_publisher.publish(position.getMsg());
+        m_publishRate.sleep();
+    }
 
-    for (auto goal = path.begin(); goal != path.end(); ++goal) {
-        Goal position = getPosition();
-        ros::Rate loop(2);
-
-        while (!m_world->occupyRegion  (goal->x(), goal->y(), goal->z(), m_id) ||
-               !m_world->isSafePosition(goal->x(), goal->y(), goal->z()))
-        {
-            if (m_direction != 0) return;
-            ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
-            m_publisher.publish(position.getMsg());
-            loop.sleep();
-        }
-
-        while (ros::ok()) {
-            if (m_direction != 0) return;
-            m_publisher.publish(goal->getMsg());
-
-            Goal position = getPosition();
-            if (position.empty()) continue;
-
-            if (goalIsReached(position, *goal)) {
-                ros::Duration(goal->delay()).sleep();
-                break; // go to next goal
-            }
-            m_publishRate.sleep();
-        }
-    }// for (auto goal = path.begin(); goal != path.end(); ++goal)
+    while (ros::ok()) {
+        if (m_direction != 0) return; // interrupt from world
+        m_publisher.publish(goal.getMsg());
+        m_publishRate.sleep();
+    }
 }

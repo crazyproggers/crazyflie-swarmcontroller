@@ -13,12 +13,12 @@ class GoalsPublisher {
     ros::NodeHandle               m_node;
     std::string                   m_worldFrame;
     std::string                   m_frame;
-    size_t                        m_id;
+    size_t                        m_robot_id;
     ros::Publisher                m_publisher;
     ros::Subscriber               m_subscriber;
     tf::TransformListener         m_listener;
     ros::Rate                     m_publishRate;
-    int8_t                        m_direction;
+    mutable int8_t                m_direction;
 
     std::thread                   m_runThread;
     static std::mutex             m_errMutex;
@@ -48,14 +48,14 @@ private:
     // Checking that |position - goal| < E
     inline bool goalIsReached(const Goal &position, const Goal &goal) const;
 
-    // Create a new goal on current direction and old goal
-    inline Goal getNextGoal(const Goal &goal);
+    // Create a goal on current direction and position
+    inline Goal getGoal() const;
 
     // Subscriber callback
     void directionChanged(const std_msgs::Byte::ConstPtr &direction);
 
     // Timer callback
-    void goToGoal(const ros::TimerEvent &e);
+    void goToGoal(const ros::TimerEvent &event);
 
 public:
     GoalsPublisher() = delete;
@@ -64,7 +64,7 @@ public:
 
     GoalsPublisher(const std::string &worldFrame,
                    const std::string &frame,
-                   size_t rate,
+                   size_t publishRate,
                    std::list<Goal> path = {});
     ~GoalsPublisher();
 
