@@ -57,7 +57,7 @@ private:
     void directionChanged(const std_msgs::Byte::ConstPtr &direction);
 
     // Timer callback
-    void goToGoal(const ros::TimerEvent &event);
+    void goToGoal(const ros::TimerEvent &e);
 
 public:
     GoalsPublisher() = delete;

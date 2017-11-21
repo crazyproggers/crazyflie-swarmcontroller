@@ -115,33 +115,48 @@ bool World::isSafePosition(double x, double y, double z, double eps) const {
 
 
 tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
+    /*
+     * If there is deadlock then check ways to step back like in picture
+     *    |----|----|----|
+     *    |    |    |    |
+     *    |    | 1  |    |
+     *    |----|----|----|
+     *    |    |    |    |
+     *    |  2 | X  | 4  |
+     *    |----|----|----|
+     *    |    |    |    |
+     *    |    | 3  |    |
+     *    |----|----|----|
+     * If there are no ways to step back then check upward way
+     * If it is not free then return point (x, y, z)
+     */
+
     struct Step {
-        short x, y;
-        Step(short x, short y) : x(x), y(y) {}
+        long long x, y, z;
+
+        Step(long long x,
+             long long y,
+             long long z) :
+            x(x), y(y), z(z) {}
     };
 
-    std::vector<Step> steps = {Step(0, -1), Step(-1, -1), Step(-1, 0), Step(-1,  1),
-                               Step(0,  1), Step( 1,  1), Step( 1, 0), Step( 1, -1)};
+    std::vector<Step> steps = {Step(0, -1, 0), Step(-1, 0, 0), Step(0, 1, 0), Step(1, 0, 0), Step(0, 0, 1)};
 
-    size_t currX = x / m_regWidth;
-    size_t currY = y / m_regLength;
+    long long currX = x / m_regWidth;
+    long long currY = y / m_regLength;
+    long long currZ = z / m_regHeight;
 
     for (auto step: steps) {
-        double newX = currX + step.x;
-        double newY = currY + step.y;
+        long long newX = currX + step.x;
+        long long newY = currY + step.y;
+        long long newZ = currZ + step.z;
 
-        if (newX > m_dimX || newX < 0 || newY > m_dimY || newY < 0)
+        // Checking if robot will cross border of the "world"
+        if (newX > m_dimX || newX < 0 || newY > m_dimY || newY < 0 || newZ > m_dimZ)
             continue;
 
-        bool freeRegion = true;
-        for (size_t i = 0; i < m_regions.size(); ++i) {
-            if (!m_regions[i][newY][newX]->isFree()) {
-                freeRegion = false;
-                break;
-            }
-        }
-        if (freeRegion)
-            return tf::Vector3((newX + 0.5) * m_regWidth, (newY + 0.5) * m_regLength, z);
+        if (!m_regions[newZ][newY][newX]->isFree())
+            return tf::Vector3((newX + 0.5) * m_regWidth, (newY + 0.5) * m_regLength, (newZ + 0.5) * m_regHeight);
     }
 
    return tf::Vector3(x, y, z);

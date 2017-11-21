@@ -42,8 +42,10 @@ GoalsPublisher::GoalsPublisher(
 
     if (!path.empty())
         m_runThread = std::thread(&GoalsPublisher::runAutomatic,  this, path);
-    else
+    else {
+        m_subscriber = m_node.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
         m_runThread = std::thread(&GoalsPublisher::runControlled, this, 50.0);
+    }
 }
 
 
@@ -172,11 +174,10 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
 
 void GoalsPublisher::runControlled(double frequency) {
-    m_subscriber = m_node.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
-    ros::Timer timer = m_node.createTimer(ros::Duration(1.0/frequency), &GoalsPublisher::goToGoal, this);
+    ros::Timer timer = m_node.createTimer(ros::Duration(1.0 / frequency), &GoalsPublisher::goToGoal, this);
 
     ros::Rate loop(10);
-    while (ros::ok) {
+    while (ros::ok()) {
         ros::spinOnce();
         loop.sleep();
     }
@@ -190,7 +191,6 @@ void GoalsPublisher::directionChanged(const std_msgs::Byte::ConstPtr &direction)
 
 inline Goal GoalsPublisher::getGoal() const {
     Goal position   = getPosition();
-
     double x        = position.x();
     double y        = position.y();
     double z        = position.y();
@@ -198,25 +198,26 @@ inline Goal GoalsPublisher::getGoal() const {
     double pitch    = position.pitch();
     double yaw      = position.yaw();
 
-    double step     = 0.05;
+    double movingStep   = 0.05; // meters
+    double rotatingStep = degToRad(10);
 
     if (m_direction == DIRECTION::forward)
-        y += step;
+        y += movingStep;
 
     else if (m_direction == DIRECTION::backward)
-        y = ((y - step) > 0)? y : y - step;
+        y = ((y - movingStep) > 0)? y : y - movingStep;
 
     else if (m_direction == DIRECTION::rightward)
-        x += step;
+        x += movingStep;
 
     else if (m_direction == DIRECTION::leftward)
-        x = ((x - step) > 0)? x : x - step;
+        x = ((x - movingStep) > 0)? x : x - movingStep;
 
     else if (m_direction == DIRECTION::upward)
-        z += step;
+        z += movingStep;
 
     else if (m_direction == DIRECTION::downward)
-        z = ((z - step) > 0)? z : z - step;
+        z = ((z - movingStep) > 0)? z : z - movingStep;
 
     else if (m_direction == DIRECTION::yawright)
         ;
@@ -230,7 +231,7 @@ inline Goal GoalsPublisher::getGoal() const {
 }
 
 
-void GoalsPublisher::goToGoal(const ros::TimerEvent &event) {
+void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
     if (!m_direction) return;
 
     Goal position = getPosition();

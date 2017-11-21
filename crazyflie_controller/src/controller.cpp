@@ -93,13 +93,13 @@ private:
         ros::Timer timer = node.createTimer(ros::Duration(1.0 / frequency), &Controller::iteration, this);
 
         ros::Rate loop(10);
-        while (ros::ok) {
+        while (ros::ok()) {
             ros::spinOnce();
             loop.sleep();
         }
     }
 
-    void goalChanged(const geometry_msgs::PoseStamped::ConstPtr&msg) {
+    void goalChanged(const geometry_msgs::PoseStamped::ConstPtr &msg) {
         m_goal = *msg;
     }
 
