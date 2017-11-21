@@ -155,7 +155,8 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
         if (newX > m_dimX || newX < 0 || newY > m_dimY || newY < 0 || newZ > m_dimZ)
             continue;
 
-        if (!m_regions[newZ][newY][newX]->isFree())
+        // Returnes center of free region
+        if (m_regions[newZ][newY][newX]->isFree())
             return tf::Vector3((newX + 0.5) * m_regWidth, (newY + 0.5) * m_regLength, (newZ + 0.5) * m_regHeight);
     }
 
