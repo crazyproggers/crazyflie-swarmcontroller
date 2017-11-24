@@ -49,8 +49,12 @@ int main(int argc, char **argv) {
 
         PathsCreator creator(worldFrame, frames, pathToMap, splinesMode);
 
-        for (size_t i = 0; i < frames.size(); ++i)
+        for (size_t i = 0; i < frames.size(); ++i) {
+            if (creator.paths[i].empty())
+                return -1;
+
             publishers[i] = new GoalsPublisher(worldFrame, frames[i], rate, creator.paths[i]);
+        }
     }
     else {
         ROS_INFO("The mode of controlled flight was chosen");

@@ -81,95 +81,22 @@ bool PathsCreator::readTable(
     std::list<Goal> path;
 
     enum AMOUNT {
-        COMMAND_COMPONENTS  = 2,
+        REPEAT_COMPONENTS   = 2,
         PARAMETERS          = 5
     };
 
-    try {
-        std::ifstream map(pathToMap.c_str());
-        map.exceptions(std::ifstream::badbit);
+    std::ifstream map(pathToMap.c_str());
+    if (!map.is_open()) {
+        ROS_FATAL("Could not open map-file: %s", pathToMap.c_str());
+        return false;
+    }
 
-        while (!map.eof()) {
-            std::string line;
-            std::getline(map, line);
-
-            if ((line == "") && (!path.empty())) {
-                if (repeat_number > 0)
-                    repeat(path);
-
-                // Add the finishing goal in the table
-                Goal   last       = path.back();
-                double last_z     = 0.1;
-                double last_roll  = 0.0;
-                double last_pitch = 0.0;
-                double last_yaw   = 0.0;
-
-                path.push_back(Goal(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw));
-                paths.push_back(path);
-                path.clear();
-            }
-            else if (line != "") {
-                std::istringstream iss(line);
-                std::vector<std::string> words {std::istream_iterator<std::string>{iss},
-                                                std::istream_iterator<std::string>{}};
-
-                if (words.size() == AMOUNT::COMMAND_COMPONENTS) {
-                    /*
-                     * COMMANDS:
-                     * repeat N  -- to repeat next N goals
-                     */
-                     std::string command(words[0]);
-                     int arg = std::atoi(words[1].c_str());
-
-                     if (command == "repeat") {
-                         if (arg < 0) {
-                             ROS_ERROR("Wrong arg for command \"repeat\": %d", arg);
-                             return false;
-                         }
-                         repeat_number = arg;
-                     }
-                     else {
-                        ROS_ERROR("Wrong command: %s", command.c_str());
-                        return false;
-                     }
-                }
-                else if (words.size() == AMOUNT::PARAMETERS) {
-                    // Add the starting goal in the table
-                    double roll = 0.0, pitch = 0.0;
-
-                    if (path.empty()) {
-                        size_t num = paths.size();
-
-                        double x = startPoints[num].getOrigin().x();
-                        double y = startPoints[num].getOrigin().y();
-                        double z = startPoints[num].getOrigin().z() + 0.5;
-                        double yaw = 0.0;
-
-                        path.push_back(Goal(x, y, z, roll, pitch, yaw));
-                    }
-
-                    double x     = std::stod(words[0]);
-                    double y     = std::stod(words[1]);
-                    double z     = std::stod(words[2]);
-                    double yaw   = std::stod(words[3]);
-                    double delay = std::stod(words[4]);
-
-                    yaw = degToRad(fixAngle(yaw));
-
-                    path.push_back(Goal(x, y, z, roll, pitch, yaw, delay));
-                    if (repeat_number) repeated_goals_count++;
-                }
-                else {
-                    ROS_ERROR("It's wrong map-file: %s", pathToMap.c_str());
-                    return false;
-                }
-            } // else
-        } // while (!map.eof())
-
-        if (!path.empty()) {
+    std::string line;
+    while (std::getline(map, line)) {
+        if ((line == "") && (!path.empty())) {
             if (repeat_number > 0)
                 repeat(path);
-            
+
             // Add the finishing goal in the table
             Goal   last       = path.back();
             double last_z     = 0.1;
@@ -179,13 +106,77 @@ bool PathsCreator::readTable(
 
             path.push_back(Goal(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw));
             paths.push_back(path);
+            path.clear();
         }
+        else if (line != "") {
+            std::istringstream iss(line);
+            std::vector<std::string> words {std::istream_iterator<std::string>{iss},
+                                            std::istream_iterator<std::string>{}};
 
-        map.close();
-    } // try
-    catch (const std::ifstream::failure  &exc) {
-        ROS_ERROR("There was an error in %s%s%s", pathToMap.c_str(), ": ", exc.what());
-        return false;
+            if (words.size() == AMOUNT::REPEAT_COMPONENTS) {
+                 // repeat N  -- repeating next N goals
+                 std::string command(words[0]);
+                 int arg = std::atoi(words[1].c_str());
+
+                 if (command == "repeat") {
+                     if (arg < 0) {
+                         ROS_ERROR("Wrong arg for command \"repeat\": %d", arg);
+                         return false;
+                     }
+                     repeat_number = arg;
+                 }
+                 else {
+                    ROS_ERROR("Wrong command: %s", command.c_str());
+                    return false;
+                 }
+            }
+            else if (words.size() == AMOUNT::PARAMETERS) {
+                // Add the starting goal in the table
+                double roll = 0.0, pitch = 0.0;
+
+                if (path.empty()) {
+                    size_t num = paths.size();
+
+                    double x = startPoints[num].getOrigin().x();
+                    double y = startPoints[num].getOrigin().y();
+                    double z = startPoints[num].getOrigin().z() + 0.5;
+                    double yaw = 0.0;
+
+                    path.push_back(Goal(x, y, z, roll, pitch, yaw));
+                }
+
+                double x     = std::stod(words[0]);
+                double y     = std::stod(words[1]);
+                double z     = std::stod(words[2]);
+                double yaw   = std::stod(words[3]);
+                double delay = std::stod(words[4]);
+
+                yaw = degToRad(fixAngle(yaw));
+
+                path.push_back(Goal(x, y, z, roll, pitch, yaw, delay));
+                if (repeat_number) repeated_goals_count++;
+            }
+            else {
+                ROS_ERROR("It's wrong map-file: %s", pathToMap.c_str());
+                return false;
+            }
+        } //  else if (line != "")
+    } // while (std::getline(map, line))
+    map.close();
+    
+    if (!path.empty()) {
+        if (repeat_number > 0)
+            repeat(path);
+        
+        // Add the finishing goal in the table
+        Goal   last       = path.back();
+        double last_z     = 0.1;
+        double last_roll  = 0.0;
+        double last_pitch = 0.0;
+        double last_yaw   = 0.0;
+
+        path.push_back(Goal(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw));
+        paths.push_back(path);
     }
 
     return true;
