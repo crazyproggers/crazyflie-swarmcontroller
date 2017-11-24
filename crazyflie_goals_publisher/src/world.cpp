@@ -50,6 +50,7 @@ bool World::isSafePosition(double x, double y, double z, double eps) const {
     size_t oldX = x / m_regWidth;
     size_t oldY = y / m_regLength;
     size_t oldZ = z / m_regHeight;
+
     size_t regX = m_regWidth  / 3;
     size_t regY = m_regLength / 3;
     size_t regZ = m_regHeight / 3;
@@ -59,10 +60,15 @@ bool World::isSafePosition(double x, double y, double z, double eps) const {
     size_t newZ = oldZ + ((oldZ < regZ && oldZ > 0)? -1 : 0) + ((oldZ > 2 * regZ && oldZ + 1 < m_dimZ)? 1 : 0);
 
     // Calculate distance between point (x, y, z) and selected region
-    auto dist = [](double x, double y, double z, const Region *region) -> double {
+    auto dist = [this](double x, double y, double z, const Region *region) -> double {
+        if (fabs(z - region->m_owner.z) > m_regHeight / 2) {
+            return std::sqrt(std::pow(x - region->m_owner.x, 2) +
+                             std::pow(y - region->m_owner.y, 2) +
+                             std::pow(z - region->m_owner.z, 2));
+        }
+
         return std::sqrt(std::pow(x - region->m_owner.x, 2) +
-                         std::pow(y - region->m_owner.y, 2) +
-                         std::pow(z - region->m_owner.z, 2));
+                         std::pow(y - region->m_owner.y, 2));
     };
 
     Region *reg = nullptr;
