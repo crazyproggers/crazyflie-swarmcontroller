@@ -38,6 +38,16 @@ class World {
     size_t m_dimY;
     size_t m_dimX;
 
+    // Offset parameters (in meters)
+    double m_offsetOX;
+    double m_offsetOY;
+    double m_offsetOZ;
+
+    // Fixes coordinates if they are negative
+    inline double moveX(double x) const;
+    inline double moveY(double y) const;
+    inline double moveZ(double z) const;
+
     std::vector<std::vector<std::vector<Region *>>> m_regions;
     std::map<size_t, Region *> m_regionInOwnership;
 
@@ -46,7 +56,8 @@ class World {
 
 public:
     World(double worldWidth, double worldLenght, double worldHeight,
-          double regWidth,   double regLength,   double regHeight);
+          double regWidth,   double regLength,   double regHeight,
+          double offsetOX,   double offsetOY,    double offsetOZ);
    ~World();
 
     World(const World &) = delete;

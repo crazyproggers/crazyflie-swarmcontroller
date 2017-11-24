@@ -4,14 +4,18 @@
 
 World::World(
     double worldWidth, double worldLength, double worldHeight,
-    double regWidth,   double regLength,   double regHeight)
+    double regWidth,   double regLength,   double regHeight,
+    double offsetOX,   double offsetOY,    double offsetOZ)
     : m_regWidth            (regWidth)
     , m_regLength           (regLength)
     , m_regHeight           (regHeight)
     , m_dimZ                (std::ceil(worldHeight / regHeight) + 1)
     , m_dimY                (std::ceil(worldLength / regLength) + 1)
     , m_dimX                (std::ceil(worldWidth  / regWidth)  + 1)
-    , m_regionInOwnership  ()
+    , m_offsetOX            (offsetOX)
+    , m_offsetOY            (offsetOY)
+    , m_offsetOZ            (offsetOZ)
+    , m_regionInOwnership   ()
 {
     // Fill the world
     for (size_t i = 0; i < m_dimZ; ++i) {
@@ -24,6 +28,7 @@ World::World(
                 vecOX.push_back(new Region);
             vecOY.push_back(vecOX);
         }
+
         m_regions.push_back(vecOY);
     }
 }
@@ -37,16 +42,24 @@ World::~World() {
 }
 
 
-inline World::Region *World::region(double x, double y, double z) {
-    size_t xNum = x / m_regWidth;
-    size_t yNum = y / m_regLength;
-    size_t zNum = z / m_regHeight;
+inline double World::moveX(double x) const {
+    return x + m_offsetOX;
+}
 
-    return m_regions[zNum][yNum][xNum];
+inline double World::moveY(double y) const {
+    return y + m_offsetOY;
+}
+
+inline double World::moveZ(double z) const {
+    return z + m_offsetOZ;
 }
 
 
 bool World::isSafePosition(double x, double y, double z, double eps) const {
+    x = moveX(x);
+    y = moveY(y);
+    z = moveZ(z);
+
     size_t oldX = x / m_regWidth;
     size_t oldY = y / m_regLength;
     size_t oldZ = z / m_regHeight;
@@ -148,9 +161,9 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
 
     std::vector<Step> steps = {Step(0, -1, 0), Step(-1, 0, 0), Step(0, 1, 0), Step(1, 0, 0), Step(0, 0, 1)};
 
-    long long currX = x / m_regWidth;
-    long long currY = y / m_regLength;
-    long long currZ = z / m_regHeight;
+    long long currX = moveX(x) / m_regWidth;
+    long long currY = moveY(y) / m_regLength;
+    long long currZ = moveZ(z) / m_regHeight;
 
     for (auto step: steps) {
         long long newX = currX + step.x;
@@ -163,15 +176,31 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
 
         // Returnes center of free region
         if (m_regions[newZ][newY][newX]->isFree())
-            return tf::Vector3((newX + 0.5) * m_regWidth, (newY + 0.5) * m_regLength, (newZ + 0.5) * m_regHeight);
+            return tf::Vector3((newX + 0.5) * m_regWidth  - m_offsetOX,
+                               (newY + 0.5) * m_regLength - m_offsetOY,
+                               (newZ + 0.5) * m_regHeight - m_offsetOZ);
     }
 
    return tf::Vector3(x, y, z);
 }
 
 
+inline World::Region *World::region(double x, double y, double z) {
+    size_t xNum = x / m_regWidth;
+    size_t yNum = y / m_regLength;
+    size_t zNum = z / m_regHeight;
+
+    return m_regions[zNum][yNum][xNum];
+}
+
+
 bool World::occupyRegion(double x, double y, double z, size_t id) {
+    x = moveX(x);
+    y = moveY(y);
+    z = moveZ(z);
+
     Region *selectedReg = region(x, y, z);
+
     std::lock_guard<std::mutex> locker(selectedReg->m_occupationMutex);
 
     if (!selectedReg->m_owner.id) {
@@ -179,10 +208,10 @@ bool World::occupyRegion(double x, double y, double z, size_t id) {
 
         // if id already has a region, need to free it
         if (regInOwn) {
-            regInOwn->m_owner.id = 0;
-            regInOwn->m_owner.x  = 0.0;
-            regInOwn->m_owner.y  = 0.0;
-            regInOwn->m_owner.z  = 0.0;
+            regInOwn->m_owner.id =  0;
+            regInOwn->m_owner.x  = -m_offsetOX;
+            regInOwn->m_owner.y  = -m_offsetOY;
+            regInOwn->m_owner.z  = -m_offsetOZ;
         }
 
         // occupy new region

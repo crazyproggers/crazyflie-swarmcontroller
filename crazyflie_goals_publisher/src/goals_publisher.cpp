@@ -56,9 +56,12 @@ GoalsPublisher::~GoalsPublisher() {
 
 void GoalsPublisher::initWorld(
     double worldWidth, double worldLength, double worldHeight,
-    double regWidth,   double regLength,   double regHeight)
+    double regWidth,   double regLength,   double regHeight,
+    double offsetOX,   double offsetOY,    double offsetOZ)
 {
-    m_world = make_unique<World>(worldWidth, worldLength, worldHeight, regWidth, regLength, regHeight);
+    m_world = make_unique<World>(worldWidth, worldLength, worldHeight, 
+                                 regWidth,   regLength,   regHeight,
+                                 offsetOX,   offsetOY,    offsetOZ);
 }
 
 
@@ -115,7 +118,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         while (!m_world->occupyRegion  (goal->x(), goal->y(), goal->z(), m_robot_id) ||
                !m_world->isSafePosition(goal->x(), goal->y(), goal->z()))
         {
-            //ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
+            ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(position.getMsg());
 
             ros::Time end = ros::Time::now();
@@ -241,7 +244,7 @@ void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
            !m_world->isSafePosition(goal.x(), goal.y(), goal.z()))
     {
         if (m_direction != 0) return; // interrupt from world
-        ROS_WARN("%s%s", m_frame.c_str(), " is waiting");
+        ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
         m_publisher.publish(position.getMsg());
         m_publishRate.sleep();
     }

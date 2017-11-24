@@ -71,7 +71,8 @@ public:
     ~GoalsPublisher();
 
     static void initWorld(double worldWidth, double worldLength, double worldHeight,
-                          double regWidth,   double regLength,   double regHeight);
+                          double regWidth,   double regLength,   double regHeight,
+                          double offsetOX,   double offsetOY,    double offsetOZ);
 };
 
 #endif // GOALS_PUBLISHER_H

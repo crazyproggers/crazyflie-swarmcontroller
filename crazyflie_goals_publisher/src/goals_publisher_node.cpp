@@ -24,15 +24,22 @@ int main(int argc, char **argv) {
 
     double worldWidth, worldLength, worldHeight;
     double regWidth,   regLength,   regHeight;
+    double offsetOX,   offsetOY,    offsetOZ;
     node.getParam("worldWidth",  worldWidth);
     node.getParam("worldLength", worldLength);
     node.getParam("worldHeight", worldHeight);
     node.getParam("regWidth",    regWidth);
     node.getParam("regLength",   regLength);
     node.getParam("regHeight",   regHeight);
+    node.getParam("offsetOX",    offsetOX);
+    node.getParam("offsetOY",    offsetOY);
+    node.getParam("offsetOZ",    offsetOZ);
 
     // Initialize the synchronization mode
-    GoalsPublisher::initWorld(worldWidth, worldLength, worldHeight, regWidth, regLength, regHeight);
+    GoalsPublisher::initWorld(worldWidth, worldLength, worldHeight, 
+                              regWidth,   regLength,   regHeight,
+                              offsetOX,   offsetOY,    offsetOZ);
+
     GoalsPublisher *publishers[frames.size()];
 
     if (!pathToMap.empty()) {
