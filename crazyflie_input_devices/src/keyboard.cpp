@@ -21,17 +21,17 @@ int getKey() {
 
 int main (int argc, char **argv) {
     ros::init(argc, argv, "keyboard");
-    ros::NodeHandle n("~");
+    ros::NodeHandle node("~");
 
     std::string frames_str;
-    n.getParam("/swarm/frames", frames_str);
+    node.getParam("/swarm/frames", frames_str);
 
     // Split frames_str by whitespace
     std::istringstream iss(frames_str);
     std::vector<std::string> frames {std::istream_iterator<std::string>{iss},
                                      std::istream_iterator<std::string>{}};
     
-    ros::Publisher commandsPublisher = n.advertise<std_msgs::Byte>("/swarm/commands", 10);
+    ros::Publisher commandsPublisher = node.advertise<std_msgs::Byte>("/swarm/commands", 10);
 
     std_srvs::Empty empty_srv;
     crazyflie_driver::UpdateParams update_srv;
@@ -120,12 +120,12 @@ int main (int argc, char **argv) {
         else if (key == KEY::UPDATE)
             for (auto frame: frames) {
                 int value;
-                n.getParam(frame + "/ring/headlightEnable", value);
+                node.getParam(frame + "/ring/headlightEnable", value);
 
                 if (value)
-                    n.setParam(frame + "/ring/headlightEnable", 1);
+                    node.setParam(frame + "/ring/headlightEnable", 1);
                 else
-                    n.setParam(frame + "/ring/headlightEnable", 0);
+                    node.setParam(frame + "/ring/headlightEnable", 0);
 
                 ros::service::call(frame + "/update_params", update_srv);
         }
