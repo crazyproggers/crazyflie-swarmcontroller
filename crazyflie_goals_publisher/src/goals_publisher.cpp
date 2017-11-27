@@ -198,9 +198,9 @@ inline Goal GoalsPublisher::getGoal() {
     double pitch    = position.pitch();
     double yaw      = position.yaw();
 
-    double movingStep   = 0.05; // meters
+    double movingStep   = 0.1; // meters
     double rotatingStep = degToRad(10);
-    double eps          = 0.1;  // meters
+    double eps          = 0.1; // meters
 
     if (m_direction == DIRECTION::forward) {
         double shift = y + movingStep;
@@ -224,7 +224,7 @@ inline Goal GoalsPublisher::getGoal() {
 
     else if (m_direction == DIRECTION::upward) {
         double shift = z + movingStep;
-        z = (shift < m_world->getOZMin() - eps)? shift : z;
+        z = (shift < m_world->getOZMax() - eps)? shift : z;
     }
 
     else if (m_direction == DIRECTION::downward) {
