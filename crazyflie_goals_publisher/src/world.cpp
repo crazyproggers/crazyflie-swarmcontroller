@@ -2,6 +2,12 @@
 #include "world.h"
 
 
+// Amount of blocks on each of axis
+#define dimOZ m_regions.size()
+#define dimOY m_regions[0].size()
+#define dimOX m_regions[0][0].size()
+
+
 World::World(
     double worldWidth, double worldLength, double worldHeight,
     double regWidth,   double regLength,   double regHeight,
@@ -9,22 +15,23 @@ World::World(
     : m_regWidth            (regWidth)
     , m_regLength           (regLength)
     , m_regHeight           (regHeight)
-    , m_dimZ                (std::ceil(worldHeight / regHeight) + 1)
-    , m_dimY                (std::ceil(worldLength / regLength) + 1)
-    , m_dimX                (std::ceil(worldWidth  / regWidth)  + 1)
     , m_offsetOX            (offsetOX)
     , m_offsetOY            (offsetOY)
     , m_offsetOZ            (offsetOZ)
     , m_regionInOwnership   ()
 {
+    double _dimOZ = std::ceil(worldHeight / regHeight) + 1;
+    double _dimOY = std::ceil(worldLength / regLength) + 1;
+    double _dimOX = std::ceil(worldWidth  / regWidth)  + 1;
+
     // Fill the world
-    for (size_t i = 0; i < m_dimZ; ++i) {
+    for (size_t i = 0; i < _dimOZ; ++i) {
         std::vector<std::vector<Region *>> vecOY;
 
-        for (size_t j = 0; j < m_dimY; ++j) {
+        for (size_t j = 0; j < _dimOY; ++j) {
             std::vector<Region *> vecOX;
 
-            for (size_t k = 0; k < m_dimX; ++k)
+            for (size_t k = 0; k < _dimOX; ++k)
                 vecOX.push_back(new Region);
             vecOY.push_back(vecOX);
         }
@@ -35,9 +42,9 @@ World::World(
 
 
 World::~World() {
-    for (size_t i = 0; i < m_dimZ; ++i)
-        for (size_t j = 0; j < m_dimY; ++j)
-            for (size_t k = 0; k < m_dimX; ++k)
+    for (size_t i = 0; i < dimOZ; ++i)
+        for (size_t j = 0; j < dimOY; ++j)
+            for (size_t k = 0; k < dimOX; ++k)
                 delete m_regions[i][j][k];
 }
 
@@ -68,9 +75,9 @@ bool World::isSafePosition(double x, double y, double z, double eps) const {
     size_t regY = m_regLength / 3;
     size_t regZ = m_regHeight / 3;
 
-    size_t newX = oldX + ((oldX < regX && oldX > 0)? -1 : 0) + ((oldX > 2 * regX && oldX + 1 < m_dimX)? 1 : 0);
-    size_t newY = oldY + ((oldY < regY && oldY > 0)? -1 : 0) + ((oldY > 2 * regY && oldY + 1 < m_dimY)? 1 : 0);
-    size_t newZ = oldZ + ((oldZ < regZ && oldZ > 0)? -1 : 0) + ((oldZ > 2 * regZ && oldZ + 1 < m_dimZ)? 1 : 0);
+    size_t newX = oldX + ((oldX < regX && oldX > 0)? -1 : 0) + ((oldX > 2 * regX && oldX + 1 < dimOX)? 1 : 0);
+    size_t newY = oldY + ((oldY < regY && oldY > 0)? -1 : 0) + ((oldY > 2 * regY && oldY + 1 < dimOY)? 1 : 0);
+    size_t newZ = oldZ + ((oldZ < regZ && oldZ > 0)? -1 : 0) + ((oldZ > 2 * regZ && oldZ + 1 < dimOZ)? 1 : 0);
 
     // Calculate distance between point (x, y, z) and selected region
     auto dist = [this](double x, double y, double z, const Region *region) -> double {
@@ -171,7 +178,7 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
         long long newZ = currZ + step.z;
 
         // Checking if robot will cross border of the "world"
-        if (newX > m_dimX || newX < 0 || newY > m_dimY || newY < 0 || newZ > m_dimZ)
+        if (newX > dimOX || newX < 0 || newY > dimOY || newY < 0 || newZ > dimOZ)
             continue;
 
         // Returnes center of free region
@@ -248,4 +255,29 @@ World::Region::~Region() {}
 
 inline bool World::Region::isFree() const {
     return !m_owner.id;
+}
+
+
+double World::getOXMin() const {
+    return -m_offsetOX;
+}
+
+double World::getOYMin() const {
+    return -m_offsetOY;
+}
+
+double World::getOZMin() const {
+    return -m_offsetOZ;
+}
+
+double World::getOXMax() const {
+    return dimOX * m_regWidth - m_offsetOX;
+}
+
+double World::getOYMax() const {
+    return dimOY * m_regLength - m_offsetOY;
+}
+
+double World::getOZMax() const {
+    return dimOZ * m_regHeight - m_offsetOZ;
 }

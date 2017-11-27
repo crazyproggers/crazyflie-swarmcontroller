@@ -33,11 +33,6 @@ class World {
     double m_regLength;
     double m_regHeight;
 
-    // Number of blocks of the world
-    size_t m_dimZ;
-    size_t m_dimY;
-    size_t m_dimX;
-
     // Offset parameters (in meters)
     double m_offsetOX;
     double m_offsetOY;
@@ -74,6 +69,15 @@ public:
 
     // Try occupy a region that contains point (x, y, z)
     bool occupyRegion(double x, double y, double z, size_t id);
+
+    // Return min/max value of the world at one of the axis
+    double getOXMin() const;
+    double getOYMin() const;
+    double getOZMin() const;
+
+    double getOXMax() const;
+    double getOYMax() const;
+    double getOZMax() const;
 };
 
 #endif // WORLD_H
