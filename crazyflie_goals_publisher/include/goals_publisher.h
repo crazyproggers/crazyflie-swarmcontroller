@@ -18,9 +18,7 @@ class GoalsPublisher {
     tf::TransformListener         m_listener;
     ros::Rate                     m_publishRate;
     int8_t                        m_direction;
-
     std::thread                   m_runThread;
-    static std::mutex             m_errMutex;
 
     // class World realize synchronization mode
     static std::unique_ptr<World> m_world;

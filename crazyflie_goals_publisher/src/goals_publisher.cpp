@@ -18,7 +18,6 @@ std::unique_ptr<T> make_unique( Args&& ...args ) {
 }
 
 
-std::mutex GoalsPublisher::m_errMutex;
 std::unique_ptr<World> GoalsPublisher::m_world;
 
 
