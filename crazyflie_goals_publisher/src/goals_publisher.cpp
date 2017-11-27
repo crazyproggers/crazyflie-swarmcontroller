@@ -172,7 +172,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
 
 void GoalsPublisher::runControlled() {
-    ros::Subscriber subscriber = m_node.subscribe("/swarm/commands", 10, &GoalsPublisher::directionChanged, this);
+    ros::Subscriber subscriber = m_node.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
     std::thread goingToGoalThr(&GoalsPublisher::goToGoal, this);
 
     ros::Rate loop(10);
@@ -193,7 +193,7 @@ inline Goal GoalsPublisher::getGoal() {
     Goal position   = getPosition();
     double x        = position.x();
     double y        = position.y();
-    double z        = position.y();
+    double z        = position.z();
     double roll     = position.roll();
     double pitch    = position.pitch();
     double yaw      = position.yaw();

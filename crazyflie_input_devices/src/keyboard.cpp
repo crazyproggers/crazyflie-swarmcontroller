@@ -19,7 +19,7 @@ int getKey() {
 }
 
 
-int main (int argc, char **argv) {
+int main(int argc, char **argv) {
     ros::init(argc, argv, "keyboard");
     ros::NodeHandle node("~");
 
@@ -31,7 +31,7 @@ int main (int argc, char **argv) {
     std::vector<std::string> frames {std::istream_iterator<std::string>{iss},
                                      std::istream_iterator<std::string>{}};
     
-    ros::Publisher commandsPublisher = node.advertise<std_msgs::Byte>("/swarm/commands", 10);
+    ros::Publisher commandsPublisher = node.advertise<std_msgs::Byte>("/swarm/commands", 1);
 
     std_srvs::Empty empty_srv;
     crazyflie_driver::UpdateParams update_srv;
@@ -96,7 +96,7 @@ int main (int argc, char **argv) {
     yawright.data   = 7;
 
     std_msgs::Byte yawleft;
-    yawleft.data   = 8;
+    yawleft.data    = 8;
 
     ros::Rate loop(10);
     while (ros::ok()) {
