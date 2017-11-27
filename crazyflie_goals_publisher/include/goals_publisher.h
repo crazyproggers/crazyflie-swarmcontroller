@@ -17,7 +17,7 @@ class GoalsPublisher {
     ros::Publisher                m_publisher;
     tf::TransformListener         m_listener;
     ros::Rate                     m_publishRate;
-    mutable int8_t                m_direction;
+    int8_t                        m_direction;
 
     std::thread                   m_runThread;
     static std::mutex             m_errMutex;
@@ -50,11 +50,12 @@ private:
     inline bool goalIsReached(const Goal &position, const Goal &goal) const;
 
     // Create a goal on current direction and position
-    inline Goal getGoal() const;
+    inline Goal getGoal();
 
     // Subscriber callback
     void directionChanged(const std_msgs::Byte::ConstPtr &direction);
 
+    // Go to the current goal
     void goToGoal();
 
 public:

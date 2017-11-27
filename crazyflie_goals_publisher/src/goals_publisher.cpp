@@ -192,7 +192,7 @@ void GoalsPublisher::directionChanged(const std_msgs::Byte::ConstPtr &direction)
 }
 
 
-inline Goal GoalsPublisher::getGoal() const {
+inline Goal GoalsPublisher::getGoal() {
     Goal position   = getPosition();
     double x        = position.x();
     double y        = position.y();
@@ -203,36 +203,47 @@ inline Goal GoalsPublisher::getGoal() const {
 
     double movingStep   = 0.05; // meters
     double rotatingStep = degToRad(10);
+    double eps          = 0.1;  // meters
 
-    if (m_direction == DIRECTION::forward)
-        y += movingStep;
+    if (m_direction == DIRECTION::forward) {
+        double shift = y + movingStep;
+        y = (shift < m_world->getOYMax() - eps)? shift : y;
+    }
 
     else if (m_direction == DIRECTION::backward) {
         double shift = y - movingStep;
-        y = (shift > 0)? shift : y;
+        y = (shift > m_world->getOYMin() + eps)? shift : y;
     }
 
-    else if (m_direction == DIRECTION::rightward)
-        x += movingStep;
+    else if (m_direction == DIRECTION::rightward) {
+        double shift = x + movingStep;
+        x = (shift < m_world->getOXMax() - eps)? shift : x;
+    }
 
     else if (m_direction == DIRECTION::leftward) {
         double shift = x - movingStep;
-        x = (shift > 0)? shift : x;
+        x = (shift > m_world->getOXMin() + eps)? shift : x;
     }
 
-    else if (m_direction == DIRECTION::upward)
-        z += movingStep;
+    else if (m_direction == DIRECTION::upward) {
+        double shift = z + movingStep;
+        z = (shift < m_world->getOZMin() - eps)? shift : z;
+    }
 
     else if (m_direction == DIRECTION::downward) {
         double shift = z - movingStep;
-        z = (shift > 0)? shift : z;
+        z = (shift > m_world->getOZMin() + eps)? shift : z;
     }
 
-    else if (m_direction == DIRECTION::yawright)
-        ;
+    else if (m_direction == DIRECTION::yawright) {
+        double shift = yaw - rotatingStep;
+        yaw = (shift > degToRad(-180.0))? shift : shift + degToRad(360.0);
+    }
 
-    else if (m_direction == DIRECTION::leftward)
-        ;
+    else if (m_direction == DIRECTION::yawleft) {
+        double shift = yaw + rotatingStep;
+        yaw = (shift < degToRad(180.0))? shift : shift - degToRad(360.0);
+    }
 
     m_direction = 0;
     
