@@ -207,20 +207,26 @@ inline Goal GoalsPublisher::getGoal() const {
     if (m_direction == DIRECTION::forward)
         y += movingStep;
 
-    else if (m_direction == DIRECTION::backward)
-        y = ((y - movingStep) > 0)? y : y - movingStep;
+    else if (m_direction == DIRECTION::backward) {
+        double shift = y - movingStep;
+        y = (shift > 0)? shift : y;
+    }
 
     else if (m_direction == DIRECTION::rightward)
         x += movingStep;
 
-    else if (m_direction == DIRECTION::leftward)
-        x = ((x - movingStep) > 0)? x : x - movingStep;
+    else if (m_direction == DIRECTION::leftward) {
+        double shift = x - movingStep;
+        x = (shift > 0)? shift : x;
+    }
 
     else if (m_direction == DIRECTION::upward)
         z += movingStep;
 
-    else if (m_direction == DIRECTION::downward)
-        z = ((z - movingStep) > 0)? z : z - movingStep;
+    else if (m_direction == DIRECTION::downward) {
+        double shift = z - movingStep;
+        z = (shift > 0)? shift : z;
+    }
 
     else if (m_direction == DIRECTION::yawright)
         ;

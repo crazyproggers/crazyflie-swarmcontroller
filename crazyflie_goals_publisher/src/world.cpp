@@ -208,10 +208,10 @@ bool World::occupyRegion(double x, double y, double z, size_t id) {
 
         // if id already has a region, need to free it
         if (regInOwn) {
-            regInOwn->m_owner.id =  0;
-            regInOwn->m_owner.x  = -m_offsetOX;
-            regInOwn->m_owner.y  = -m_offsetOY;
-            regInOwn->m_owner.z  = -m_offsetOZ;
+            regInOwn->m_owner.id = 0;
+            regInOwn->m_owner.x  = 0.0;
+            regInOwn->m_owner.y  = 0.0;
+            regInOwn->m_owner.z  = 0.0;
         }
 
         // occupy new region
