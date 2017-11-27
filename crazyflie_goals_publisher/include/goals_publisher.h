@@ -46,9 +46,6 @@ private:
     // Get current position at the space
     inline Goal getPosition() const;
 
-    // Checking that |position - goal| < E
-    inline bool goalIsReached(const Goal &position, const Goal &goal) const;
-
     // Create a goal on current direction and position
     inline Goal getGoal();
 

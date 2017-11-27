@@ -87,16 +87,6 @@ inline Goal GoalsPublisher::getPosition() const {
 }
 
 
-inline bool GoalsPublisher::goalIsReached(const Goal &position, const Goal &goal) const {
-    return (fabs(position.x()     - goal.x()) < 0.2) &&
-           (fabs(position.y()     - goal.y()) < 0.2) &&
-           (fabs(position.z()     - goal.z()) < 0.2) &&
-           (fabs(position.roll()  - goal.roll())  < degToRad(10)) &&
-           (fabs(position.pitch() - goal.pitch()) < degToRad(10)) &&
-           (fabs(position.yaw()   - goal.yaw())   < degToRad(10));
-}
-
-
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     // Get an extra waiting time in case of deadlock
     auto getExtraWaitingTime = [](double maxWaiting = 3.0) {
@@ -150,15 +140,23 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 Goal position = getPosition();
                 if (position.empty()) continue;
 
-                if (goalIsReached(position, *goal)) {
+                // Check that |position - goal| < E
+                if ((fabs(position.x()     - goal->x()) < 0.2) &&
+                    (fabs(position.y()     - goal->y()) < 0.2) &&
+                    (fabs(position.z()     - goal->z()) < 0.2) &&
+                    (fabs(position.roll()  - goal->roll())  < degToRad(10)) &&
+                    (fabs(position.pitch() - goal->pitch()) < degToRad(10)) &&
+                    (fabs(position.yaw()   - goal->yaw())   < degToRad(10)))
+                {
                     ros::Duration(goal->delay()).sleep();
                     break; // go to next goal
                 }
+
                 m_publishRate.sleep();
             }
         }
         else {
-            // Interpolating from position to tmpGoal and backward
+            // Interpolate from position to tmpGoal and backward
             std::list<Goal> tmpPath  = interpolate(position, tmpGoal);
             std::list<Goal> backPath = interpolate(tmpGoal, *goal);
 
