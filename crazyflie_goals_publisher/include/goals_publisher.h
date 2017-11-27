@@ -15,7 +15,6 @@ class GoalsPublisher {
     std::string                   m_frame;
     size_t                        m_robot_id;
     ros::Publisher                m_publisher;
-    ros::Subscriber               m_subscriber;
     tf::TransformListener         m_listener;
     ros::Rate                     m_publishRate;
     mutable int8_t                m_direction;
@@ -42,7 +41,7 @@ private:
     void runAutomatic(std::list<Goal> path);
 
     // Controlled flight
-    void runControlled(double frequency);
+    void runControlled();
 
     // Get current position at the space
     inline Goal getPosition() const;
@@ -56,8 +55,7 @@ private:
     // Subscriber callback
     void directionChanged(const std_msgs::Byte::ConstPtr &direction);
 
-    // Timer callback
-    void goToGoal(const ros::TimerEvent &e);
+    void goToGoal();
 
 public:
     GoalsPublisher() = delete;

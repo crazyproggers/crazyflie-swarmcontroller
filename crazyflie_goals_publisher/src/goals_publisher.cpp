@@ -32,20 +32,18 @@ GoalsPublisher::GoalsPublisher(
     , m_frame                     (frame)
     , m_robot_id                  (std::hash<std::string>()(frame))
     , m_publisher                 ()
-    , m_subscriber                ()
     , m_listener                  ()
     , m_publishRate               (publishRate)
+    , m_direction                 (0)
 {
     m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
     m_publisher = m_node.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
-    srand(time(NULL));
+    std::srand(std::time(NULL));
 
     if (!path.empty())
         m_runThread = std::thread(&GoalsPublisher::runAutomatic,  this, path);
-    else {
-        m_subscriber = m_node.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
-        m_runThread = std::thread(&GoalsPublisher::runControlled, this, 50.0);
-    }
+    else
+        m_runThread = std::thread(&GoalsPublisher::runControlled, this);
 }
 
 
@@ -176,14 +174,16 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 } // run(std::vector<Goal> path)
 
 
-void GoalsPublisher::runControlled(double frequency) {
-    ros::Timer timer = m_node.createTimer(ros::Duration(1.0 / frequency), &GoalsPublisher::goToGoal, this);
+void GoalsPublisher::runControlled() {
+    ros::Subscriber subscriber = m_node.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
+    std::thread goingToGoalThr(&GoalsPublisher::goToGoal, this);
 
     ros::Rate loop(10);
     while (ros::ok()) {
         ros::spinOnce();
         loop.sleep();
     }
+    goingToGoalThr.join();
 }
 
 
@@ -234,24 +234,26 @@ inline Goal GoalsPublisher::getGoal() const {
 }
 
 
-void GoalsPublisher::goToGoal(const ros::TimerEvent &e) {
-    if (!m_direction) return;
-
-    Goal position = getPosition();
-    Goal goal = getGoal();
-
-    while (!m_world->occupyRegion  (goal.x(), goal.y(), goal.z(), m_robot_id) ||
-           !m_world->isSafePosition(goal.x(), goal.y(), goal.z()))
-    {
-        if (m_direction != 0) return; // interrupt from world
-        ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
-        m_publisher.publish(position.getMsg());
-        m_publishRate.sleep();
-    }
-
+void GoalsPublisher::goToGoal() {
     while (ros::ok()) {
-        if (m_direction != 0) return; // interrupt from world
-        m_publisher.publish(goal.getMsg());
-        m_publishRate.sleep();
+        if (!m_direction) continue;
+
+        Goal position = getPosition();
+        Goal goal = getGoal();
+
+        // If m_direction != 0 then it is meant that we have got interrupt from the world
+        while (!m_direction &&
+              (!m_world->occupyRegion  (goal.x(), goal.y(), goal.z(), m_robot_id) ||
+               !m_world->isSafePosition(goal.x(), goal.y(), goal.z())))
+        {
+            ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
+            m_publisher.publish(position.getMsg());
+            m_publishRate.sleep();
+        }
+
+        while (!m_direction) {
+            m_publisher.publish(goal.getMsg());
+            m_publishRate.sleep();
+        }
     }
 }
