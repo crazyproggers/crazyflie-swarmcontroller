@@ -242,6 +242,9 @@ inline Goal GoalsPublisher::getGoal() {
         yaw = (shift < degToRad(180.0))? shift : shift - degToRad(360.0);
     }
 
+    else if (m_direction == DIRECTION::takeoff)
+        z += 0.5;
+
     m_direction = 0;
     
     return Goal(x, y, z, roll, pitch, yaw);

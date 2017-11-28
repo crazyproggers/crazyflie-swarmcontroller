@@ -98,12 +98,15 @@ int main(int argc, char **argv) {
     std_msgs::Byte yawleft;
     yawleft.data    = 8;
 
+    std_msgs::Byte takeoff;
+    takeoff.data    = 9;
+
     ros::Rate loop(10);
     while (ros::ok()) {
         int key = getKey();
 
         if (key == KEY::TAKEOFF) {
-            commandsPublisher.publish(upward);
+            commandsPublisher.publish(takeoff);
 
             for (auto frame: frames)
                 ros::service::call(frame + "/takeoff", empty_srv);

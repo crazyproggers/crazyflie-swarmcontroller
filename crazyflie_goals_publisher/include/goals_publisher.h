@@ -31,7 +31,8 @@ private:
         upward      = 5,
         downward    = 6,
         yawright    = 7,
-        yawleft     = 8
+        yawleft     = 8,
+        takeoff     = 9
     };
 
     // Automatic flight
