@@ -200,7 +200,7 @@ inline Goal GoalsPublisher::getGoal() {
 
     double movingStep   = 0.1; // meters
     double rotatingStep = degToRad(10);
-    double eps          = 0.1; // meters
+    double eps          = 0.2; // meters
 
     if (m_direction == DIRECTION::forward) {
         double shift = y + movingStep;
