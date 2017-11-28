@@ -20,9 +20,9 @@ World::World(
     , m_offsetOZ            (offsetOZ)
     , m_regionInOwnership   ()
 {
-    double _dimOZ = std::ceil(worldHeight / regHeight) + 1;
-    double _dimOY = std::ceil(worldLength / regLength) + 1;
-    double _dimOX = std::ceil(worldWidth  / regWidth)  + 1;
+    double _dimOZ = std::ceil(worldHeight / regHeight);
+    double _dimOY = std::ceil(worldLength / regLength);
+    double _dimOX = std::ceil(worldWidth  / regWidth);
 
     // Fill the world
     for (size_t i = 0; i < _dimOZ; ++i) {
