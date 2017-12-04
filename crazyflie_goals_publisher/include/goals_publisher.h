@@ -23,18 +23,6 @@ class GoalsPublisher {
     static std::unique_ptr<World> m_world;
 
 private:
-    enum DIRECTION {
-        forward     = 1,
-        backward    = 2,
-        rightward   = 3,
-        leftward    = 4,
-        upward      = 5,
-        downward    = 6,
-        yawright    = 7,
-        yawleft     = 8,
-        takeoff     = 9
-    };
-
     // Automatic flight
     void runAutomatic(std::list<Goal> path);
 

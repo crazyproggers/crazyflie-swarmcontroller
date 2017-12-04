@@ -4,6 +4,7 @@ project(crazyflie_input_devices)
 find_package(catkin REQUIRED COMPONENTS
   std_srvs
   roscpp
+  crazyflie_goals_publisher
 )
 
 # Enable C++11
@@ -13,7 +14,8 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ## catkin specific configuration ##
 ###################################
 catkin_package(
-   CATKIN_DEPENDS
+  CATKIN_DEPENDS
+  crazyflie_goals_publisher
 )
 
 ###########

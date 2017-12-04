@@ -5,6 +5,7 @@
 #include <ctime>
 #include "goals_publisher.h"
 #include "interpolations.h"
+#include "commands.h"
 
 
 constexpr double degToRad(double deg) {
@@ -202,47 +203,47 @@ inline Goal GoalsPublisher::getGoal() {
     double rotatingStep = degToRad(10);
     double eps          = 0.2; // meters
 
-    if (m_direction == DIRECTION::forward) {
+    if (m_direction == commands::forward) {
         double shift = y + movingStep;
         y = (shift < m_world->getOYMax() - eps)? shift : y;
     }
 
-    else if (m_direction == DIRECTION::backward) {
+    else if (m_direction == commands::backward) {
         double shift = y - movingStep;
         y = (shift > m_world->getOYMin() + eps)? shift : y;
     }
 
-    else if (m_direction == DIRECTION::rightward) {
+    else if (m_direction == commands::rightward) {
         double shift = x + movingStep;
         x = (shift < m_world->getOXMax() - eps)? shift : x;
     }
 
-    else if (m_direction == DIRECTION::leftward) {
+    else if (m_direction == commands::leftward) {
         double shift = x - movingStep;
         x = (shift > m_world->getOXMin() + eps)? shift : x;
     }
 
-    else if (m_direction == DIRECTION::upward) {
+    else if (m_direction == commands::upward) {
         double shift = z + movingStep;
         z = (shift < m_world->getOZMax() - eps)? shift : z;
     }
 
-    else if (m_direction == DIRECTION::downward) {
+    else if (m_direction == commands::downward) {
         double shift = z - movingStep;
         z = (shift > m_world->getOZMin() + eps)? shift : z;
     }
 
-    else if (m_direction == DIRECTION::yawright) {
+    else if (m_direction == commands::yawright) {
         double shift = yaw - rotatingStep;
         yaw = (shift > degToRad(-180.0))? shift : shift + degToRad(360.0);
     }
 
-    else if (m_direction == DIRECTION::yawleft) {
+    else if (m_direction == commands::yawleft) {
         double shift = yaw + rotatingStep;
         yaw = (shift < degToRad(180.0))? shift : shift - degToRad(360.0);
     }
 
-    else if (m_direction == DIRECTION::takeoff)
+    else if (m_direction == commands::takeoff)
         z += 0.5;
 
     m_direction = 0;

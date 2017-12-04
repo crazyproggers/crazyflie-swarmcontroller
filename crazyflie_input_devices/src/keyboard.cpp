@@ -1,8 +1,10 @@
 #include <ros/ros.h>
 #include <termios.h>
 #include <std_srvs/Empty.h>
-#include <std_msgs/Byte.h>
 #include "crazyflie_driver/UpdateParams.h"
+#include "commands.h"
+
+using namespace commands;
 
 
 int getKey() {
@@ -73,40 +75,12 @@ int main(int argc, char **argv) {
         ROS_INFO("Found update_params services");
     }
 
-    // Directions:
-    std_msgs::Byte forward;
-    forward.data    = 1;
-
-    std_msgs::Byte backward;
-    backward.data   = 2;
-
-    std_msgs::Byte rightward;
-    rightward.data  = 3;
-
-    std_msgs::Byte leftward;
-    leftward.data   = 4;
-
-    std_msgs::Byte upward;
-    upward.data     = 5;
-
-    std_msgs::Byte downward;
-    downward.data   = 6;
-
-    std_msgs::Byte yawright;
-    yawright.data   = 7;
-
-    std_msgs::Byte yawleft;
-    yawleft.data    = 8;
-
-    std_msgs::Byte takeoff;
-    takeoff.data    = 9;
-
     ros::Rate loop(10);
     while (ros::ok()) {
         int key = getKey();
 
         if (key == KEY::TAKEOFF) {
-            commandsPublisher.publish(takeoff);
+            commandsPublisher.publish(takeoff.getMsg());
 
             for (auto frame: frames)
                 ros::service::call(frame + "/takeoff", empty_srv);
@@ -140,28 +114,28 @@ int main(int argc, char **argv) {
         }
 
         else if (key == KEY::FORWARD)
-            commandsPublisher.publish(forward);
+            commandsPublisher.publish(forward.getMsg());
 
         else if (key == KEY::BACKWARD) 
-            commandsPublisher.publish(backward);
+            commandsPublisher.publish(backward.getMsg());
 
         else if (key == KEY::RIGHTWARD) 
-            commandsPublisher.publish(rightward);
+            commandsPublisher.publish(rightward.getMsg());
 
         else if (key == KEY::LEFTWARD)
-            commandsPublisher.publish(leftward);
+            commandsPublisher.publish(leftward.getMsg());
 
         else if (key == KEY::UPWARD)
-            commandsPublisher.publish(upward);
+            commandsPublisher.publish(upward.getMsg());
 
         else if (key == KEY::DOWNWARD)
-            commandsPublisher.publish(downward);
+            commandsPublisher.publish(downward.getMsg());
 
         else if (key == KEY::YAWRIGHT)
-            commandsPublisher.publish(yawright);
+            commandsPublisher.publish(yawright.getMsg());
 
         else if (key == KEY::YAWLEFT)
-            commandsPublisher.publish(yawleft);
+            commandsPublisher.publish(yawleft.getMsg());
 
         ros::spinOnce();
         loop.sleep();
