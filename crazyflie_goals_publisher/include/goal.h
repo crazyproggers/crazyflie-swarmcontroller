@@ -1,23 +1,16 @@
 #ifndef GOAL_H
 #define GOAL_H
 
-#include <tf/tf.h>
+#include <tf/transform_datatypes.h>
 
+// This class provides a wrapper over geometry_msgs::PoseStamped
 
-class Goal {
-    typedef geometry_msgs::PoseStamped msg_t;
-
-    /*
-     * roll  - angle around X
-     * pitch - angle around Y
-     * yaw   - angle around Z
-     */
-    double m_roll;
-    double m_pitch;
-    double m_yaw;
-    double m_delay;
-    msg_t  m_msg;
-    bool   m_empty;
+class Goal: private geometry_msgs::PoseStamped {
+    double m_roll;   // angle around OX
+    double m_pitch;  // angle around OY
+    double m_yaw;    // angle around OZ
+    double m_delay;  // waiting at point (by default is zero)
+    bool   m_empty;  // true if goal was not denote (by default is false)
 
 public:
     Goal() : m_empty(true) {}
@@ -38,15 +31,15 @@ public:
     {
         tf::Quaternion quaternion = tf::createQuaternionFromRPY(roll, pitch, yaw);
 
-        m_msg.header.seq         = 0;
-        m_msg.header.stamp       = ros::Time(0);
-        m_msg.pose.position.x    = x;
-        m_msg.pose.position.y    = y;
-        m_msg.pose.position.z    = z;
-        m_msg.pose.orientation.x = quaternion.x();
-        m_msg.pose.orientation.y = quaternion.y();
-        m_msg.pose.orientation.z = quaternion.z();
-        m_msg.pose.orientation.w = quaternion.w();
+        header.seq         = 0;
+        header.stamp       = ros::Time(0);
+        pose.position.x    = x;
+        pose.position.y    = y;
+        pose.position.z    = z;
+        pose.orientation.x = quaternion.x();
+        pose.orientation.y = quaternion.y();
+        pose.orientation.z = quaternion.z();
+        pose.orientation.w = quaternion.w();
     }
 
     Goal(const Goal &goal)
@@ -58,38 +51,37 @@ public:
     {
         tf::Quaternion quaternion = tf::createQuaternionFromRPY(m_roll, m_pitch, m_yaw);
 
-        m_msg.header.seq         = 0;
-        m_msg.header.stamp       = ros::Time(0);
-        m_msg.pose.position.x    = goal.x();
-        m_msg.pose.position.y    = goal.y();
-        m_msg.pose.position.z    = goal.z();
-        m_msg.pose.orientation.x = quaternion.x();
-        m_msg.pose.orientation.y = quaternion.y();
-        m_msg.pose.orientation.z = quaternion.z();
-        m_msg.pose.orientation.w = quaternion.w();
+        header.seq         = 0;
+        header.stamp       = ros::Time(0);
+        pose.position.x    = goal.pose.position.x;
+        pose.position.y    = goal.pose.position.y;
+        pose.position.z    = goal.pose.position.z;
+        pose.orientation.x = quaternion.x();
+        pose.orientation.y = quaternion.y();
+        pose.orientation.z = quaternion.z();
+        pose.orientation.w = quaternion.w();
     }
 
     Goal & operator=(const Goal &goal) {
-        if (this != &goal) {
-            this->~Goal();
-            new (this) Goal(goal);
-        }
+        if (this != &goal)
+            Goal(goal);
+
         return *this;
     }
 
-    double x()        const   { return m_msg.pose.position.x; }
-    double y()        const   { return m_msg.pose.position.y; }
-    double z()        const   { return m_msg.pose.position.z; }
-    double roll()     const   { return m_roll;                }
-    double pitch()    const   { return m_pitch;               }
-    double yaw()      const   { return m_yaw;                 }
-    double delay()    const   { return m_delay;               }
-    bool   empty()    const   { return m_empty;               }
+    double x()        const   { return pose.position.x; }
+    double y()        const   { return pose.position.y; }
+    double z()        const   { return pose.position.z; }
+    double roll()     const   { return m_roll;          }
+    double pitch()    const   { return m_pitch;         }
+    double yaw()      const   { return m_yaw;           }
+    double delay()    const   { return m_delay;         }
+    bool   empty()    const   { return m_empty;         }
 
-    msg_t getMsg() {
-        m_msg.header.seq++;
-        m_msg.header.stamp = ros::Time::now();
-        return m_msg;
+    geometry_msgs::PoseStamped getMsg() {
+        ++header.seq;
+        header.stamp = ros::Time::now();
+        return static_cast<geometry_msgs::PoseStamped>(*this);
     }
 };
 
