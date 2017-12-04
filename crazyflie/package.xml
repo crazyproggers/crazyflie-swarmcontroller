@@ -3,7 +3,7 @@
   <version>0.0.1</version>
   <maintainer email="somemail@somemail.com">Crazyprogers</maintainer>
   <license>MIT</license>
-  <description>ROS integration for Crazyflie Nano Quadcopter from Bitcraze</description>
+  <description>Implementation of a swarm of crazyflie quadrocopter</description>
 
   <!-- Dependencies which this package needs to build itself. -->
   <buildtool_depend>catkin</buildtool_depend>
