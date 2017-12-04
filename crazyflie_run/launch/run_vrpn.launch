@@ -22,6 +22,9 @@
 
   <include file="$(find crazyflie_goals_publisher)/launch/goals_publisher.launch">
     <arg name="map" value="$(arg map)" />
+
+    <!--Splines mode is incompatible with controlled flight!-->
+    <arg name="splinesMode" value="False" />
   </include>
 
   <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn" output="screen" required="true">

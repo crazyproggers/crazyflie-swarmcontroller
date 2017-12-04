@@ -2,17 +2,21 @@
 
 <launch>
   <arg name="map" />
+  <arg name="splinesMode" />
 
   <node name="goals_publisher" pkg="crazyflie_goals_publisher" type="goals_publisher" output="screen">
       <param name="map" value="$(arg map)" />
       <param name="rate" value="10" />
-      <param name="splinesMode" value="False" />
+      <param name="splinesMode" value="$(arg splinesMode)" />
 
-      <!--All params are measured in meters-->
+      <!--All parameters are measured in meters-->
+
+      <!--World sizes-->
       <param name="worldWidth" value="2.4" />
       <param name="worldLength" value="2.4" />
       <param name="worldHeight" value="2.4" />
 
+      <!--Region sizes-->
       <param name="regWidth" value="0.4" />
       <param name="regLength" value="0.4" />
       <param name="regHeight" value="0.8" />
