@@ -192,21 +192,16 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
 }
 
 
-inline World::Region *World::region(double x, double y, double z) {
-    size_t xNum = x / m_regWidth;
-    size_t yNum = y / m_regLength;
-    size_t zNum = z / m_regHeight;
-
-    return m_regions[zNum][yNum][xNum];
-}
-
-
 bool World::occupyRegion(double x, double y, double z, size_t id) {
     x = moveX(x);
     y = moveY(y);
     z = moveZ(z);
 
-    Region *selectedReg = region(x, y, z);
+    // Get region that containes point (x, y, z)
+    size_t xNum = x / m_regWidth;
+    size_t yNum = y / m_regLength;
+    size_t zNum = z / m_regHeight;
+    Region *selectedReg = m_regions[zNum][yNum][xNum];
 
     std::lock_guard<std::mutex> locker(selectedReg->m_occupationMutex);
 
