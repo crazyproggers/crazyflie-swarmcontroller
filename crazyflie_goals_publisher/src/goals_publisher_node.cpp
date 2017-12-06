@@ -1,6 +1,7 @@
 #include "goals_publisher.h"
 #include "paths_creator.h"
 
+
 int main(int argc, char **argv) {
     ros::init(argc, argv, "goals_publisher");
 
@@ -25,6 +26,7 @@ int main(int argc, char **argv) {
     double worldWidth, worldLength, worldHeight;
     double regWidth,   regLength,   regHeight;
     double offsetOX,   offsetOY,    offsetOZ;
+
     node.getParam("worldWidth",  worldWidth);
     node.getParam("worldLength", worldLength);
     node.getParam("worldHeight", worldHeight);
@@ -43,21 +45,18 @@ int main(int argc, char **argv) {
     GoalsPublisher *publishers[frames.size()];
 
     if (!pathToMap.empty()) {
-        ROS_INFO("The mode of automatic flight was chosen");
         bool splinesMode = false;
         node.getParam("splinesMode", splinesMode);
 
-        PathsCreator creator(worldFrame, frames, pathToMap, splinesMode);
+        PathsCreator creator(pathToMap, worldFrame, splinesMode);
 
-        for (size_t i = 0; i < frames.size(); ++i) {
-            if (creator.paths[i].empty())
-                return -1;
+        if (!creator.canGenPaths())
+            return -1;
 
-            publishers[i] = new GoalsPublisher(worldFrame, frames[i], rate, creator.paths[i]);
-        }
+        for (size_t i = 0; i < frames.size(); ++i)
+            publishers[i] = new GoalsPublisher(worldFrame, frames[i], rate, creator.genPath(frames[i]));
     }
     else {
-        ROS_INFO("The mode of controlled flight was chosen");
         for (size_t i = 0; i < frames.size(); ++i)
             publishers[i] = new GoalsPublisher(worldFrame, frames[i], rate);
     }

@@ -4,25 +4,25 @@
 #include "goal.h"
 
 class PathsCreator {
-    bool readTable(const std::string &pathToMap, 
-                   const std::string &worldFrame, 
-                   const std::vector<std::string> &frames);
+    std::string 				  	m_worldFrame;
+    std::vector<std::list<Goal>> 	m_paths;
+    bool 							m_splinesMode;
+    bool 							m_canGenPaths;
 
-    void createPaths(bool splinesMode);
+    bool readTable(const std::string &pathToMap);
 
 public:
     PathsCreator() = delete;
     PathsCreator(const PathsCreator &) = delete;
     PathsCreator & operator=(const PathsCreator &) = delete;
 
-    PathsCreator(const std::string &worldFrame,
-                 const std::vector<std::string> &frames,
-                 const std::string &pathToMap,
+    PathsCreator(const std::string &pathToMap,
+                 const std::string &worldFrame,
                  bool  splinesMode = false);
-
-    std::vector<std::list<Goal>> paths;
-
     ~PathsCreator();
+
+    bool canGenPaths();
+    std::list<Goal> genPath(const std::string &frame);
 };
 
-#endif // PATHS_creator_H
+#endif // PATHS_CREATOR_H

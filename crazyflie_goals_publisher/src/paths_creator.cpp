@@ -7,47 +7,24 @@
 
 
 PathsCreator::PathsCreator(
-        const  std::string &worldFrame,
-        const  std::vector<std::string> &frames,
         const  std::string &pathToMap,
+        const  std::string &worldFrame,
         bool   splinesMode)
+        : m_worldFrame		(worldFrame)
+        , m_splinesMode		(splinesMode)
+        , m_canGenPaths		(false)
 {
-    if (readTable(pathToMap, worldFrame, frames))
-        createPaths(splinesMode);
+    if (readTable(pathToMap))
+        m_canGenPaths = true;
 }
 
 
 PathsCreator::~PathsCreator() {
-    paths.clear();
+    m_paths.clear();
 }
 
 
-bool PathsCreator::readTable(
-        const std::string &pathToMap,
-        const std::string &worldFrame,
-        const std::vector<std::string> &frames)
-{
-    // #########################################################
-    // ####### FINDING STARTING POINTS FOR ALL CRAZYFLIES ######
-    // #########################################################
-    const size_t TOTAL_CRAZYFLIES = frames.size();
-
-    tf::TransformListener listeners[TOTAL_CRAZYFLIES];
-    tf::StampedTransform  startPoints[TOTAL_CRAZYFLIES];
-
-    for (size_t i = 0; i < TOTAL_CRAZYFLIES; ++i) {
-        listeners[i].waitForTransform(worldFrame, frames[i], ros::Time(0), ros::Duration(5.0));
-
-        try {
-            listeners[i].lookupTransform(worldFrame, frames[i], ros::Time(0), startPoints[i]);
-        }
-        catch (tf::TransformException &exc) {
-            ROS_ERROR("%s%s", frames[i].c_str(), ": could not get current position!");
-            ROS_ERROR("An exception was caught: %s", exc.what());
-            return false;
-        }
-    }
-
+bool PathsCreator::readTable(const std::string &pathToMap) {
     // #########################################################
     // ################# SOME LAMBDA FUNCTIONS #################
     // #########################################################
@@ -76,7 +53,7 @@ bool PathsCreator::readTable(
     };
 
     // #########################################################
-    // ########### READING AND PARSING THE MAP-FILE ############
+    // ############## READ AND PARSE THE MAP-FILE ##############
     // #########################################################
     std::list<Goal> path;
 
@@ -105,7 +82,7 @@ bool PathsCreator::readTable(
             double last_yaw   = 0.0;
 
             path.push_back(Goal(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw));
-            paths.push_back(path);
+            m_paths.push_back(path);
             path.clear();
         }
         else if (line != "") {
@@ -131,25 +108,13 @@ bool PathsCreator::readTable(
                  }
             }
             else if (words.size() == AMOUNT::PARAMETERS) {
-                // Add the starting goal in the table
-                double roll = 0.0, pitch = 0.0;
-
-                if (path.empty()) {
-                    size_t num = paths.size();
-
-                    double x = startPoints[num].getOrigin().x();
-                    double y = startPoints[num].getOrigin().y();
-                    double z = startPoints[num].getOrigin().z() + 0.5;
-                    double yaw = 0.0;
-
-                    path.push_back(Goal(x, y, z, roll, pitch, yaw));
-                }
-
                 double x     = std::stod(words[0]);
                 double y     = std::stod(words[1]);
                 double z     = std::stod(words[2]);
                 double yaw   = std::stod(words[3]);
                 double delay = std::stod(words[4]);
+                double roll  = 0.0;
+                double pitch = 0.0;
 
                 yaw = degToRad(fixAngle(yaw));
 
@@ -176,36 +141,85 @@ bool PathsCreator::readTable(
         double last_yaw   = 0.0;
 
         path.push_back(Goal(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw));
-        paths.push_back(path);
+        m_paths.push_back(path);
     }
 
     return true;
 }
 
 
-void PathsCreator::createPaths(bool splinesMode) {
-    if (splinesMode) {
-        for (std::list<Goal> &path: paths)
-            path = createSpline(std::move(path));
-    }
-    else {
-        for (size_t i = 0; i < paths.size(); ++i) {
-            std::list<Goal> tmp;
-            std::list<Goal> path;
-
-            auto finish = std::prev(paths[i].end());
-
-            for (auto it = paths[i].begin(); it != finish; ++it) {
-                Goal curr = *it;
-                Goal next = *(std::next(it));
-
-                tmp = interpolate(curr, next);
-                path.splice(path.end(), tmp);
-            }
-
-            path.push_back(paths[i].back());
-            paths[i] = std::move(path);
-        }
-    }
+bool PathsCreator::canGenPaths() {
+    return m_canGenPaths;
 }
 
+
+std::list<Goal> PathsCreator::genPath(const std::string &frame) {
+    // #########################################################
+    // ########## FIND THE STARTING POINT OF ROBOT #############
+    // #########################################################
+    tf::TransformListener listener;
+    tf::StampedTransform  startPoint;
+
+    listener.waitForTransform(m_worldFrame, frame, ros::Time(0), ros::Duration(5.0));
+    try {
+        listener.lookupTransform(m_worldFrame, frame, ros::Time(0), startPoint);
+    }
+    catch (tf::TransformException &exc) {
+        ROS_ERROR("%s%s", frame.c_str(), ": could not get current position!");
+        ROS_ERROR("An exception was caught: %s", exc.what());
+    }
+
+    double x0 = startPoint.getOrigin().x();
+    double y0 = startPoint.getOrigin().y();
+    double z0 = startPoint.getOrigin().z() + 0.5;
+
+    // #########################################################
+    // ######## FIND THE NEAREST PATH TO STARTING POINT ########
+    // #########################################################
+    auto dist = [](double x0, double y0, double z0, double x, double y, double z) {
+        return std::sqrt(std::pow(x - x0, 2) + std::pow(y - y0, 2) + std::pow(z - z0, 2));
+    };
+
+    double minDist = std::numeric_limits<double>::max();
+    size_t pathNum = 0;
+
+    for (size_t i = 0; i < m_paths.size(); ++i) {
+        Goal firstGoal = m_paths[i].front();
+        double d = dist(x0, y0, z0, firstGoal.x(), firstGoal.y(), firstGoal.z());
+
+        if (d < minDist) {
+            minDist = d;
+            pathNum = i;
+        }
+    }
+
+    std::list<Goal> selectedPath = std::move(m_paths[pathNum]);
+    m_paths.erase(std::next(m_paths.begin(), pathNum));
+
+    // #########################################################
+    // ############## INTREPOLATE SELECTED PATH ################
+    // #########################################################
+    selectedPath.push_front(Goal(x0, y0, z0, 0.0, 0.0, 0.0));
+
+    if (m_splinesMode)
+        selectedPath = createSpline(std::move(selectedPath));
+    else {
+        std::list<Goal> tmp;
+        std::list<Goal> path;
+
+        auto finish = std::prev(selectedPath.end());
+
+        for (auto it = selectedPath.begin(); it != finish; ++it) {
+            Goal curr = *it;
+            Goal next = *(std::next(it));
+
+            tmp = interpolate(curr, next);
+            path.splice(path.end(), tmp);
+        }
+
+        path.push_back(selectedPath.back());
+        selectedPath = std::move(path);
+    }
+
+    return selectedPath;
+}
