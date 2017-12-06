@@ -154,7 +154,7 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
      *    |    | 3  |    |
      *    |----|----|----|
      * If there are no ways to step back then check upward way
-     * If it is not free then return point (x, y, z)
+     * If it is not free then return center of current region
      */
 
     struct Step {
@@ -188,7 +188,9 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
                                (newZ + 0.5) * m_regHeight - m_offsetOZ);
     }
 
-   return tf::Vector3(x, y, z);
+   return tf::Vector3((currX + 0.5) * m_regWidth  - m_offsetOX,
+                      (currY + 0.5) * m_regLength - m_offsetOY,
+                      (currZ + 0.5) * m_regHeight - m_offsetOZ);
 }
 
 
