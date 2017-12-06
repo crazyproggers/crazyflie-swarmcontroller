@@ -40,8 +40,7 @@ std::list<Goal> createSpline(std::list<Goal> goals, double step) {
     auto finish = std::prev(goals.end(), t.size());
 
     for (auto goal = goals.begin(); goal != finish; ++goal) {
-
-        for (double T = 1; T < 1; T += step) {
+        for (double T = 1; T < 2; T += step) {
 
             auto firstGoal  = goal;
             auto secondGoal = goal;
