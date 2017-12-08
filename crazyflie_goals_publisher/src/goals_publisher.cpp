@@ -200,48 +200,74 @@ inline Goal GoalsPublisher::getGoal() {
     double yaw      = position.yaw();
 
     double movingStep   = 0.1; // meters
-    double rotatingStep = degToRad(10);
     double eps          = 0.2; // meters
 
+    auto moveByX = [=](double x, double slope) {
+        double shiftX = x + slope * movingStep;
+        x = (shiftX < m_world->getOXMax() - eps)? shiftX : x;
+        x = (shiftX > m_world->getOXMin() + eps)? shiftX : x;
+
+        return x;
+    };
+
+    auto moveByY = [=](double y, double slope) {
+        double shiftY = y + slope * movingStep;
+        y = (shiftY < m_world->getOYMax() - eps)? shiftY : y;
+        y = (shiftY > m_world->getOYMin() + eps)? shiftY : y;
+
+        return y;
+    };
+
+    auto moveByZ = [=](double z, double shift) {
+        double shiftZ = z + shift;
+        z = (shiftZ < m_world->getOZMax() - eps)? shiftZ : z;
+        z = (shiftZ > m_world->getOZMin() + eps)? shiftZ : z;
+
+        return z;
+    };
+
+    auto rotate = [](double currAngle, double shift) {
+        double minAngle = degToRad(-180);
+        double maxAngle = degToRad( 180);
+
+        currAngle += (currAngle + shift > maxAngle)? shift : shift - maxAngle;
+        currAngle += (currAngle + shift < minAngle)? shift : shift - minAngle;
+
+        return currAngle;
+    };
+
+
     if (m_direction == commands::forward) {
-        double shift = y + movingStep;
-        y = (shift < m_world->getOYMax() - eps)? shift : y;
+        x = moveByX(x, std::cos(yaw));
+        y = moveByY(y, std::sin(yaw));
     }
 
     else if (m_direction == commands::backward) {
-        double shift = y - movingStep;
-        y = (shift > m_world->getOYMin() + eps)? shift : y;
+        x = moveByX(x, -std::cos(yaw));
+        y = moveByY(y, -std::sin(yaw));
     }
 
     else if (m_direction == commands::rightward) {
-        double shift = x + movingStep;
-        x = (shift < m_world->getOXMax() - eps)? shift : x;
+        x = moveByX(x,  std::sin(yaw));
+        y = moveByY(y, -std::cos(yaw));
     }
 
     else if (m_direction == commands::leftward) {
-        double shift = x - movingStep;
-        x = (shift > m_world->getOXMin() + eps)? shift : x;
+        x = moveByX(x, -std::sin(yaw));
+        y = moveByY(y,  std::cos(yaw));
     }
 
-    else if (m_direction == commands::upward) {
-        double shift = z + movingStep;
-        z = (shift < m_world->getOZMax() - eps)? shift : z;
-    }
+    else if (m_direction == commands::yawright)
+        yaw = rotate(yaw, degToRad(-10));
 
-    else if (m_direction == commands::downward) {
-        double shift = z - movingStep;
-        z = (shift > m_world->getOZMin() + eps)? shift : z;
-    }
+    else if (m_direction == commands::yawleft)
+        yaw = rotate(yaw, degToRad(10));
 
-    else if (m_direction == commands::yawright) {
-        double shift = yaw - rotatingStep;
-        yaw = (shift > degToRad(-180.0))? shift : shift + degToRad(360.0);
-    }
+    else if (m_direction == commands::upward)
+        z = moveByZ(z,  movingStep);
 
-    else if (m_direction == commands::yawleft) {
-        double shift = yaw + rotatingStep;
-        yaw = (shift < degToRad(180.0))? shift : shift - degToRad(360.0);
-    }
+    else if (m_direction == commands::downward)
+        z = moveByZ(z, -movingStep);
 
     else if (m_direction == commands::takeoff)
         z += 0.5;
