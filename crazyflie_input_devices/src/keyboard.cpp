@@ -58,21 +58,21 @@ int main(int argc, char **argv) {
     };
 
     for (auto frame: frames) {
-        ROS_INFO("Waiting for takeoff services");
+        ROS_INFO("%s%s", frame.c_str(), ": waiting for takeoff services");
         ros::service::waitForService(frame + "/takeoff");
-        ROS_INFO("Found takeoff sevices");
+        ROS_INFO("%s%s", frame.c_str(), ": found takeoff sevices");
 
-        ROS_INFO("Waiting for land services");
+        ROS_INFO("%s%s", frame.c_str(), ": waiting for land services");
         ros::service::waitForService(frame + "/land");
-        ROS_INFO("Found land services");
+        ROS_INFO("%s%s", frame.c_str(), ": found land services");
 
-        ROS_INFO("Waiting for emergency services");
+        ROS_INFO("%s%s", frame.c_str(), ": waiting for emergency services");
         ros::service::waitForService(frame + "/emergency");
-        ROS_INFO("Found emergency services");
+        ROS_INFO("%s%s", frame.c_str(), ": found emergency services");
 
-        ROS_INFO("Waiting for update_params services");
+        ROS_INFO("%s%s", frame.c_str(), ": waiting for update_params services");
         ros::service::waitForService(frame + "/update_params");
-        ROS_INFO("Found update_params services");
+        ROS_INFO("%s%s", frame.c_str(), ": found update_params services");
     }
 
     ros::Rate loop(10);
