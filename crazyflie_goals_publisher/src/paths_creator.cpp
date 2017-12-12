@@ -28,15 +28,15 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
     // #########################################################
     // ################# SOME LAMBDA FUNCTIONS #################
     // #########################################################
-    size_t repeat_number        = 0;
-    size_t repeated_goals_count = 0;
+    size_t repeat_number         = 0;
+    size_t repeated_goals_amount = 0;
 
     auto repeat = [&](std::list<Goal> &path) mutable {
-        std::list<Goal> tmp(std::prev(path.end(), repeated_goals_count), path.end());
+        std::list<Goal> tmp(std::prev(path.end(), repeated_goals_amount), path.end());
 
         for (; repeat_number > 0; --repeat_number)
-            path.splice(path.end(), tmp);
-        repeated_goals_count = 0;
+            path.insert(path.end(), tmp.begin(), tmp.end());
+        repeated_goals_amount = 0;
     };
 
     auto fixAngle = [](double degree) {
@@ -71,7 +71,7 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
     std::string line;
     while (std::getline(map, line)) {
         if ((line == "") && (!path.empty())) {
-            if (repeat_number > 0)
+            if (repeat_number)
                 repeat(path);
 
             // Add the finishing goal in the table
@@ -100,6 +100,9 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
                          ROS_ERROR("Wrong arg for command \"repeat\": %d", arg);
                          return false;
                      }
+
+                     if (repeat_number)
+                        repeat(path);
                      repeat_number = arg;
                  }
                  else {
@@ -119,7 +122,7 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
                 yaw = degToRad(fixAngle(yaw));
 
                 path.push_back(Goal(x, y, z, roll, pitch, yaw, delay));
-                if (repeat_number) repeated_goals_count++;
+                if (repeat_number) ++repeated_goals_amount;
             }
             else {
                 ROS_ERROR("It's wrong map-file: %s", pathToMap.c_str());
