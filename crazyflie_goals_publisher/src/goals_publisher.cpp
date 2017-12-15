@@ -30,7 +30,6 @@ GoalsPublisher::GoalsPublisher(
     : m_node                      ()
     , m_worldFrame                (worldFrame)
     , m_frame                     (frame)
-    , m_robot_id                  (std::hash<std::string>()(frame))
     , m_publisher                 ()
     , m_listener                  ()
     , m_publishRate               (publishRate)
@@ -92,19 +91,27 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     auto getExtraWaitingTime = [](double maxWaiting = 3.0) {
         return (rand() % 2)? maxWaiting : 0.0;
     };
-    ros::Rate waitLoop(2);
 
+    Goal starting = getPosition();
+    Occupator occupator(m_frame, starting.x(), starting.y(), starting.z());
+
+    if (!m_world->addOccupator(occupator))
+        return;
 
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
         Goal position = getPosition();
         Goal tmpGoal;
 
+        // Update exact position of occupator
+        occupator.setXYZ(position.x(), position.y(), position.z());
+
         ros::Duration duration(5.0);
+        ros::Rate     waitLoop(2);
         bool participatedInToss = false;
         ros::Time begin = ros::Time::now();
 
-        while (!m_world->occupyRegion  (goal->x(), goal->y(), goal->z(), m_robot_id) ||
-               !m_world->isSafePosition(goal->x(), goal->y(), goal->z()))
+        while (!m_world->occupyRegion    (occupator, goal->x(), goal->y(), goal->z()) ||
+               !m_world->isAtSafePosition(occupator))
         {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(position.getMsg());
@@ -122,8 +129,8 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 }
 
                 // Searching the nearest free region center
-                tf::Vector3 freeCenter = m_world->getFreeCenter(position.x(), position.y(), position.z());
-                tmpGoal = Goal(freeCenter.x(), freeCenter.y(), freeCenter.z(), 0.0, 0.0, 0.0);
+                tf::Vector3 center = m_world->getFreeCenter(occupator);
+                tmpGoal = Goal(center.x(), center.y(), center.z(), 0.0, 0.0, 0.0);
 
                 if (tmpGoal.x() != position.x() || tmpGoal.y() != position.y() || tmpGoal.z() != position.z())
                     break;
@@ -137,8 +144,9 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
             while (ros::ok()) {
                 m_publisher.publish(goal->getMsg());
 
+                // Update exact position of occupator
                 Goal position = getPosition();
-                if (position.empty()) continue;
+                occupator.setXYZ(position.x(), position.y(), position.z());
 
                 // Check that |position - goal| < E
                 if ((fabs(position.x()     - goal->x()) < 0.2) &&
@@ -279,16 +287,25 @@ inline Goal GoalsPublisher::getGoal() {
 
 
 void GoalsPublisher::goToGoal() {
+    Goal starting = getPosition();
+    Occupator occupator(m_frame, starting.x(), starting.y(), starting.z());
+
+    if (!m_world->addOccupator(occupator))
+        return;
+
     while (ros::ok()) {
         if (!m_direction) continue;
 
         Goal position = getPosition();
-        Goal goal = getGoal();
+        Goal goal     = getGoal();
+
+        // Update exact position of occupator
+        occupator.setXYZ(position.x(), position.y(), position.z());
 
         // If m_direction != 0 then it is meant that we have got interrupt from the world
         while (!m_direction &&
-              (!m_world->occupyRegion  (goal.x(), goal.y(), goal.z(), m_robot_id) ||
-               !m_world->isSafePosition(goal.x(), goal.y(), goal.z())))
+              (!m_world->occupyRegion    (occupator, goal.x(), goal.y(), goal.z()) ||
+               !m_world->isAtSafePosition(occupator)))
         {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(position.getMsg());
@@ -297,7 +314,12 @@ void GoalsPublisher::goToGoal() {
 
         while (!m_direction) {
             m_publisher.publish(goal.getMsg());
+
+            // Update exact position of occupator
+            Goal position = getPosition();
+            occupator.setXYZ(position.x(), position.y(), position.z());
+
             m_publishRate.sleep();
         }
-    }
+    } // while (ros::ok())
 }

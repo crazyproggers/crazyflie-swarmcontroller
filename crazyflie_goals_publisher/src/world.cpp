@@ -2,6 +2,33 @@
 #include "world.h"
 
 
+Occupator::Occupator(const std::string &name, double x0, double y0, double z0)
+    : name		(name)
+    , x			(x0)
+    , y			(y0)
+    , z			(z0)
+    , region 	(nullptr)
+{}
+
+
+void Occupator::setXYZ(double x, double y, double z) {
+    this->x = x;
+    this->y = y;
+    this->z = z;
+}
+
+
+Region::Region()
+    : m_occupationMutex	()
+    , m_owner		(nullptr)
+{}
+
+
+inline bool Region::isFree() const {
+    return (m_owner == nullptr);
+}
+
+
 // Amount of blocks on each of axis
 #define dimOZ m_regions.size()
 #define dimOY m_regions[0].size()
@@ -18,7 +45,7 @@ World::World(
     , m_offsetOX            (offsetOX)
     , m_offsetOY            (offsetOY)
     , m_offsetOZ            (offsetOZ)
-    , m_regionInOwnership   ()
+    , m_registerMutex		 ()
 {
     double _dimOZ = std::ceil(worldHeight / regHeight);
     double _dimOY = std::ceil(worldLength / regLength);
@@ -62,10 +89,86 @@ inline double World::moveZ(double z) const {
 }
 
 
-bool World::isSafePosition(double x, double y, double z, double eps) const {
-    x = moveX(x);
-    y = moveY(y);
-    z = moveZ(z);
+bool World::addOccupator(Occupator &occupator) {
+    std::lock_guard<std::mutex> locker(m_registerMutex);
+
+    double movedX = moveX(occupator.x);
+    double movedY = moveX(occupator.y);
+    double movedZ = moveX(occupator.z);
+
+    // Get region that containes occupator position
+    size_t xNum = movedX / m_regWidth;
+    size_t yNum = movedY / m_regLength;
+    size_t zNum = movedZ / m_regHeight;
+
+    // Checking if occupator crosses border of the world
+    if (xNum >= dimOX || movedX < 0 ||
+        yNum >= dimOY || movedY < 0 ||
+        zNum >= dimOZ || movedZ < 0)
+    {
+        ROS_ERROR("%s%s", occupator.name.c_str(), " is outside of the world!");
+        return false;
+    }
+
+    Region *currReg = m_regions[zNum][yNum][xNum];
+
+    // Cheking if distances between each of occupators are ok
+    bool distancesAreOk = true;
+    double eps = 0.4;
+
+    for (tf::Vector3 point: m_registrationPoints)
+        if (std::sqrt(std::pow(movedX - point.x(), 2) + std::pow(movedY - point.y(), 2)) < eps) {
+            distancesAreOk = false;
+            break;
+        }
+
+    if (!currReg->isFree() || !distancesAreOk) {
+        ROS_ERROR("Could not register %s%s", occupator.name.c_str(),
+                  ": is too close to other occupator!");
+        return false;
+    }
+
+    // Occupy starting region
+    currReg->m_owner = &occupator;
+    occupator.region = currReg;
+
+    m_registrationPoints.push_back(tf::Vector3(movedX, movedY, movedZ));
+
+    return true;
+}
+
+
+bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
+    // Get region that containes occupator position
+    size_t xNum = moveX(occupator.x) / m_regWidth;
+    size_t yNum = moveY(occupator.y) / m_regLength;
+    size_t zNum = moveZ(occupator.z) / m_regHeight;
+    Region *selectedReg = m_regions[zNum][yNum][xNum];
+
+    std::lock_guard<std::mutex> locker(selectedReg->m_occupationMutex);
+
+    if (selectedReg->isFree()) {
+        // free old region of ocuppator
+        occupator.region->m_owner = nullptr;
+
+        // occupy new region
+        occupator.region = selectedReg;
+        selectedReg->m_owner = &occupator;
+
+        return true;
+    }
+    // If occupator have been owning selected region
+    else if (selectedReg->m_owner == &occupator)
+        return true;
+
+    return false;
+}
+
+
+bool World::isAtSafePosition(const Occupator &occupator, double eps) const {
+    double x = moveX(occupator.x);
+    double y = moveY(occupator.y);
+    double z = moveZ(occupator.z);
 
     size_t oldX = x / m_regWidth;
     size_t oldY = y / m_regLength;
@@ -81,14 +184,18 @@ bool World::isSafePosition(double x, double y, double z, double eps) const {
 
     // Calculate distance between point (x, y, z) and selected region
     auto dist = [this](double x, double y, double z, const Region *region) -> double {
-        if (fabs(z - region->m_owner.z) > m_regHeight / 2) {
-            return std::sqrt(std::pow(x - region->m_owner.x, 2) +
-                             std::pow(y - region->m_owner.y, 2) +
-                             std::pow(z - region->m_owner.z, 2));
+        double occupator_x = moveX(region->m_owner->x);
+        double occupator_y = moveY(region->m_owner->y);
+        double occupator_z = moveZ(region->m_owner->z);
+
+        if (fabs(z - occupator_z) > m_regHeight / 2) {
+            return std::sqrt(std::pow(x - occupator_x, 2) +
+                             std::pow(y - occupator_y, 2) +
+                             std::pow(z - occupator_z, 2));
         }
 
-        return std::sqrt(std::pow(x - region->m_owner.x, 2) +
-                         std::pow(y - region->m_owner.y, 2));
+        return std::sqrt(std::pow(x - occupator_x, 2) +
+                         std::pow(y - occupator_y, 2));
     };
 
     Region *reg = nullptr;
@@ -140,7 +247,7 @@ bool World::isSafePosition(double x, double y, double z, double eps) const {
 }
 
 
-tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
+tf::Vector3 World::getFreeCenter(const Occupator &occupator) const {
     /*
      * If there is deadlock then check ways to step back like in picture
      *    |----|----|----|
@@ -168,9 +275,9 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
 
     std::vector<Step> steps = {Step(0, -1, 0), Step(-1, 0, 0), Step(0, 1, 0), Step(1, 0, 0), Step(0, 0, 1)};
 
-    long long currX = moveX(x) / m_regWidth;
-    long long currY = moveY(y) / m_regLength;
-    long long currZ = moveZ(z) / m_regHeight;
+    long long currX = moveX(occupator.x) / m_regWidth;
+    long long currY = moveY(occupator.y) / m_regLength;
+    long long currZ = moveZ(occupator.z) / m_regHeight;
 
     for (auto step: steps) {
         long long newX = currX + step.x;
@@ -178,7 +285,7 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
         long long newZ = currZ + step.z;
 
         // Checking if robot will cross border of the "world"
-        if (newX > dimOX || newX < 0 || newY > dimOY || newY < 0 || newZ > dimOZ)
+        if (newX >= dimOX || newX < 0 || newY >= dimOY || newY < 0 || newZ >= dimOZ || newZ < 0)
             continue;
 
         // Returnes center of free region
@@ -188,68 +295,7 @@ tf::Vector3 World::getFreeCenter(double x, double y, double z) const {
                                (newZ + 0.5) * m_regHeight - m_offsetOZ);
     }
 
-    return tf::Vector3(x, y, z);
-}
-
-
-bool World::occupyRegion(double x, double y, double z, size_t id) {
-    x = moveX(x);
-    y = moveY(y);
-    z = moveZ(z);
-
-    // Get region that containes point (x, y, z)
-    size_t xNum = x / m_regWidth;
-    size_t yNum = y / m_regLength;
-    size_t zNum = z / m_regHeight;
-    Region *selectedReg = m_regions[zNum][yNum][xNum];
-
-    std::lock_guard<std::mutex> locker(selectedReg->m_occupationMutex);
-
-    if (!selectedReg->m_owner.id) {
-        Region *regInOwn = m_regionInOwnership[id];
-
-        // if id already has a region, need to free it
-        if (regInOwn) {
-            regInOwn->m_owner.id = 0;
-            regInOwn->m_owner.x  = 0.0;
-            regInOwn->m_owner.y  = 0.0;
-            regInOwn->m_owner.z  = 0.0;
-        }
-
-        // occupy new region
-        selectedReg->m_owner.id = id;
-        selectedReg->m_owner.x  = x;
-        selectedReg->m_owner.y  = y;
-        selectedReg->m_owner.z  = z;
-        m_regionInOwnership[id] = selectedReg;
-
-        return true;
-    }
-    else if (selectedReg->m_owner.id == id) {
-        selectedReg->m_owner.x = x;
-        selectedReg->m_owner.y = y;
-        selectedReg->m_owner.z = z;
-
-        return true;
-    }
-
-    return false;
-}
-
-
-World::Region::Region()
-    : m_occupationMutex()
-{
-    m_owner.x = m_owner.y = m_owner.z = 0.0;
-    m_owner.id = 0;
-}
-
-
-World::Region::~Region() {}
-
-
-inline bool World::Region::isFree() const {
-    return !m_owner.id;
+    return tf::Vector3(occupator.x, occupator.y, occupator.z);
 }
 
 

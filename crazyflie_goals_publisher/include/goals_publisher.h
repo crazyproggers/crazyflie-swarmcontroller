@@ -12,7 +12,6 @@ class GoalsPublisher {
     ros::NodeHandle               m_node;
     std::string                   m_worldFrame;
     std::string                   m_frame;
-    size_t                        m_robot_id;
     ros::Publisher                m_publisher;
     tf::TransformListener         m_listener;
     ros::Rate                     m_publishRate;

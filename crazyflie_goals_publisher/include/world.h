@@ -7,27 +7,42 @@
 #include <tf/tf.h>
 
 
+class Region;
+class World;
+
+
+struct Occupator {
+    Occupator(const std::string &name, double x0, double y0, double z0);
+
+    Occupator() = delete;
+    Occupator(const Occupator &) = delete;
+    Occupator(Occupator &&) = delete;
+
+    std::string		name;
+    Region 	   	   *region;
+    double 			x, y, z;
+
+    void setXYZ(double x, double y, double z);
+};
+
+
+class Region {
+    friend class World;
+
+    std::mutex  m_occupationMutex;
+    Occupator  *m_owner;
+
+public:
+    Region();
+
+    Region(const Region &) = delete;
+    Region(Region &&) = delete;
+
+    bool isFree() const;
+};
+
+
 class World {
-    struct Region {
-        // Information about owner
-        struct {
-            double x;
-            double y;
-            double z;
-            size_t id;
-        } m_owner;
-
-        std::mutex m_occupationMutex;
-
-        Region();
-       ~Region();
-
-        Region(const Region &) = delete;
-        Region(Region &&) = delete;
-
-        inline bool isFree() const;
-   };
-
     // Region parameters (in meters)
     double m_regWidth;
     double m_regLength;
@@ -38,13 +53,15 @@ class World {
     double m_offsetOY;
     double m_offsetOZ;
 
-    // Fixes coordinates if they are negative
-    inline double moveX(double x) const;
-    inline double moveY(double y) const;
-    inline double moveZ(double z) const;
-
     std::vector<std::vector<std::vector<Region *>>> m_regions;
-    std::map<size_t, Region *> m_regionInOwnership;
+
+    std::mutex m_registerMutex;
+    std::vector<tf::Vector3> m_registrationPoints;
+
+    // Fixes coordinates if they are negative
+    double moveX(double x) const;
+    double moveY(double y) const;
+    double moveZ(double z) const;
 
 public:
     World(double worldWidth, double worldLenght, double worldHeight,
@@ -55,17 +72,20 @@ public:
     World(const World &) = delete;
     World(World &&) = delete;
 
-    // Checks if there are other robots nearby point (x, y, z)
-    bool isSafePosition(double x, double y, double z, double eps = 0.4) const;
-
-    /* 
-     * Return the center of the nearest free region.
-     * If there is no free center then return the point itself
-     */
-    tf::Vector3 getFreeCenter(double x, double y, double z) const;
+    // Try to register occupator
+    bool addOccupator(Occupator &occupator);
 
     // Try occupy a region that contains point (x, y, z)
-    bool occupyRegion(double x, double y, double z, size_t id);
+    bool occupyRegion(Occupator &occupator, double x, double y, double z);
+
+    // Checks if there are other robots nearby occupator
+    bool isAtSafePosition(const Occupator &occupator, double eps = 0.4) const;
+
+    /* 
+     * Return the center of the nearest free region
+     * If there is no free center then return current position of occupator
+     */
+    tf::Vector3 getFreeCenter(const Occupator &occupator) const;
 
     // Return min/max value of the world at one of the axis
     double getOXMin() const;
