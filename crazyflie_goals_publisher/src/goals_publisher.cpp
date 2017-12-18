@@ -103,7 +103,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         Goal tmpGoal;
 
         // Update exact position of occupator
-        occupator.setXYZ(position.x(), position.y(), position.z());
+        occupator.updateXYZ(position.x(), position.y(), position.z());
 
         ros::Duration duration(5.0);
         ros::Rate     waitLoop(2);
@@ -146,7 +146,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
                 // Update exact position of occupator
                 Goal position = getPosition();
-                occupator.setXYZ(position.x(), position.y(), position.z());
+                occupator.updateXYZ(position.x(), position.y(), position.z());
 
                 // Check that |position - goal| < E
                 if ((fabs(position.x()     - goal->x()) < 0.2) &&
@@ -300,7 +300,7 @@ void GoalsPublisher::goToGoal() {
         Goal goal     = getGoal();
 
         // Update exact position of occupator
-        occupator.setXYZ(position.x(), position.y(), position.z());
+        occupator.updateXYZ(position.x(), position.y(), position.z());
 
         // If m_direction != 0 then it is meant that we have got interrupt from the world
         while (!m_direction &&
@@ -317,7 +317,7 @@ void GoalsPublisher::goToGoal() {
 
             // Update exact position of occupator
             Goal position = getPosition();
-            occupator.setXYZ(position.x(), position.y(), position.z());
+            occupator.updateXYZ(position.x(), position.y(), position.z());
 
             m_publishRate.sleep();
         }

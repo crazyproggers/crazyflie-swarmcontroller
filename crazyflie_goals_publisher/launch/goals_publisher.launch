@@ -19,7 +19,7 @@
       <!--Region sizes-->
       <param name="regWidth" value="0.4" />
       <param name="regLength" value="0.4" />
-      <param name="regHeight" value="0.8" />
+      <param name="regHeight" value="1.2" />
 
       <!--If there are negative coordinates then fix them-->
       <param name="offsetOX" value="0.0" />

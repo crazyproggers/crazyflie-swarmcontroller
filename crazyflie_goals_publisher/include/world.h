@@ -6,31 +6,36 @@
 #include <vector>
 #include <tf/tf.h>
 
-
 class Region;
 class World;
 
+class Occupator {
+    friend class World;
 
-struct Occupator {
+    std::string 	m_name;
+    size_t			m_id;
+    Region 		   *region;
+
+public:
     Occupator(const std::string &name, double x0, double y0, double z0);
 
     Occupator() = delete;
     Occupator(const Occupator &) = delete;
     Occupator(Occupator &&) = delete;
 
-    std::string		name;
-    Region 	   	   *region;
+    std::string 	name() const;
+    size_t 			id()   const;
+    void 			freeRegion();
     double 			x, y, z;
-
-    void setXYZ(double x, double y, double z);
+    void 			updateXYZ(double x, double y, double z);
 };
 
 
 class Region {
     friend class World;
 
-    std::mutex  m_occupationMutex;
-    Occupator  *m_owner;
+    Occupator  *owner;
+    std::mutex  occupationMutex;
 
 public:
     Region();
@@ -39,6 +44,7 @@ public:
     Region(Region &&) = delete;
 
     bool isFree() const;
+    void free();
 };
 
 
@@ -53,7 +59,7 @@ class World {
     double m_offsetOY;
     double m_offsetOZ;
 
-    std::vector<std::vector<std::vector<Region *>>> m_regions;
+    std::vector<std::vector<std::vector<Region*>>> m_regions;
 
     std::mutex m_registerMutex;
     std::vector<tf::Vector3> m_registrationPoints;

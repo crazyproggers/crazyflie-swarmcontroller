@@ -3,29 +3,51 @@
 
 
 Occupator::Occupator(const std::string &name, double x0, double y0, double z0)
-    : name		(name)
+    : m_name	(name)
+    , m_id		(std::hash<std::string>()(name))
+    , region 	(nullptr)
     , x			(x0)
     , y			(y0)
     , z			(z0)
-    , region 	(nullptr)
 {}
 
 
-void Occupator::setXYZ(double x, double y, double z) {
+void Occupator::updateXYZ(double x, double y, double z) {
     this->x = x;
     this->y = y;
     this->z = z;
 }
 
 
+void Occupator::freeRegion() {
+    region->free();
+    region = nullptr;
+}
+
+
+std::string Occupator::name() const {
+    return m_name;
+}
+
+
+size_t Occupator::id() const {
+    return m_id;
+}
+
+
 Region::Region()
-    : m_occupationMutex	()
-    , m_owner		(nullptr)
+    : owner				(nullptr)
+    , occupationMutex	()
 {}
 
 
 inline bool Region::isFree() const {
-    return (m_owner == nullptr);
+    return (owner == nullptr);
+}
+
+
+void Region::free() {
+    owner = nullptr;
 }
 
 
@@ -53,7 +75,7 @@ World::World(
 
     // Fill the world
     for (size_t i = 0; i < _dimOZ; ++i) {
-        std::vector<std::vector<Region *>> vecOY;
+        std::vector<std::vector<Region*>> vecOY;
 
         for (size_t j = 0; j < _dimOY; ++j) {
             std::vector<Region *> vecOX;
@@ -106,7 +128,7 @@ bool World::addOccupator(Occupator &occupator) {
         yNum >= dimOY || movedY < 0 ||
         zNum >= dimOZ || movedZ < 0)
     {
-        ROS_ERROR("%s%s", occupator.name.c_str(), " is outside of the world!");
+        ROS_ERROR("%s%s", occupator.name().c_str(), " is outside of the world!");
         return false;
     }
 
@@ -123,13 +145,13 @@ bool World::addOccupator(Occupator &occupator) {
         }
 
     if (!currReg->isFree() || !distancesAreOk) {
-        ROS_ERROR("Could not register %s%s", occupator.name.c_str(),
+        ROS_ERROR("Could not register %s%s", occupator.name().c_str(),
                   ": is too close to other occupator!");
         return false;
     }
 
     // Occupy starting region
-    currReg->m_owner = &occupator;
+    currReg->owner   = &occupator;
     occupator.region = currReg;
 
     m_registrationPoints.push_back(tf::Vector3(movedX, movedY, movedZ));
@@ -145,20 +167,20 @@ bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
     size_t zNum = moveZ(occupator.z) / m_regHeight;
     Region *selectedReg = m_regions[zNum][yNum][xNum];
 
-    std::lock_guard<std::mutex> locker(selectedReg->m_occupationMutex);
+    std::lock_guard<std::mutex> locker(selectedReg->occupationMutex);
 
     if (selectedReg->isFree()) {
         // free old region of ocuppator
-        occupator.region->m_owner = nullptr;
+        occupator.region->owner = nullptr;
 
         // occupy new region
-        occupator.region = selectedReg;
-        selectedReg->m_owner = &occupator;
+        occupator.region   = selectedReg;
+        selectedReg->owner = &occupator;
 
         return true;
     }
     // If occupator have been owning selected region
-    else if (selectedReg->m_owner == &occupator)
+    else if (selectedReg->owner == &occupator)
         return true;
 
     return false;
@@ -184,9 +206,9 @@ bool World::isAtSafePosition(const Occupator &occupator, double eps) const {
 
     // Calculate distance between point (x, y, z) and selected region
     auto dist = [this](double x, double y, double z, const Region *region) -> double {
-        double occupator_x = moveX(region->m_owner->x);
-        double occupator_y = moveY(region->m_owner->y);
-        double occupator_z = moveZ(region->m_owner->z);
+        double occupator_x = moveX(region->owner->x);
+        double occupator_y = moveY(region->owner->y);
+        double occupator_z = moveZ(region->owner->z);
 
         if (fabs(z - occupator_z) > m_regHeight / 2) {
             return std::sqrt(std::pow(x - occupator_x, 2) +
