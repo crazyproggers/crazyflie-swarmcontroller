@@ -12,6 +12,11 @@ Occupator::Occupator(const std::string &name, double x0, double y0, double z0)
 {}
 
 
+Occupator::~Occupator() {
+    region = nullptr;
+}
+
+
 void Occupator::updateXYZ(double x, double y, double z) {
     this->x = x;
     this->y = y;
@@ -39,6 +44,11 @@ Region::Region()
     : owner             (nullptr)
     , occupationMutex   ()
 {}
+
+
+Region::~Region() {
+    owner = nullptr;
+}
 
 
 inline bool Region::isFree() const {
@@ -94,8 +104,10 @@ World::World(
 World::~World() {
     for (size_t i = 0; i < dimOZ; ++i)
         for (size_t j = 0; j < dimOY; ++j)
-            for (size_t k = 0; k < dimOX; ++k)
+            for (size_t k = 0; k < dimOX; ++k) {
                 delete m_regions[i][j][k];
+                m_regions[i][j][k] = nullptr;
+            }
 }
 
 

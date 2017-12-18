@@ -6,8 +6,10 @@
 #include <vector>
 #include <tf/tf.h>
 
+
 class Region;
 class World;
+
 
 class Occupator {
     friend class World;
@@ -18,6 +20,7 @@ class Occupator {
 
 public:
     Occupator(const std::string &name, double x0, double y0, double z0);
+   ~Occupator();
 
     Occupator() = delete;
     Occupator(const Occupator &) = delete;
@@ -39,6 +42,7 @@ class Region {
 
 public:
     Region();
+   ~Region();
 
     Region(const Region &) = delete;
     Region(Region &&) = delete;
@@ -59,9 +63,17 @@ class World {
     double m_offsetOY;
     double m_offsetOZ;
 
+    // Filling of the world
     std::vector<std::vector<std::vector<Region*>>> m_regions;
+
+    // This mutex is needed for global synchronization between all occupators
     std::mutex m_globalMutex;
 
+    /*
+     * All users of the world
+     * key:   id
+     * value: occupator
+     */
     std::map<size_t, Occupator*> m_occupators;
 
     // Fixes coordinates if they are negative
