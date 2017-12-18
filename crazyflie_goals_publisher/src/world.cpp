@@ -175,49 +175,22 @@ bool World::addOccupator(Occupator &occupator) {
 }
 
 
-bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
-    // Get region that containes occupator position
-    size_t xNum = moveX(occupator.x) / m_regWidth;
-    size_t yNum = moveY(occupator.y) / m_regLength;
-    size_t zNum = moveZ(occupator.z) / m_regHeight;
-    Region *selectedReg = m_regions[zNum][yNum][xNum];
-
-    std::lock_guard<std::mutex> locker(selectedReg->occupationMutex);
-
-    if (selectedReg->isFree()) {
-        // free old region of ocuppator
-        occupator.region->owner = nullptr;
-
-        // occupy new region
-        occupator.region   = selectedReg;
-        selectedReg->owner = &occupator;
-
-        return true;
-    }
-    // If occupator have been owning selected region
-    else if (selectedReg->owner == &occupator)
-        return true;
-
-    return false;
-}
-
-
-bool World::isAtSafePosition(const Occupator &occupator, double eps) const {
-    double x = moveX(occupator.x);
-    double y = moveY(occupator.y);
-    double z = moveZ(occupator.z);
+bool World::areSafeDistances(const Occupator &occupator, double x, double y, double z, double eps) const {
+    x = moveX(x);
+    y = moveY(y);
+    z = moveZ(z);
 
     size_t oldX = x / m_regWidth;
     size_t oldY = y / m_regLength;
     size_t oldZ = z / m_regHeight;
 
-    size_t regX = m_regWidth  / 3;
-    size_t regY = m_regLength / 3;
-    size_t regZ = m_regHeight / 3;
+    size_t regX = m_regWidth  / 2;
+    size_t regY = m_regLength / 2;
+    size_t regZ = m_regHeight / 2;
 
-    size_t newX = oldX + ((oldX < regX && oldX > 0)? -1 : 0) + ((oldX > 2 * regX && oldX + 1 < dimOX)? 1 : 0);
-    size_t newY = oldY + ((oldY < regY && oldY > 0)? -1 : 0) + ((oldY > 2 * regY && oldY + 1 < dimOY)? 1 : 0);
-    size_t newZ = oldZ + ((oldZ < regZ && oldZ > 0)? -1 : 0) + ((oldZ > 2 * regZ && oldZ + 1 < dimOZ)? 1 : 0);
+    size_t newX = oldX + ((oldX < regX && oldX > 0)? -1 : 0) + ((oldX > regX && oldX + 1 < dimOX)? 1 : 0);
+    size_t newY = oldY + ((oldY < regY && oldY > 0)? -1 : 0) + ((oldY > regY && oldY + 1 < dimOY)? 1 : 0);
+    size_t newZ = oldZ + ((oldZ < regZ && oldZ > 0)? -1 : 0) + ((oldZ > regZ && oldZ + 1 < dimOZ)? 1 : 0);
 
     // Calculate distance between point (x, y, z) and selected region
     auto dist = [this](double x, double y, double z, const Region *region) -> double {
@@ -235,10 +208,10 @@ bool World::isAtSafePosition(const Occupator &occupator, double eps) const {
                          std::pow(y - occupator_y, 2));
     };
 
-    Region *reg = nullptr;
-    size_t isNewX = newX - oldX;
-    size_t isNewY = newY - oldY;
-    size_t isNewZ = newZ - oldZ;
+    Region *reg    = nullptr;
+    size_t isNewX  = newX - oldX;
+    size_t isNewY  = newY - oldY;
+    size_t isNewZ  = newZ - oldZ;
 
     /*
      * Find nearest occupied regions and
@@ -246,41 +219,70 @@ bool World::isAtSafePosition(const Occupator &occupator, double eps) const {
      */
 
     reg = m_regions[oldZ][oldY][newX];
-    if (!isNewZ && !isNewY && isNewX && !reg->isFree())
+    if (!isNewZ && !isNewY && isNewX && !reg->isFree() && reg != occupator.region)
         if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[oldZ][newY][oldX];
-    if (!isNewZ && isNewY && !isNewX && !reg->isFree())
+    if (!isNewZ && isNewY && !isNewX && !reg->isFree() && reg != occupator.region)
         if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[oldZ][newY][newX];
-    if (!isNewZ && isNewY && isNewX && !reg->isFree())
+    if (!isNewZ && isNewY && isNewX && !reg->isFree() && reg != occupator.region)
         if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[newZ][oldY][oldX];
-    if (isNewZ && !isNewY && !isNewX && !reg->isFree())
+    if (isNewZ && !isNewY && !isNewX && !reg->isFree() && reg != occupator.region)
         if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[newZ][oldY][newX];
-    if (isNewZ && !isNewY && isNewX && !reg->isFree())
+    if (isNewZ && !isNewY && isNewX && !reg->isFree() && reg != occupator.region)
         if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[newZ][newY][oldX];
-    if (isNewZ && isNewY && !isNewX && !reg->isFree())
+    if (isNewZ && isNewY && !isNewX && !reg->isFree() && reg != occupator.region)
         if (dist(x, y, z, reg) < eps)
             return false;
 
     reg = m_regions[newZ][newY][newX];
-    if (isNewZ && isNewY && isNewX && !reg->isFree())
+    if (isNewZ && isNewY && isNewX && !reg->isFree() && reg != occupator.region)
         if (dist(x, y, z, reg) < eps)
             return false;
 
     return true;
+}
+
+
+bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
+    bool safeDistances = areSafeDistances(occupator, x, y, z);
+
+    // Get region that containes occupator position
+    size_t xNum = moveX(occupator.x) / m_regWidth;
+    size_t yNum = moveY(occupator.y) / m_regLength;
+    size_t zNum = moveZ(occupator.z) / m_regHeight;
+    Region *selectedReg = m_regions[zNum][yNum][xNum];
+
+    std::lock_guard<std::mutex> locker(selectedReg->occupationMutex);
+
+    if (selectedReg->isFree() && safeDistances) {
+        // free old region of ocuppator
+        occupator.region->owner = nullptr;
+
+        // occupy new region
+        occupator.region   = selectedReg;
+        selectedReg->owner = &occupator;
+
+        return true;
+    }
+    // If occupator have been owning selected region
+    else if (selectedReg->owner == &occupator && safeDistances)
+        return true;
+
+    return false;
 }
 
 

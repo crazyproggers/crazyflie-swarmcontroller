@@ -110,9 +110,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         bool participatedInToss = false;
         ros::Time begin = ros::Time::now();
 
-        while (!m_world->occupyRegion    (occupator, goal->x(), goal->y(), goal->z()) ||
-               !m_world->isAtSafePosition(occupator))
-        {
+        while (!m_world->occupyRegion(occupator, goal->x(), goal->y(), goal->z())) {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(position.getMsg());
 
@@ -303,10 +301,7 @@ void GoalsPublisher::goToGoal() {
         occupator.updateXYZ(position.x(), position.y(), position.z());
 
         // If m_direction != 0 then it is meant that we have got interrupt from the world
-        while (!m_direction &&
-              (!m_world->occupyRegion    (occupator, goal.x(), goal.y(), goal.z()) ||
-               !m_world->isAtSafePosition(occupator)))
-        {
+        while (!m_direction && (!m_world->occupyRegion(occupator, goal.x(), goal.y(), goal.z()))) {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(position.getMsg());
             m_publishRate.sleep();

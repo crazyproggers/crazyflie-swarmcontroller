@@ -81,6 +81,10 @@ class World {
     double moveY(double y) const;
     double moveZ(double z) const;
 
+
+    // Checks if distances from point (x, y, z) to occupators in nearest regions are safe
+    bool areSafeDistances(const Occupator &occupator, double x, double y, double z, double eps = 0.4) const;
+
 public:
     World(double worldWidth, double worldLenght, double worldHeight,
           double regWidth,   double regLength,   double regHeight,
@@ -95,9 +99,6 @@ public:
 
     // Try occupy a region that contains point (x, y, z)
     bool occupyRegion(Occupator &occupator, double x, double y, double z);
-
-    // Checks if there are other robots nearby occupator
-    bool isAtSafePosition(const Occupator &occupator, double eps = 0.4) const;
 
     /* 
      * Return the center of the nearest free region
