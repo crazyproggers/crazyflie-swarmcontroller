@@ -128,8 +128,8 @@ bool World::addOccupator(Occupator &occupator) {
     std::lock_guard<std::mutex> locker(m_globalMutex);
 
     double movedX = moveX(occupator.x);
-    double movedY = moveX(occupator.y);
-    double movedZ = moveX(occupator.z);
+    double movedY = moveY(occupator.y);
+    double movedZ = moveZ(occupator.z);
 
     // Get region that containes occupator position
     size_t xNum = movedX / m_regWidth;
@@ -261,9 +261,9 @@ bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
     bool safeDistances = areSafeDistances(occupator, x, y, z);
 
     // Get region that containes occupator position
-    size_t xNum = moveX(occupator.x) / m_regWidth;
-    size_t yNum = moveY(occupator.y) / m_regLength;
-    size_t zNum = moveZ(occupator.z) / m_regHeight;
+    size_t xNum = moveX(x) / m_regWidth;
+    size_t yNum = moveY(y) / m_regLength;
+    size_t zNum = moveZ(z) / m_regHeight;
     Region *selectedReg = m_regions[zNum][yNum][xNum];
 
     std::lock_guard<std::mutex> locker(selectedReg->occupationMutex);
