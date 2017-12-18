@@ -236,8 +236,8 @@ inline Goal GoalsPublisher::getGoal() {
         double minAngle = degToRad(-180);
         double maxAngle = degToRad( 180);
 
-        currAngle += (currAngle + shift > maxAngle)? shift : shift - maxAngle;
-        currAngle += (currAngle + shift < minAngle)? shift : shift - minAngle;
+        currAngle += (currAngle + shift > maxAngle)? shift - 2 * maxAngle : shift;
+        currAngle += (currAngle + shift < minAngle)? shift - 2 * minAngle : shift;
 
         return currAngle;
     };
