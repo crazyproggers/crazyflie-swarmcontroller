@@ -29,10 +29,10 @@ private:
     void runControlled();
 
     // Get current pose at the space
-    inline Pose getPose() const;
+    Pose getPose() const;
 
     // Create a goal on current direction and position
-    inline Goal getGoal();
+    Goal getGoal();
 
     // Subscriber callback
     void directionChanged(const std_msgs::Byte::ConstPtr &direction);
