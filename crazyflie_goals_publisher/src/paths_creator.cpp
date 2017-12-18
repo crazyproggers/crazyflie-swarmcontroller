@@ -10,9 +10,9 @@ PathsCreator::PathsCreator(
         const  std::string &pathToMap,
         const  std::string &worldFrame,
         bool   splinesMode)
-        : m_worldFrame		(worldFrame)
-        , m_splinesMode		(splinesMode)
-        , m_canGenPaths		(false)
+        : m_worldFrame      (worldFrame)
+        , m_splinesMode     (splinesMode)
+        , m_canGenPaths     (false)
 {
     if (readTable(pathToMap))
         m_canGenPaths = true;

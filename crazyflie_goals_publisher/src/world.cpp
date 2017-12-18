@@ -3,12 +3,12 @@
 
 
 Occupator::Occupator(const std::string &name, double x0, double y0, double z0)
-    : m_name	(name)
-    , m_id		(std::hash<std::string>()(name))
-    , region 	(nullptr)
-    , x			(x0)
-    , y			(y0)
-    , z			(z0)
+    : m_name    (name)
+    , m_id      (std::hash<std::string>()(name))
+    , region    (nullptr)
+    , x         (x0)
+    , y         (y0)
+    , z         (z0)
 {}
 
 
@@ -36,8 +36,8 @@ size_t Occupator::id() const {
 
 
 Region::Region()
-    : owner				(nullptr)
-    , occupationMutex	()
+    : owner             (nullptr)
+    , occupationMutex   ()
 {}
 
 
@@ -67,7 +67,8 @@ World::World(
     , m_offsetOX            (offsetOX)
     , m_offsetOY            (offsetOY)
     , m_offsetOZ            (offsetOZ)
-    , m_registerMutex		 ()
+    , m_globalMutex         ()
+    , m_occupators          ()
 {
     double _dimOZ = std::ceil(worldHeight / regHeight);
     double _dimOY = std::ceil(worldLength / regLength);
@@ -112,7 +113,7 @@ inline double World::moveZ(double z) const {
 
 
 bool World::addOccupator(Occupator &occupator) {
-    std::lock_guard<std::mutex> locker(m_registerMutex);
+    std::lock_guard<std::mutex> locker(m_globalMutex);
 
     double movedX = moveX(occupator.x);
     double movedY = moveX(occupator.y);
@@ -138,8 +139,10 @@ bool World::addOccupator(Occupator &occupator) {
     bool distancesAreOk = true;
     double eps = 0.4;
 
-    for (tf::Vector3 point: m_registrationPoints)
-        if (std::sqrt(std::pow(movedX - point.x(), 2) + std::pow(movedY - point.y(), 2)) < eps) {
+    for (auto checked: m_occupators)
+        if (std::sqrt(std::pow(movedX - moveX(checked.second->x), 2) +
+                      std::pow(movedY - moveY(checked.second->y), 2)) < eps)
+        {
             distancesAreOk = false;
             break;
         }
@@ -154,7 +157,7 @@ bool World::addOccupator(Occupator &occupator) {
     currReg->owner   = &occupator;
     occupator.region = currReg;
 
-    m_registrationPoints.push_back(tf::Vector3(movedX, movedY, movedZ));
+    m_occupators[occupator.id()] = &occupator;
 
     return true;
 }

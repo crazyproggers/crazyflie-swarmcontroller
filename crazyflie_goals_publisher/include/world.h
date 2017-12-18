@@ -12,9 +12,9 @@ class World;
 class Occupator {
     friend class World;
 
-    std::string 	m_name;
-    size_t			m_id;
-    Region 		   *region;
+    std::string     m_name;
+    size_t          m_id;
+    Region         *region;
 
 public:
     Occupator(const std::string &name, double x0, double y0, double z0);
@@ -23,11 +23,11 @@ public:
     Occupator(const Occupator &) = delete;
     Occupator(Occupator &&) = delete;
 
-    std::string 	name() const;
-    size_t 			id()   const;
-    void 			freeRegion();
-    double 			x, y, z;
-    void 			updateXYZ(double x, double y, double z);
+    std::string     name() const;
+    size_t          id()   const;
+    void            freeRegion();
+    double          x, y, z;
+    void            updateXYZ(double x, double y, double z);
 };
 
 
@@ -60,9 +60,9 @@ class World {
     double m_offsetOZ;
 
     std::vector<std::vector<std::vector<Region*>>> m_regions;
+    std::mutex m_globalMutex;
 
-    std::mutex m_registerMutex;
-    std::vector<tf::Vector3> m_registrationPoints;
+    std::map<size_t, Occupator*> m_occupators;
 
     // Fixes coordinates if they are negative
     double moveX(double x) const;

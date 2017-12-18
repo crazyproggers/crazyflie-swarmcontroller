@@ -4,10 +4,10 @@
 #include "goal.h"
 
 class PathsCreator {
-    std::string 				  	m_worldFrame;
-    std::vector<std::list<Goal>> 	m_paths;
-    bool 							m_splinesMode;
-    bool 							m_canGenPaths;
+    std::string                     m_worldFrame;
+    std::vector<std::list<Goal>>    m_paths;
+    bool                            m_splinesMode;
+    bool                            m_canGenPaths;
 
     bool readTable(const std::string &pathToMap);
 
