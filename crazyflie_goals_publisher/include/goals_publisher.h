@@ -28,8 +28,8 @@ private:
     // Controlled flight
     void runControlled();
 
-    // Get current position at the space
-    inline Goal getPosition() const;
+    // Get current pose at the space
+    inline Pose getPose() const;
 
     // Create a goal on current direction and position
     inline Goal getGoal();

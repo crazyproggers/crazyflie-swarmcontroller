@@ -110,6 +110,19 @@ public:
         return *this;
     }
 
+    Goal (const Pose &pose)
+        : Pose    (pose.x(), pose.y(), pose.z(), pose.roll(), pose.pitch(), pose.yaw())
+        , m_delay (0.0)
+        , m_empty (false)
+    {}
+
+    Goal & operator=(const Pose &pose) {
+        if (this != &pose)
+            Goal(pose);
+
+        return *this;
+    }
+
     double delay()    const   { return m_delay; }
     bool   empty()    const   { return m_empty; }
 };

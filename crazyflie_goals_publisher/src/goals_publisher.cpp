@@ -62,27 +62,27 @@ void GoalsPublisher::initWorld(
 }
 
 
-inline Goal GoalsPublisher::getPosition() const {
-    tf::StampedTransform position;
+inline Pose GoalsPublisher::getPose() const {
+    tf::StampedTransform poseAtSpace;
 
     try {
-        m_listener.lookupTransform(m_worldFrame, m_frame, ros::Time(0), position);
+        m_listener.lookupTransform(m_worldFrame, m_frame, ros::Time(0), poseAtSpace);
     }
     catch (tf::TransformException &exc) {
-        ROS_ERROR("%s%s", m_frame.c_str(), ": could not get current position!");
+        ROS_ERROR("%s%s", m_frame.c_str(), ": could not get current pose!");
         ROS_ERROR("An exception was caught: %s", exc.what());
         return Goal();
     }
 
-    double x = position.getOrigin().x();
-    double y = position.getOrigin().y();
-    double z = position.getOrigin().z();
+    double x = poseAtSpace.getOrigin().x();
+    double y = poseAtSpace.getOrigin().y();
+    double z = poseAtSpace.getOrigin().z();
 
     double roll, pitch, yaw;
-    tf::Quaternion quaternion = position.getRotation();
+    tf::Quaternion quaternion = poseAtSpace.getRotation();
     tf::Matrix3x3(quaternion).getRPY(roll, pitch, yaw);
 
-    return Goal(x, y, z, roll, pitch, yaw);
+    return Pose(x, y, z, roll, pitch, yaw);
 }
 
 
@@ -92,18 +92,18 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         return (rand() % 2)? maxWaiting : 0.0;
     };
 
-    Goal starting = getPosition();
+    Pose starting = getPose();
     Occupator occupator(m_frame, starting.x(), starting.y(), starting.z());
 
     if (!m_world->addOccupator(occupator))
         return;
 
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
-        Goal position = getPosition();
+        Pose pose = getPose();
         Goal tmpGoal;
 
-        // Update exact position of occupator
-        occupator.updateXYZ(position.x(), position.y(), position.z());
+        // Update exact pose of occupator
+        occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
         ros::Duration duration(5.0);
         ros::Rate     waitLoop(2);
@@ -114,7 +114,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                !m_world->isAtSafePosition(occupator))
         {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
-            m_publisher.publish(position.getMsg());
+            m_publisher.publish(pose.getMsg());
 
             ros::Time end = ros::Time::now();
 
@@ -132,7 +132,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 tf::Vector3 center = m_world->getFreeCenter(occupator);
                 tmpGoal = Goal(center.x(), center.y(), center.z(), 0.0, 0.0, 0.0);
 
-                if (tmpGoal.x() != position.x() || tmpGoal.y() != position.y() || tmpGoal.z() != position.z())
+                if (tmpGoal.x() != pose.x() || tmpGoal.y() != pose.y() || tmpGoal.z() != pose.z())
                     break;
                 else begin = ros::Time::now();
             }
@@ -144,17 +144,17 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
             while (ros::ok()) {
                 m_publisher.publish(goal->getMsg());
 
-                // Update exact position of occupator
-                Goal position = getPosition();
-                occupator.updateXYZ(position.x(), position.y(), position.z());
+                // Update exact pose of occupator
+                Pose pose = getPose();
+                occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
-                // Check that |position - goal| < E
-                if ((fabs(position.x()     - goal->x()) < 0.2) &&
-                    (fabs(position.y()     - goal->y()) < 0.2) &&
-                    (fabs(position.z()     - goal->z()) < 0.2) &&
-                    (fabs(position.roll()  - goal->roll())  < degToRad(10)) &&
-                    (fabs(position.pitch() - goal->pitch()) < degToRad(10)) &&
-                    (fabs(position.yaw()   - goal->yaw())   < degToRad(10)))
+                // Check that |pose - goal| < E
+                if ((fabs(pose.x()     - goal->x()) < 0.2) &&
+                    (fabs(pose.y()     - goal->y()) < 0.2) &&
+                    (fabs(pose.z()     - goal->z()) < 0.2) &&
+                    (fabs(pose.roll()  - goal->roll())  < degToRad(10)) &&
+                    (fabs(pose.pitch() - goal->pitch()) < degToRad(10)) &&
+                    (fabs(pose.yaw()   - goal->yaw())   < degToRad(10)))
                 {
                     ros::Duration(goal->delay()).sleep();
                     break; // go to next goal
@@ -164,14 +164,14 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
             }
         }
         else {
-            // Interpolate from position to tmpGoal and backward
-            std::list<Goal> tmpPath  = interpolate(position, tmpGoal);
+            // Interpolate from pose to tmpGoal and backward
+            std::list<Goal> tmpPath  = interpolate(pose, tmpGoal);
             std::list<Goal> backPath = interpolate(tmpGoal, *goal);
 
-            auto pos = std::next(goal);
+            auto position = std::next(goal);
 
-            path.splice(pos, tmpPath);
-            path.splice(pos, backPath);
+            path.splice(position, tmpPath);
+            path.splice(position, backPath);
         }
     } // for (goal = path.begin(); goal != path.end(); ++goal)
 
@@ -199,13 +199,13 @@ void GoalsPublisher::directionChanged(const std_msgs::Byte::ConstPtr &direction)
 
 
 inline Goal GoalsPublisher::getGoal() {
-    Goal position   = getPosition();
-    double x        = position.x();
-    double y        = position.y();
-    double z        = position.z();
-    double roll     = position.roll();
-    double pitch    = position.pitch();
-    double yaw      = position.yaw();
+    Pose pose       = getPose();
+    double x        = pose.x();
+    double y        = pose.y();
+    double z        = pose.z();
+    double roll     = pose.roll();
+    double pitch    = pose.pitch();
+    double yaw      = pose.yaw();
 
     double movingStep   = 0.1; // meters
     double eps          = 0.2; // meters
@@ -287,7 +287,7 @@ inline Goal GoalsPublisher::getGoal() {
 
 
 void GoalsPublisher::goToGoal() {
-    Goal starting = getPosition();
+    Pose starting = getPose();
     Occupator occupator(m_frame, starting.x(), starting.y(), starting.z());
 
     if (!m_world->addOccupator(occupator))
@@ -296,11 +296,11 @@ void GoalsPublisher::goToGoal() {
     while (ros::ok()) {
         if (!m_direction) continue;
 
-        Goal position = getPosition();
-        Goal goal     = getGoal();
+        Pose pose = getPose();
+        Goal goal = getGoal();
 
-        // Update exact position of occupator
-        occupator.updateXYZ(position.x(), position.y(), position.z());
+        // Update exact pose of occupator
+        occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
         // If m_direction != 0 then it is meant that we have got interrupt from the world
         while (!m_direction &&
@@ -308,16 +308,16 @@ void GoalsPublisher::goToGoal() {
                !m_world->isAtSafePosition(occupator)))
         {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
-            m_publisher.publish(position.getMsg());
+            m_publisher.publish(pose.getMsg());
             m_publishRate.sleep();
         }
 
         while (!m_direction) {
             m_publisher.publish(goal.getMsg());
 
-            // Update exact position of occupator
-            Goal position = getPosition();
-            occupator.updateXYZ(position.x(), position.y(), position.z());
+            // Update exact pose of occupator
+            Pose pose = getPose();
+            occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
             m_publishRate.sleep();
         }
