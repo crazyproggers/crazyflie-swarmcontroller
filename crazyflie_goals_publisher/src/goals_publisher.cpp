@@ -92,15 +92,15 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         return (rand() % 2)? maxWaiting : 0.0;
     };
 
-    Pose starting = getPose();
-    Occupator occupator(m_frame, starting.x(), starting.y(), starting.z());
+    Pose pose = getPose();
+    Occupator occupator(m_frame, pose.x(), pose.y(), pose.z());
 
     if (!m_world->addOccupator(occupator))
         return;
 
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
         // Update exact pose of occupator
-        Pose pose = getPose();
+        pose = getPose();
         occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
         Goal tmpGoal;
@@ -143,7 +143,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 m_publisher.publish(goal->msg());
 
                 // Update exact pose of occupator
-                Pose pose = getPose();
+                pose = getPose();
                 occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
                 // Check that |pose - goal| < E
@@ -285,8 +285,8 @@ inline Goal GoalsPublisher::getGoal() {
 
 
 void GoalsPublisher::goToGoal() {
-    Pose starting = getPose();
-    Occupator occupator(m_frame, starting.x(), starting.y(), starting.z());
+    Pose pose = getPose();
+    Occupator occupator(m_frame, pose.x(), pose.y(), pose.z());
 
     if (!m_world->addOccupator(occupator))
         return;
@@ -297,7 +297,7 @@ void GoalsPublisher::goToGoal() {
         Goal goal = getGoal();
 
         // Update exact pose of occupator
-        Pose pose = getPose();
+        pose = getPose();
         occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
         // If m_direction != 0 then it is meant that we have got interrupt from the world
