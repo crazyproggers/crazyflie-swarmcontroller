@@ -1,6 +1,10 @@
 #include "goals_publisher.h"
 #include "paths_creator.h"
 
+Goal test() {
+    return Goal(5.0, 5.0, 5.0, 0, 0, 0);
+}
+
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "goals_publisher");

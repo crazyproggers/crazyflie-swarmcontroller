@@ -99,11 +99,11 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         return;
 
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
-        Pose pose = getPose();
-        Goal tmpGoal;
-
         // Update exact pose of occupator
+        Pose pose = getPose();
         occupator.updateXYZ(pose.x(), pose.y(), pose.z());
+
+        Goal tmpGoal;
 
         ros::Duration duration(5.0);
         ros::Rate     waitLoop(2);
@@ -112,7 +112,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
         while (!m_world->occupyRegion(occupator, goal->x(), goal->y(), goal->z())) {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
-            m_publisher.publish(pose.getMsg());
+            m_publisher.publish(pose.msg());
 
             ros::Time end = ros::Time::now();
 
@@ -140,7 +140,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
         if (tmpGoal.empty()) {
             while (ros::ok()) {
-                m_publisher.publish(goal->getMsg());
+                m_publisher.publish(goal->msg());
 
                 // Update exact pose of occupator
                 Pose pose = getPose();
@@ -294,24 +294,25 @@ void GoalsPublisher::goToGoal() {
     while (ros::ok()) {
         if (!m_direction) continue;
 
-        Pose pose = getPose();
         Goal goal = getGoal();
 
         // Update exact pose of occupator
+        Pose pose = getPose();
         occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
         // If m_direction != 0 then it is meant that we have got interrupt from the world
         while (!m_direction && (!m_world->occupyRegion(occupator, goal.x(), goal.y(), goal.z()))) {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
-            m_publisher.publish(pose.getMsg());
+            m_publisher.publish(pose.msg());
+
             m_publishRate.sleep();
         }
 
         while (!m_direction) {
-            m_publisher.publish(goal.getMsg());
+            m_publisher.publish(goal.msg());
 
             // Update exact pose of occupator
-            Pose pose = getPose();
+            pose = getPose();
             occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
             m_publishRate.sleep();

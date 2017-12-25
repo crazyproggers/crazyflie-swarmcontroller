@@ -5,13 +5,46 @@
 
 
 // This class provides a wrapper over geometry_msgs::PoseStamped
-class Pose: private geometry_msgs::PoseStamped {
-    double m_roll;   // angle around OX
-    double m_pitch;  // angle around OY
-    double m_yaw;    // angle around OZ
+class Pose: protected geometry_msgs::PoseStamped {
+protected:
+    double m_roll;   // angle around OX (in radians)
+    double m_pitch;  // angle around OY (in radians)
+    double m_yaw;    // angle around OZ (in radians)
+    bool   m_empty;  // true if pose is not denoted
+
+    // Copy original to *this
+    void copy(const Pose &original) {
+        m_roll             = original.m_roll;
+        m_pitch            = original.m_pitch;
+        m_yaw              = original.m_yaw;
+        m_empty            = original.m_empty;
+        header.seq         = original.header.seq;
+        header.stamp       = original.header.stamp;
+        pose.position.x    = original.pose.position.x;
+        pose.position.y    = original.pose.position.y;
+        pose.position.z    = original.pose.position.z;
+        pose.orientation.x = original.pose.orientation.x;
+        pose.orientation.y = original.pose.orientation.y;
+        pose.orientation.z = original.pose.orientation.z;
+        pose.orientation.w = original.pose.orientation.w;
+    }
+
+    // Move original to *this
+    void move(Pose &original) {
+        copy(original);
+
+        original.m_empty        = true;
+        original.header.seq     = 0;
+        original.header.stamp   = ros::Time(0);
+    }
 
 public:
-    Pose() {}
+    Pose()
+        : m_empty               (true)
+    {
+        header.seq              = 0;
+        header.stamp            = ros::Time(0);
+    }
 
     Pose(
         double x,
@@ -20,44 +53,42 @@ public:
         double roll,
         double pitch,
         double yaw)
-        : m_roll    (roll)
-        , m_pitch   (pitch)
-        , m_yaw     (yaw)
+        : m_roll                (roll)
+        , m_pitch               (pitch)
+        , m_yaw                 (yaw)
+        , m_empty               (false)
     {
         tf::Quaternion quaternion = tf::createQuaternionFromRPY(roll, pitch, yaw);
 
-        header.seq         = 0;
-        header.stamp       = ros::Time(0);
-        pose.position.x    = x;
-        pose.position.y    = y;
-        pose.position.z    = z;
-        pose.orientation.x = quaternion.x();
-        pose.orientation.y = quaternion.y();
-        pose.orientation.z = quaternion.z();
-        pose.orientation.w = quaternion.w();
+        header.seq              = 0;
+        header.stamp            = ros::Time(0);
+        pose.position.x         = x;
+        pose.position.y         = y;
+        pose.position.z         = z;
+        pose.orientation.x      = quaternion.x();
+        pose.orientation.y      = quaternion.y();
+        pose.orientation.z      = quaternion.z();
+        pose.orientation.w      = quaternion.w();
     }
 
-    Pose(const Pose &newPose)
-        : m_roll    (newPose.m_roll)
-        , m_pitch   (newPose.m_pitch)
-        , m_yaw     (newPose.m_yaw)
-    {
-        tf::Quaternion quaternion = tf::createQuaternionFromRPY(m_roll, m_pitch, m_yaw);
-
-        header.seq         = 0;
-        header.stamp       = ros::Time(0);
-        pose.position.x    = newPose.pose.position.x;
-        pose.position.y    = newPose.pose.position.y;
-        pose.position.z    = newPose.pose.position.z;
-        pose.orientation.x = quaternion.x();
-        pose.orientation.y = quaternion.y();
-        pose.orientation.z = quaternion.z();
-        pose.orientation.w = quaternion.w();
+    Pose(const Pose &pose) {
+        copy(pose);
     }
 
-    Pose & operator=(const Pose &newPose) {
-        if (this != &newPose)
-            Pose(newPose);
+    Pose & operator=(const Pose &pose) {
+        if (this != &pose)
+            copy(pose);
+
+        return *this;
+    }
+
+    Pose(Pose &&pose) {
+        move(pose);
+    }
+
+    Pose & operator=(Pose &&pose) {
+        if (this != &pose)
+            move(pose);
 
         return *this;
     }
@@ -68,8 +99,9 @@ public:
     double roll()     const   { return m_roll;          }
     double pitch()    const   { return m_pitch;         }
     double yaw()      const   { return m_yaw;           }
+    bool   empty()    const   { return m_empty;         }
 
-    geometry_msgs::PoseStamped getMsg() {
+    geometry_msgs::PoseStamped msg() {
         ++header.seq;
         header.stamp = ros::Time::now();
         return static_cast<geometry_msgs::PoseStamped>(*this);
@@ -79,10 +111,19 @@ public:
 
 class Goal: public Pose {
     double m_delay;  // waiting at point (by default is zero)
-    bool   m_empty;  // true if goal was not denote (by default is false)
+
+    // Move goal to *this
+    void move(Goal &goal) {
+        copy(static_cast<Pose>(goal));
+
+        goal.m_empty        = true;
+        goal.m_delay        = 0.0;
+        goal.header.seq     = 0;
+        goal.header.stamp   = ros::Time(0);
+    }
 
 public:
-    Goal() : m_empty(true) {}
+    Goal() : Pose() {}
 
     Goal(
         double x,
@@ -94,37 +135,56 @@ public:
         double delay = 0.0)
         : Pose      (x, y, z, roll, pitch, yaw)
         , m_delay   (delay)
-        , m_empty   (false)
     {}
 
-    Goal (const Goal &goal)
+    Goal(const Goal &goal)
         : Pose    (goal.x(), goal.y(), goal.z(), goal.roll(), goal.pitch(), goal.yaw())
         , m_delay (goal.m_delay)
-        , m_empty (goal.m_empty)
     {}
 
     Goal & operator=(const Goal &goal) {
-        if (this != &goal)
-            Goal(goal);
+        if (this != &goal) {
+            Pose pose(goal.x(), goal.y(), goal.z(), goal.roll(), goal.pitch(), goal.yaw());
+            copy(pose);
+            m_delay = goal.m_delay;
+        }
 
         return *this;
     }
 
-    Goal (const Pose &pose)
+    Goal(Goal &&goal)
+        : m_delay (goal.m_delay)
+    {
+        move(goal);
+    }
+
+    Goal & operator=(Goal &&goal) {
+        if (this != &goal) {
+            m_delay = goal.m_delay;
+            move(goal);
+        }
+
+        return *this;
+    }
+
+    Goal(const Pose &pose)
         : Pose    (pose.x(), pose.y(), pose.z(), pose.roll(), pose.pitch(), pose.yaw())
         , m_delay (0.0)
-        , m_empty (false)
     {}
 
     Goal & operator=(const Pose &pose) {
-        if (this != &pose)
-            Goal(pose);
+        if (this != &pose) {
+            copy(pose);
+            m_delay = 0.0;
+        }
 
         return *this;
     }
 
-    double delay()    const   { return m_delay; }
-    bool   empty()    const   { return m_empty; }
+    Goal(Pose &&pose) = delete;
+    Goal & operator=(Pose &&pose) = delete;
+
+    double delay() const { return m_delay; }
 };
 
 #endif // GOAL_H
