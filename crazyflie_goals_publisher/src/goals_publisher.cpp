@@ -147,9 +147,9 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                     continue;
                 }
 
-                // Searching the nearest free region center
-                tf::Vector3 center = m_world->getFreeCenter(occupator);
-                tmpGoal = Goal(center.x(), center.y(), center.z(), 0.0, 0.0, 0.0);
+                // Retreat into the nearest free region
+                tf::Vector3 safe = m_world->retreat(occupator);
+                tmpGoal = Goal(safe.x(), safe.y(), safe.z(), 0.0, 0.0, 0.0);
 
                 if (tmpGoal.x() != pose.x() || tmpGoal.y() != pose.y() || tmpGoal.z() != pose.z())
                     break;

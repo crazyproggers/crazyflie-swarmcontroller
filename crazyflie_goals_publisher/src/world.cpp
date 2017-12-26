@@ -286,7 +286,7 @@ bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
 }
 
 
-tf::Vector3 World::getFreeCenter(const Occupator &occupator) const {
+tf::Vector3 World::retreat(const Occupator &occupator) const {
     /*
      * If there is deadlock then check ways to step back like in picture
      *    |----|----|----|

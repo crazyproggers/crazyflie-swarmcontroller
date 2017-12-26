@@ -104,7 +104,7 @@ public:
      * Return the center of the nearest free region
      * If there is no free center then return current position of occupator
      */
-    tf::Vector3 getFreeCenter(const Occupator &occupator) const;
+    tf::Vector3 retreat(const Occupator &occupator) const;
 
     // Return min/max value of the world at one of the axis
     double getOXMin() const;
