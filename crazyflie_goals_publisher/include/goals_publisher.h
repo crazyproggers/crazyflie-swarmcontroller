@@ -31,6 +31,13 @@ private:
     // Get current pose at the space
     Pose getPose() const;
 
+    /*
+     * Return true if |pose - goal| >= eps
+     * It is possible if robot have landed or pushed away from it is current pose
+     */
+    bool isFarFromGoal(const Pose &pose, const Goal &goal, double eps = 0.4) const;
+
+
     // Create a goal on current direction and position
     Goal getGoal();
 

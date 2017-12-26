@@ -71,7 +71,7 @@ inline Pose GoalsPublisher::getPose() const {
     catch (tf::TransformException &exc) {
         ROS_ERROR("%s%s", m_frame.c_str(), ": could not get current pose!");
         ROS_ERROR("An exception was caught: %s", exc.what());
-        return Goal();
+        return Pose();
     }
 
     double x = poseAtSpace.getOrigin().x();
@@ -83,6 +83,20 @@ inline Pose GoalsPublisher::getPose() const {
     tf::Matrix3x3(quaternion).getRPY(roll, pitch, yaw);
 
     return Pose(x, y, z, roll, pitch, yaw);
+}
+
+
+inline bool GoalsPublisher::isFarFromGoal(const Pose &pose, const Goal &goal, double eps) const {
+    auto dist = [](const Pose &pose, const Goal &goal) {
+        return std::sqrt(std::pow(pose.x() - goal.x(), 2) +
+                         std::pow(pose.y() - goal.y(), 2) +
+                         std::pow(pose.z() - goal.z(), 2));
+    };
+
+    if (dist(pose, goal) < eps)
+        return false;
+
+    return true;
 }
 
 
@@ -99,7 +113,6 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         return;
 
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
-        // Update exact pose of occupator
         pose = getPose();
         occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
@@ -113,6 +126,14 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         while (!m_world->occupyRegion(occupator, goal->x(), goal->y(), goal->z())) {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(pose.msg());
+
+            {
+                Pose exactPose = getPose();
+                occupator.updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
+
+                if (isFarFromGoal(exactPose, *goal))
+                    occupator.freeRegion();
+            }
 
             ros::Time end = ros::Time::now();
 
@@ -142,9 +163,11 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
             while (ros::ok()) {
                 m_publisher.publish(goal->msg());
 
-                // Update exact pose of occupator
                 pose = getPose();
                 occupator.updateXYZ(pose.x(), pose.y(), pose.z());
+
+                if (goal != path.begin() && isFarFromGoal(pose, *goal))
+                    occupator.freeRegion();
 
                 // Check that |pose - goal| < E
                 if ((fabs(pose.x()     - goal->x()) < 0.2) &&
@@ -291,19 +314,32 @@ void GoalsPublisher::goToGoal() {
     if (!m_world->addOccupator(occupator))
         return;
 
+    /*
+     * isFarFromGoal(...) should not work on the first goal. 
+     * Otherwise, this will lead to the collapse of the program
+     */
+    bool firstGoal = true;
+
     while (ros::ok()) {
         if (!m_direction) continue;
 
         Goal goal = getGoal();
 
-        // Update exact pose of occupator
         pose = getPose();
         occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
         // If m_direction != 0 then it is meant that we have got interrupt from the world
-        while (!m_direction && (!m_world->occupyRegion(occupator, goal.x(), goal.y(), goal.z()))) {
+        while ((!m_direction) && !m_world->occupyRegion(occupator, goal.x(), goal.y(), goal.z())) {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(pose.msg());
+
+             {
+                Pose exactPose = getPose();
+                occupator.updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
+
+                if (isFarFromGoal(exactPose, goal))
+                    occupator.freeRegion();
+            }
 
             m_publishRate.sleep();
         }
@@ -311,9 +347,14 @@ void GoalsPublisher::goToGoal() {
         while (!m_direction) {
             m_publisher.publish(goal.msg());
 
-            // Update exact pose of occupator
             pose = getPose();
             occupator.updateXYZ(pose.x(), pose.y(), pose.z());
+
+            if (!firstGoal) {
+                if (isFarFromGoal(pose, goal))
+                    occupator.freeRegion();
+            }
+            else firstGoal = false;
 
             m_publishRate.sleep();
         }
