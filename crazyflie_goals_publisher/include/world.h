@@ -83,7 +83,7 @@ class World {
 
 
     // Checks if distances from point (x, y, z) to occupators in nearest regions are safe
-    bool areSafeDistances(const Occupator &occupator, double x, double y, double z, double eps = 0.4) const;
+    bool safeDistances(const Occupator &occupator, double x, double y, double z, double eps = 0.4) const;
 
 public:
     World(double worldWidth, double worldLenght, double worldHeight,
