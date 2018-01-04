@@ -12,11 +12,6 @@ Occupator::Occupator(const std::string &name, double x0, double y0, double z0)
 {}
 
 
-Occupator::~Occupator() {
-    region = nullptr;
-}
-
-
 void Occupator::updateXYZ(double x, double y, double z) {
     this->x = x;
     this->y = y;
@@ -40,15 +35,15 @@ size_t Occupator::id() const {
 }
 
 
+Occupator::~Occupator() {
+    freeRegion();
+}
+
+
 Region::Region()
     : owner             (nullptr)
     , occupationMutex   ()
 {}
-
-
-Region::~Region() {
-    owner = nullptr;
-}
 
 
 inline bool Region::isFree() const {
@@ -58,6 +53,11 @@ inline bool Region::isFree() const {
 
 void Region::free() {
     owner = nullptr;
+}
+
+
+Region::~Region() {
+    free();
 }
 
 
