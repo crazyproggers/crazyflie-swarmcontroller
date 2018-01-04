@@ -180,43 +180,47 @@ bool World::safeDistances(const Occupator &occupator, double x, double y, double
     y = moveY(y);
     z = moveZ(z);
 
+    // Calculate distance between two points
+    auto dist = [this](double x1, double y1, double z1, double x2, double y2, double z2) -> double {
+        if (fabs(z1 - z2) > m_regHeight / 2)
+            return std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2) + std::pow(z1 - z2, 2));
+
+        return std::sqrt(std::pow(x1 - x2, 2) + std::pow(y1 - y2, 2));
+    };
+
+    if (m_occupators.size() <= 15) {
+        for (auto checked: m_occupators) {
+            if (checked.second != &occupator)
+                continue;
+
+            double checked_x = checked.second->x;
+            double checked_y = checked.second->y;
+            double checked_z = checked.second->z;
+
+            if (dist(x, y, z, checked_x, checked_y, checked_z) < eps)
+                return false;
+        }
+
+        return true;
+    }
 
     long long regionX = x / m_regWidth;
     long long regionY = y / m_regLength;
     long long regionZ = z / m_regHeight;
-
-    // Calculate distance between point (x, y, z) and selected region
-    auto dist = [this](double x, double y, double z, const Region *region) -> double {
-        double occupator_x = moveX(region->owner->x);
-        double occupator_y = moveY(region->owner->y);
-        double occupator_z = moveZ(region->owner->z);
-
-        if (fabs(z - occupator_z) > m_regHeight / 2)
-            return std::sqrt(std::pow(x - occupator_x, 2) +
-                             std::pow(y - occupator_y, 2) +
-                             std::pow(z - occupator_z, 2));
-
-        return std::sqrt(std::pow(x - occupator_x, 2) +
-                         std::pow(y - occupator_y, 2));
-    };
 
     /*
      * Find nearest occupied regions and
      * calculate distances from their owners to point (x, y, z)
      */
 
-
-    long long startX  = (x > m_regWidth * (regionX + 0.5)) ? -1 : -2;
-    long long finishX = (x > m_regWidth * (regionX + 0.5)) ?  2 :  1;
+    long long startX  = (x > m_regWidth * (regionX + 0.5)) ?  -1 : -2;
+    long long finishX = (x > m_regWidth * (regionX + 0.5)) ?   2 :  1;
 
     long long startY  = (y > m_regLength * (regionY + 0.5)) ? -1 : -2;
     long long finishY = (y > m_regLength * (regionY + 0.5)) ?  2 :  1;
 
-    long long startZ  = (z > m_regHeight * (regionZ + 0.5)) ? 0 : 1;
-    long long finishZ = (z > m_regHeight * (regionZ + 0.5)) ? 1 :  0;
-
-
-    Region *reg = nullptr;
+    long long startZ  = (z > m_regHeight * (regionZ + 0.5)) ?  0 :  1;
+    long long finishZ = (z > m_regHeight * (regionZ + 0.5)) ?  1 :  0;
 
     for (long long i = startX; i <= finishX; ++i) {
         long long X = regionX + i;
@@ -233,13 +237,18 @@ bool World::safeDistances(const Occupator &occupator, double x, double y, double
                 if (Z < 0 || Z > dimOZ - 1)
                     continue;
 
-                reg = m_regions[Z][Y][X];
-                if (!reg->isFree() && reg != occupator.region)
-                    if (dist(x, y, z, reg) < eps)
+                Region *reg = m_regions[Z][Y][X];
+                if (!reg->isFree() && reg != occupator.region) {
+                    double occupator_x = moveX(reg->owner->x);
+                    double occupator_y = moveY(reg->owner->y);
+                    double occupator_z = moveZ(reg->owner->z);
+
+                    if (dist(x, y, z, occupator_x, occupator_y, occupator_z) < eps)
                         return false;
-            }
-        }
-    } // for (int i = -2; i <= 2; ++i)
+                }
+            } // for (long long k = startZ; k <= finishZ; ++k)
+        } // for (long long j = startY; j <= finishY; ++j)
+    } // for (long long i = startX; i <= finishX; ++i)
 
     return true;
 }
