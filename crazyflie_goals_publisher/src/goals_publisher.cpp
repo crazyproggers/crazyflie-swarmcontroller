@@ -131,8 +131,10 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 Pose exactPose = getPose();
                 occupator.updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
 
+                /*
                 if (isFarFromGoal(exactPose, *goal))
                     occupator.freeRegion();
+                */
             }
 
             ros::Time end = ros::Time::now();
@@ -166,8 +168,10 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 pose = getPose();
                 occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
+                /*
                 if (goal != path.begin() && isFarFromGoal(pose, *goal))
                     occupator.freeRegion();
+                */
 
                 // Check that |pose - goal| < E
                 if ((fabs(pose.x()     - goal->x()) < 0.2) &&
@@ -337,8 +341,10 @@ void GoalsPublisher::goToGoal() {
                 Pose exactPose = getPose();
                 occupator.updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
 
+                /*
                 if (isFarFromGoal(exactPose, goal))
                     occupator.freeRegion();
+                */
             }
 
             m_publishRate.sleep();
@@ -350,11 +356,13 @@ void GoalsPublisher::goToGoal() {
             pose = getPose();
             occupator.updateXYZ(pose.x(), pose.y(), pose.z());
 
+            /*
             if (!firstGoal) {
                 if (isFarFromGoal(pose, goal))
                     occupator.freeRegion();
             }
             else firstGoal = false;
+            */
 
             m_publishRate.sleep();
         }

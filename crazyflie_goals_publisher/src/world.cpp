@@ -190,7 +190,7 @@ bool World::safeDistances(const Occupator &occupator, double x, double y, double
 
     if (m_occupators.size() <= 15) {
         for (auto checked: m_occupators) {
-            if (checked.second != &occupator)
+            if (checked.second == &occupator)
                 continue;
 
             double checked_x = checked.second->x;
