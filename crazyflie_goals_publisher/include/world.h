@@ -81,7 +81,6 @@ class World {
     double moveY(double y) const;
     double moveZ(double z) const;
 
-
     // Checks if distances from point (x, y, z) to occupators in nearest regions are safe
     bool safeDistances(const Occupator &occupator, double x, double y, double z, double eps = 0.4) const;
 

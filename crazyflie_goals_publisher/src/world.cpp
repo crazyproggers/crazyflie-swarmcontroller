@@ -108,6 +108,9 @@ World::~World() {
                 delete m_regions[i][j][k];
                 m_regions[i][j][k] = nullptr;
             }
+
+    for (auto occupator: m_occupators)
+        occupator.second = nullptr;
 }
 
 
