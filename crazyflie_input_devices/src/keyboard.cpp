@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
         int key = getKey();
 
         if (key == KEY::TAKEOFF) {
-            commandsPublisher.publish(takeoff.getMsg());
+            commandsPublisher.publish(takeoff.msg());
 
             for (auto frame: frames)
                 ros::service::call(frame + "/takeoff", empty_srv);
@@ -114,28 +114,28 @@ int main(int argc, char **argv) {
         }
 
         else if (key == KEY::FORWARD)
-            commandsPublisher.publish(forward.getMsg());
+            commandsPublisher.publish(forward.msg());
 
         else if (key == KEY::BACKWARD) 
-            commandsPublisher.publish(backward.getMsg());
+            commandsPublisher.publish(backward.msg());
 
         else if (key == KEY::RIGHTWARD) 
-            commandsPublisher.publish(rightward.getMsg());
+            commandsPublisher.publish(rightward.msg());
 
         else if (key == KEY::LEFTWARD)
-            commandsPublisher.publish(leftward.getMsg());
+            commandsPublisher.publish(leftward.msg());
 
         else if (key == KEY::UPWARD)
-            commandsPublisher.publish(upward.getMsg());
+            commandsPublisher.publish(upward.msg());
 
         else if (key == KEY::DOWNWARD)
-            commandsPublisher.publish(downward.getMsg());
+            commandsPublisher.publish(downward.msg());
 
         else if (key == KEY::YAWRIGHT)
-            commandsPublisher.publish(yawright.getMsg());
+            commandsPublisher.publish(yawright.msg());
 
         else if (key == KEY::YAWLEFT)
-            commandsPublisher.publish(yawleft.getMsg());
+            commandsPublisher.publish(yawleft.msg());
 
         ros::spinOnce();
         loop.sleep();

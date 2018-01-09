@@ -27,7 +27,7 @@ public:
     friend bool operator==(int8_t value, Command command);
     friend bool operator!=(int8_t value, Command command);
 
-    std_msgs::Byte getMsg() const {
+    std_msgs::Byte msg() const {
         return static_cast<std_msgs::Byte>(*this);
     }
 };
