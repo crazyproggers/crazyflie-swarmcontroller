@@ -30,6 +30,7 @@ public:
     size_t          id()   const;
     void            freeRegion();
     double          x, y, z;
+    double          extraWaitingTime;
     void            updateXYZ(double x, double y, double z);
 };
 
@@ -103,7 +104,7 @@ public:
      * Return the center of the nearest free region
      * If there is no free center then return current position of occupator
      */
-    tf::Vector3 retreat(const Occupator &occupator) const;
+    tf::Vector3 retreat(const Occupator &occupator);
 
     // Return min/max value of the world at one of the axis
     double getOXMin() const;

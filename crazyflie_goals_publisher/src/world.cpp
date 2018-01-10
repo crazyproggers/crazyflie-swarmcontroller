@@ -3,12 +3,13 @@
 
 
 Occupator::Occupator(const std::string &name, double x0, double y0, double z0)
-    : m_name    (name)
-    , m_id      (std::hash<std::string>()(name))
-    , region    (nullptr)
-    , x         (x0)
-    , y         (y0)
-    , z         (z0)
+    : m_name            (name)
+    , m_id              (std::hash<std::string>()(name))
+    , region            (nullptr)
+    , extraWaitingTime  (0.0)
+    , x                 (x0)
+    , y                 (y0)
+    , z                 (z0)
 {}
 
 
@@ -89,7 +90,7 @@ World::World(
         std::vector<std::vector<Region*>> vecOY;
 
         for (size_t j = 0; j < _dimOY; ++j) {
-            std::vector<Region *> vecOX;
+            std::vector<Region*> vecOX;
 
             for (size_t k = 0; k < _dimOX; ++k)
                 vecOX.push_back(new Region);
@@ -286,8 +287,19 @@ bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
 }
 
 
-tf::Vector3 World::retreat(const Occupator &occupator) const {
+tf::Vector3 World::retreat(const Occupator &occupator) {
+    std::lock_guard<std::mutex> locker(m_globalMutex);
+
+    double x = occupator.x;
+    double y = occupator.y;
+    double z = occupator.z;
+
+    if (occupator.extraWaitingTime)
+        return tf::Vector3(x, y, z);
+
     /*
+     * Adding extra waiting time to neighbours
+     *
      * If there is deadlock then check ways to step back like in picture
      *    |----|----|----|
      *    |    |    |    |
@@ -303,38 +315,41 @@ tf::Vector3 World::retreat(const Occupator &occupator) const {
      * If it is not free then return point (x, y, z) itself
      */
 
-    struct Step {
-        long long x, y, z;
+    long long currX = moveX(x) / m_regWidth;
+    long long currY = moveY(y) / m_regLength;
+    long long currZ = moveZ(z) / m_regHeight;
 
-        Step(long long x,
-             long long y,
-             long long z) :
-            x(x), y(y), z(z) {}
-    };
+    const double extraTime = 3.0;
 
-    std::vector<Step> steps = {Step(0, -1, 0), Step(-1, 0, 0), Step(0, 1, 0), Step(1, 0, 0), Step(0, 0, 1)};
+    for (short stepX = -1; stepX <= 1; ++stepX)
+        for (short stepY = -1; stepY <= 1; ++stepY) {
+            bool positionIsOk = true;
+            long long newX = currX + stepX;
+            long long newY = currY + stepY;
 
-    long long currX = moveX(occupator.x) / m_regWidth;
-    long long currY = moveY(occupator.y) / m_regLength;
-    long long currZ = moveZ(occupator.z) / m_regHeight;
+            for (short stepZ = -1; stepZ <= 1; ++stepZ) {
+                long long newZ = currZ + stepZ;
 
-    for (auto step: steps) {
-        long long newX = currX + step.x;
-        long long newY = currY + step.y;
-        long long newZ = currZ + step.z;
+                if (newX >= dimOX || newX < 0 || newY >= dimOY || newY < 0 || newZ >= dimOZ || newZ < 0)
+                    continue;
 
-        // Checking if robot will cross border of the "world"
-        if (newX >= dimOX || newX < 0 || newY >= dimOY || newY < 0 || newZ >= dimOZ || newZ < 0)
-            continue;
+                Region *reg = m_regions[newZ][newY][newX];
 
-        // Returnes center of free region
-        if (m_regions[newZ][newY][newX]->isFree())
-            return tf::Vector3((newX + 0.5) * m_regWidth  - m_offsetOX,
-                               (newY + 0.5) * m_regLength - m_offsetOY,
-                               (newZ + 0.5) * m_regHeight - m_offsetOZ);
-    }
+                if (!reg->isFree() && reg != occupator.region)
+                    reg->owner->extraWaitingTime = extraTime;
 
-    return tf::Vector3(occupator.x, occupator.y, occupator.z);
+                if (!(abs(stepX + stepY) == 1) || !reg->isFree())
+                    positionIsOk = false;
+            }
+
+            if (positionIsOk) {
+                x = (newX + 0.5) * m_regWidth  - m_offsetOX;
+                y = (newY + 0.5) * m_regLength - m_offsetOY;
+            }
+
+        } // for (short stepY = -1; stepY <= 1; ++stepY)
+
+    return tf::Vector3(x, y, z);
 }
 
 

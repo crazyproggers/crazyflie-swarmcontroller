@@ -101,16 +101,13 @@ inline bool GoalsPublisher::isFarFromGoal(const Pose &pose, const Goal &goal, do
 
 
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {
-    // Get an extra waiting time in case of deadlock
-    auto getExtraWaitingTime = [](double maxWaiting = 3.0) {
-        return (rand() % 2)? maxWaiting : 0.0;
-    };
-
     Pose pose = getPose();
     Occupator occupator(m_frame, pose.x(), pose.y(), pose.z());
 
     if (!m_world->addOccupator(occupator))
         return;
+
+    bool exactMoving = false;
 
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
         pose = getPose();
@@ -118,9 +115,8 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
         Goal tmpGoal;
 
-        ros::Duration duration(5.0);
-        ros::Rate     waitLoop(2);
-        bool participatedInToss = false;
+        ros::Duration duration(3.0);
+        ros::Rate waitLoop(2);
         ros::Time begin = ros::Time::now();
 
         while (!m_world->occupyRegion(occupator, goal->x(), goal->y(), goal->z())) {
@@ -141,21 +137,18 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
             // If happened deadlock or we wait too long
             if ((end - begin) >= duration) {
-                double extraTime = getExtraWaitingTime();
-
-                if (extraTime && !participatedInToss) {
-                    participatedInToss = true;
-                    duration += ros::Duration(extraTime);
-                    continue;
-                }
-
                 // Retreat into the nearest free region
                 tf::Vector3 safe = m_world->retreat(occupator);
-                tmpGoal = Goal(safe.x(), safe.y(), safe.z(), 0.0, 0.0, 0.0);
+                tmpGoal = Goal(safe.x(), safe.y(), safe.z(), 0.0, 0.0, 0.0, 1.0);
 
-                if (tmpGoal.x() != pose.x() || tmpGoal.y() != pose.y() || tmpGoal.z() != pose.z())
+                // TODO: fix bug
+                if (!occupator.extraWaitingTime)
                     break;
-                else begin = ros::Time::now();
+                else {
+                    duration += ros::Duration(occupator.extraWaitingTime);
+                    occupator.extraWaitingTime = 0.0;
+                    exactMoving = true;
+                }
             }
 
             waitLoop.sleep();
@@ -174,15 +167,27 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 */
 
                 // Check that |pose - goal| < E
-                if ((fabs(pose.x()     - goal->x()) < 0.2) &&
-                    (fabs(pose.y()     - goal->y()) < 0.2) &&
-                    (fabs(pose.z()     - goal->z()) < 0.2) &&
-                    (fabs(pose.roll()  - goal->roll())  < degToRad(10)) &&
-                    (fabs(pose.pitch() - goal->pitch()) < degToRad(10)) &&
-                    (fabs(pose.yaw()   - goal->yaw())   < degToRad(10)))
-                {
-                    ros::Duration(goal->delay()).sleep();
-                    break; // go to next goal
+                if (!exactMoving) {
+                    if ((fabs(pose.x()     - goal->x()) < 0.2) &&
+                        (fabs(pose.y()     - goal->y()) < 0.2) &&
+                        (fabs(pose.z()     - goal->z()) < 0.2) &&
+                        (fabs(pose.roll()  - goal->roll())  < degToRad(10)) &&
+                        (fabs(pose.pitch() - goal->pitch()) < degToRad(10)) &&
+                        (fabs(pose.yaw()   - goal->yaw())   < degToRad(10)))
+                    {
+                        ros::Duration(goal->delay()).sleep();
+                        break; // go to next goal
+                    }
+                }
+                else {
+                    if ((fabs(pose.x() - goal->x()) < 0.05) &&
+                        (fabs(pose.y() - goal->y()) < 0.05) &&
+                        (fabs(pose.z() - goal->z()) < 0.05))
+                    {
+                        ros::Duration(goal->delay()).sleep();
+                        exactMoving = false;
+                        break; // go to next goal
+                    }
                 }
 
                 m_publishRate.sleep();
@@ -197,6 +202,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
             path.splice(position, tmpPath);
             path.splice(position, backPath);
+
         }
     } // for (goal = path.begin(); goal != path.end(); ++goal)
 
