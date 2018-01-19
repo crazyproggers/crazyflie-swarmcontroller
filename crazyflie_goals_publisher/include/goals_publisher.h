@@ -12,10 +12,13 @@ class GoalsPublisher {
     ros::NodeHandle               m_node;
     std::string                   m_worldFrame;
     std::string                   m_frame;
+    Pose                          m_pose;
+    std::unique_ptr<Occupator>    m_occupator;
     ros::Publisher                m_publisher;
     tf::TransformListener         m_listener;
     ros::Rate                     m_publishRate;
     int8_t                        m_direction;
+    std::thread                   m_updatePoseThread;
     std::thread                   m_runThread;
 
     // class World realize synchronization mode
@@ -28,15 +31,8 @@ private:
     // Controlled flight
     void runControlled();
 
-    // Get current pose at the space
-    Pose getPose() const;
-
-    /*
-     * Return true if |pose - goal| >= eps
-     * It is possible if robot have landed or pushed away from it is current pose
-     */
-    bool isFarFromGoal(const Pose &pose, const Goal &goal, double eps = 0.4) const;
-
+    // Update pose of occupator at the space
+    void updatePose();
 
     // Create a goal on current direction and position
     Goal getGoal();
