@@ -10,25 +10,25 @@ Occupator::Occupator(const std::string &name)
 {}
 
 
-void Occupator::updateXYZ(double x, double y, double z) {
+void Occupator::updateXYZ(double x, double y, double z) noexcept {
     this->x = x;
     this->y = y;
     this->z = z;
 }
 
 
-void Occupator::freeRegion() {
+void Occupator::freeRegion() noexcept {
     region->free();
     region = nullptr;
 }
 
 
-std::string Occupator::name() const {
+std::string Occupator::name() const noexcept {
     return m_name;
 }
 
 
-size_t Occupator::id() const {
+size_t Occupator::id() const noexcept {
     return m_id;
 }
 
@@ -44,12 +44,12 @@ Region::Region()
 {}
 
 
-inline bool Region::isFree() const {
+inline bool Region::isFree() const noexcept {
     return (owner == nullptr);
 }
 
 
-void Region::free() {
+void Region::free() noexcept {
     owner = nullptr;
 }
 
@@ -112,15 +112,15 @@ World::~World() {
 }
 
 
-inline double World::moveX(double x) const {
+inline double World::moveX(double x) const noexcept {
     return x + m_offsetOX;
 }
 
-inline double World::moveY(double y) const {
+inline double World::moveY(double y) const noexcept {
     return y + m_offsetOY;
 }
 
-inline double World::moveZ(double z) const {
+inline double World::moveZ(double z) const noexcept {
     return z + m_offsetOZ;
 }
 
@@ -350,26 +350,26 @@ tf::Vector3 World::retreat(const Occupator &occupator) {
 }
 
 
-double World::getOXMin() const {
+double World::getOXMin() const noexcept {
     return -m_offsetOX;
 }
 
-double World::getOYMin() const {
+double World::getOYMin() const noexcept {
     return -m_offsetOY;
 }
 
-double World::getOZMin() const {
+double World::getOZMin() const noexcept {
     return -m_offsetOZ;
 }
 
-double World::getOXMax() const {
+double World::getOXMax() const noexcept {
     return dimOX * m_regWidth - m_offsetOX;
 }
 
-double World::getOYMax() const {
+double World::getOYMax() const noexcept {
     return dimOY * m_regLength - m_offsetOY;
 }
 
-double World::getOZMax() const {
+double World::getOZMax() const noexcept {
     return dimOZ * m_regHeight - m_offsetOZ;
 }

@@ -39,8 +39,7 @@ protected:
     }
 
 public:
-    Pose()
-        : m_empty               (true)
+    Pose(): m_empty             (true)
     {
         header.seq              = 0;
         header.stamp            = ros::Time(0);
@@ -93,13 +92,13 @@ public:
         return *this;
     }
 
-    double x()        const   { return pose.position.x; }
-    double y()        const   { return pose.position.y; }
-    double z()        const   { return pose.position.z; }
-    double roll()     const   { return m_roll;          }
-    double pitch()    const   { return m_pitch;         }
-    double yaw()      const   { return m_yaw;           }
-    bool   empty()    const   { return m_empty;         }
+    double x()        const noexcept  { return pose.position.x; }
+    double y()        const noexcept  { return pose.position.y; }
+    double z()        const noexcept  { return pose.position.z; }
+    double roll()     const noexcept  { return m_roll;          }
+    double pitch()    const noexcept  { return m_pitch;         }
+    double yaw()      const noexcept  { return m_yaw;           }
+    bool   empty()    const noexcept  { return m_empty;         }
 
     geometry_msgs::PoseStamped msg() {
         ++header.seq;
@@ -152,9 +151,7 @@ public:
         return *this;
     }
 
-    Goal(Goal &&goal)
-        : m_delay (goal.m_delay)
-    {
+    Goal(Goal &&goal): m_delay (goal.m_delay) {
         move(goal);
     }
 
@@ -181,10 +178,10 @@ public:
         return *this;
     }
 
-    Goal(Pose &&pose) = delete;
-    Goal & operator=(Pose &&pose) = delete;
+    Goal(Pose &&pose)               = delete;
+    Goal & operator=(Pose &&pose)   = delete;
 
-    double delay() const { return m_delay; }
+    double delay() const noexcept { return m_delay; }
 };
 
 #endif // GOAL_H

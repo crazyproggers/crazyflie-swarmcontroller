@@ -22,16 +22,18 @@ public:
     Occupator(const std::string &name);
    ~Occupator();
 
-    Occupator() = delete;
-    Occupator(const Occupator &) = delete;
-    Occupator(Occupator &&) = delete;
+    Occupator()                                 = delete;
+    Occupator(const Occupator &)                = delete;
+    Occupator(Occupator &&)                     = delete;
+    Occupator & operator=(const Occupator &)    = delete;
+    Occupator & operator=(Occupator &&)         = delete;
 
-    std::string     name() const;
-    size_t          id()   const;
-    void            freeRegion();
+    std::string     name() const noexcept;
+    size_t          id()   const noexcept;
+    void            freeRegion() noexcept;
     double          x, y, z;
     double          extraWaitingTime;
-    void            updateXYZ(double x, double y, double z);
+    void            updateXYZ(double x, double y, double z) noexcept;
 };
 
 
@@ -45,11 +47,13 @@ public:
     Region();
    ~Region();
 
-    Region(const Region &) = delete;
-    Region(Region &&) = delete;
+    Region(const Region &)              = delete;
+    Region(Region &&)                   = delete;
+    Region & operator=(const Region &)  = delete;
+    Region & operator=(Region &&)       = delete;
 
-    bool isFree() const;
-    void free();
+    bool isFree() const noexcept;
+    void free() noexcept;
 };
 
 
@@ -78,9 +82,9 @@ class World {
     std::map<size_t, Occupator*> m_occupators;
 
     // Fixes coordinates if they are negative
-    double moveX(double x) const;
-    double moveY(double y) const;
-    double moveZ(double z) const;
+    double moveX(double x) const noexcept;
+    double moveY(double y) const noexcept;
+    double moveZ(double z) const noexcept;
 
     // Checks if distances from point (x, y, z) to occupators in nearest regions are safe
     bool safeDistances(const Occupator &occupator, double x, double y, double z, double eps = 0.4) const;
@@ -91,8 +95,10 @@ public:
           double offsetOX,   double offsetOY,    double offsetOZ);
    ~World();
 
-    World(const World &) = delete;
-    World(World &&) = delete;
+    World(const World &)                = delete;
+    World(World &&)                     = delete;
+    World & operator=(const World &)    = delete;
+    World & operator=(World &&)         = delete;
 
     // Try to register occupator
     bool addOccupator(Occupator &occupator);
@@ -107,13 +113,13 @@ public:
     tf::Vector3 retreat(const Occupator &occupator);
 
     // Return min/max value of the world at one of the axis
-    double getOXMin() const;
-    double getOYMin() const;
-    double getOZMin() const;
+    double getOXMin() const noexcept;
+    double getOYMin() const noexcept;
+    double getOZMin() const noexcept;
 
-    double getOXMax() const;
-    double getOYMax() const;
-    double getOZMax() const;
+    double getOXMax() const noexcept;
+    double getOYMax() const noexcept;
+    double getOZMax() const noexcept;
 };
 
 #endif // WORLD_H

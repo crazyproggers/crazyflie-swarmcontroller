@@ -44,9 +44,11 @@ private:
     void goToGoal();
 
 public:
-    GoalsPublisher() = delete;
-    GoalsPublisher(const GoalsPublisher &) = delete;
-    GoalsPublisher & operator=(const GoalsPublisher &) = delete;
+    GoalsPublisher()                                    = delete;
+    GoalsPublisher(const GoalsPublisher &)              = delete;
+    GoalsPublisher(GoalsPublisher&&)                    = delete;
+    GoalsPublisher & operator=(const GoalsPublisher &)  = delete;
+    GoalsPublisher & operator=(GoalsPublisher &&)       = delete;
 
     GoalsPublisher(const std::string &worldFrame,
                    const std::string &frame,
