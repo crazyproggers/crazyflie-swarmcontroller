@@ -19,7 +19,7 @@ class Occupator {
     Region         *region;
 
 public:
-    Occupator(const std::string &name);
+    Occupator(const std::string &name, double x0, double y0, double z0);
    ~Occupator();
 
     Occupator()                                 = delete;

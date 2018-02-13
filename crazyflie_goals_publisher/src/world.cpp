@@ -2,11 +2,14 @@
 #include "world.h"
 
 
-Occupator::Occupator(const std::string &name)
+Occupator::Occupator(const std::string &name, double x0, double y0, double z0)
     : m_name            (name)
     , m_id              (std::hash<std::string>()(name))
     , region            (nullptr)
     , extraWaitingTime  (0.0)
+    , x                 (x0)
+    , y                 (y0)
+    , z                 (z0)
 {}
 
 
