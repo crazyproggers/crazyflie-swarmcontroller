@@ -3,6 +3,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+
+#include "goal.h"
 #include "goals_publisher.h"
 #include "interpolations.h"
 #include "commands.h"
@@ -126,11 +128,6 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
             {
                 Pose exactPose = getPose();
                 occupator.updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
-
-                /*
-                if (isFarFromGoal(exactPose, *goal))
-                    occupator.freeRegion();
-                */
             }
 
             ros::Time end = ros::Time::now();
@@ -141,7 +138,6 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 tf::Vector3 safe = m_world->retreat(occupator);
                 tmpGoal = Goal(safe.x(), safe.y(), safe.z(), 0.0, 0.0, 0.0, 1.0);
 
-                // TODO: fix bug
                 if (!occupator.extraWaitingTime)
                     break;
                 else {
@@ -160,11 +156,6 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
                 pose = getPose();
                 occupator.updateXYZ(pose.x(), pose.y(), pose.z());
-
-                /*
-                if (goal != path.begin() && isFarFromGoal(pose, *goal))
-                    occupator.freeRegion();
-                */
 
                 // Check that |pose - goal| < E
                 if (!exactMoving) {
@@ -238,8 +229,8 @@ inline Goal GoalsPublisher::getGoal() {
     double pitch    = pose.pitch();
     double yaw      = pose.yaw();
 
-    double movingStep   = 0.1; // meters
-    double eps          = 0.2; // meters
+    constexpr double movingStep   = 0.1; // meters
+    constexpr double eps          = 0.2; // meters
 
     auto moveByX = [=](double x, double slope) {
         double shiftX = x + slope * movingStep;
@@ -324,12 +315,6 @@ void GoalsPublisher::goToGoal() {
     if (!m_world->addOccupator(occupator))
         return;
 
-    /*
-     * isFarFromGoal(...) should not work on the first goal. 
-     * Otherwise, this will lead to the collapse of the program
-     */
-    bool firstGoal = true;
-
     while (ros::ok()) {
         if (!m_direction) continue;
 
@@ -346,11 +331,6 @@ void GoalsPublisher::goToGoal() {
              {
                 Pose exactPose = getPose();
                 occupator.updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
-
-                /*
-                if (isFarFromGoal(exactPose, goal))
-                    occupator.freeRegion();
-                */
             }
 
             m_publishRate.sleep();
@@ -361,14 +341,6 @@ void GoalsPublisher::goToGoal() {
 
             pose = getPose();
             occupator.updateXYZ(pose.x(), pose.y(), pose.z());
-
-            /*
-            if (!firstGoal) {
-                if (isFarFromGoal(pose, goal))
-                    occupator.freeRegion();
-            }
-            else firstGoal = false;
-            */
 
             m_publishRate.sleep();
         }

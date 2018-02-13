@@ -153,7 +153,7 @@ bool World::addOccupator(Occupator &occupator) {
 
     // Cheking if distances between each of occupators are ok
     bool distancesAreOk = true;
-    double eps = 0.4;
+    constexpr double eps = 0.4;
 
     for (auto checked: m_occupators)
         if (std::sqrt(std::pow(movedX - moveX(checked.second->x), 2) +
@@ -319,7 +319,7 @@ tf::Vector3 World::retreat(const Occupator &occupator) {
     long long currY = moveY(y) / m_regLength;
     long long currZ = moveZ(z) / m_regHeight;
 
-    const double extraTime = 3.0;
+    constexpr double extraTime = 3.0;
 
     for (short stepX = -1; stepX <= 1; ++stepX)
         for (short stepY = -1; stepY <= 1; ++stepY) {
