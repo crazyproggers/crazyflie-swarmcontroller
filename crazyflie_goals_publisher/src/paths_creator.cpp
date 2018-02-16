@@ -39,7 +39,7 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
         repeated_goals_amount = 0;
     };
 
-    auto fixAngle = [](double degree) {
+    auto fixAngle = [](double degree) -> double {
         if (degree > 180.0)
             degree -= 360.0;
         else if (degree < -180.0)
@@ -151,7 +151,7 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
 }
 
 
-bool PathsCreator::canGenPaths() {
+bool PathsCreator::canGenPaths() const noexcept {
     return m_canGenPaths;
 }
 
@@ -179,7 +179,7 @@ std::list<Goal> PathsCreator::genPath(const std::string &frame) {
     // #########################################################
     // ######## FIND THE NEAREST PATH TO STARTING POINT ########
     // #########################################################
-    auto dist = [](double x0, double y0, double z0, double x, double y, double z) {
+    auto dist = [](double x0, double y0, double z0, double x, double y, double z) -> double {
         return std::sqrt(std::pow(x - x0, 2) + std::pow(y - y0, 2) + std::pow(z - z0, 2));
     };
 

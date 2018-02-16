@@ -21,7 +21,7 @@ public:
                  bool  splinesMode = false);
     ~PathsCreator();
 
-    bool canGenPaths();
+    bool canGenPaths() const noexcept;
     std::list<Goal> genPath(const std::string &frame);
 };
 

@@ -6,7 +6,6 @@
 #include "goals_publisher.h"
 #include "interpolations.h"
 #include "commands.h"
-#include <iostream>
 
 
 constexpr double degToRad(double deg) {
@@ -24,10 +23,10 @@ std::unique_ptr<World> GoalsPublisher::m_world;
 
 
 GoalsPublisher::GoalsPublisher(
-    const std::string &worldFrame,
-    const std::string &frame,
-    size_t publishRate,
-    std::list<Goal> path)
+    const std::string   &worldFrame,
+    const std::string   &frame,
+    size_t               publishRate,
+    std::list<Goal>      path)
     : m_node                      ()
     , m_worldFrame                (worldFrame)
     , m_frame                     (frame)
@@ -91,8 +90,8 @@ inline Pose GoalsPublisher::getPose() const {
 }
 
 
-inline bool GoalsPublisher::isFarFromGoal(const Pose &pose, const Goal &goal, double eps) const {
-    auto dist = [](const Pose &pose, const Goal &goal) {
+inline bool GoalsPublisher::isFarFromGoal(const Pose &pose, const Goal &goal, double eps) const noexcept {
+    auto dist = [](const Pose &pose, const Goal &goal) -> double {
         return std::sqrt(std::pow(pose.x() - goal.x(), 2) +
                          std::pow(pose.y() - goal.y(), 2) +
                          std::pow(pose.z() - goal.z(), 2));
@@ -268,7 +267,7 @@ inline Goal GoalsPublisher::getGoal() {
     constexpr double movingStep   = 0.1; // meters
     constexpr double eps          = 0.2; // meters
 
-    auto moveByX = [=](double x, double slope) {
+    auto moveByX = [=](double x, double slope) -> double {
         double shiftX = x + slope * movingStep;
         x = (shiftX < m_world->getOXMax() - eps)? shiftX : x;
         x = (shiftX > m_world->getOXMin() + eps)? shiftX : x;
@@ -276,7 +275,7 @@ inline Goal GoalsPublisher::getGoal() {
         return x;
     };
 
-    auto moveByY = [=](double y, double slope) {
+    auto moveByY = [=](double y, double slope) -> double {
         double shiftY = y + slope * movingStep;
         y = (shiftY < m_world->getOYMax() - eps)? shiftY : y;
         y = (shiftY > m_world->getOYMin() + eps)? shiftY : y;
@@ -284,7 +283,7 @@ inline Goal GoalsPublisher::getGoal() {
         return y;
     };
 
-    auto moveByZ = [=](double z, double shift) {
+    auto moveByZ = [=](double z, double shift) -> double {
         double shiftZ = z + shift;
         z = (shiftZ < m_world->getOZMax() - eps)? shiftZ : z;
         z = (shiftZ > m_world->getOZMin() + eps)? shiftZ : z;
@@ -292,7 +291,7 @@ inline Goal GoalsPublisher::getGoal() {
         return z;
     };
 
-    auto rotate = [](double currAngle, double shift) {
+    auto rotate = [](double currAngle, double shift) -> double {
         double minAngle = degToRad(-180);
         double maxAngle = degToRad( 180);
 

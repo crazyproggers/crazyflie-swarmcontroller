@@ -44,7 +44,7 @@ private:
      * Return true if |pose - goal| >= eps
      * It is possible if robot have landed or pushed away from it is current pose
      */
-    bool isFarFromGoal(const Pose &pose, const Goal &goal, double eps = 0.4) const;
+    bool isFarFromGoal(const Pose &pose, const Goal &goal, double eps = 0.4) const noexcept;
 
 
     // Create a goal on current direction and position
@@ -68,8 +68,8 @@ public:
 
     GoalsPublisher(const std::string &worldFrame,
                    const std::string &frame,
-                   size_t publishRate,
-                   std::list<Goal> path = {});
+                   size_t             publishRate,
+                   std::list<Goal>    path = {});
 
     ~GoalsPublisher();
 
