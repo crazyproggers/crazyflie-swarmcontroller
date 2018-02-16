@@ -163,6 +163,9 @@ private:
                     msg.linear.z = m_thrust;
                     m_pubNav.publish(msg);
                 }
+
+                std_srvs::Empty empty_srv;
+                ros::service::call(m_frame + "/start_publishing", empty_srv);
             } // case TakingOff:
             break;
 
@@ -175,6 +178,9 @@ private:
                     m_state = Idle;
                     geometry_msgs::Twist msg;
                     m_pubNav.publish(msg);
+
+                    std_srvs::Empty empty_srv;
+                    ros::service::call(m_frame + "/stop_publishing", empty_srv);
                 }
             }
 

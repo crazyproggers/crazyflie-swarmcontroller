@@ -13,7 +13,7 @@ protected:
     bool   m_empty;  // true if pose is not denoted
 
     // Copy original to *this
-    void copy(const Pose &original) {
+    void copy(const Pose &original) noexcept {
         m_roll             = original.m_roll;
         m_pitch            = original.m_pitch;
         m_yaw              = original.m_yaw;
@@ -30,7 +30,7 @@ protected:
     }
 
     // Move original to *this
-    void move(Pose &original) {
+    void move(Pose &original) noexcept {
         copy(original);
 
         original.m_empty        = true;

@@ -2,6 +2,7 @@
 #define GOALS_PUBLISHER_H
 
 #include <tf/transform_listener.h>
+#include <std_srvs/Empty.h>
 #include <std_msgs/Byte.h>
 #include <thread>
 #include "world.h"
@@ -14,11 +15,17 @@ class GoalsPublisher {
     ros::NodeHandle               m_node;
     std::string                   m_worldFrame;
     std::string                   m_frame;
+    std::unique_ptr<Occupator>    m_occupator;
     ros::Publisher                m_publisher;
     tf::TransformListener         m_listener;
-    ros::Rate                     m_publishRate;
-    int8_t                        m_direction;
     std::thread                   m_runThread;
+
+    ros::ServiceServer            m_stopPublishing;
+    ros::ServiceServer            m_startPublishing;
+    bool                          m_publishingIsStopped;
+    ros::Rate                     m_publishRate;
+
+    int8_t                        m_direction;
 
     // class World realize synchronization mode
     static std::unique_ptr<World> m_world;
@@ -49,6 +56,9 @@ private:
     // Go to the current goal
     void goToGoal();
 
+    bool stopPublishing (std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res);
+    bool startPublishing(std_srvs::Empty::Request  &req, std_srvs::Empty::Response &res);
+
 public:
     GoalsPublisher()                                    = delete;
     GoalsPublisher(const GoalsPublisher &)              = delete;
@@ -60,6 +70,7 @@ public:
                    const std::string &frame,
                    size_t publishRate,
                    std::list<Goal> path = {});
+
     ~GoalsPublisher();
 
     static void initWorld(double worldWidth, double worldLength, double worldHeight,

@@ -103,6 +103,9 @@ public:
     // Try to register occupator
     bool addOccupator(Occupator &occupator);
 
+    // Delete occupator from world
+    void delOccupator(Occupator &occupator);
+
     // Try occupy a region that contains point (x, y, z)
     bool occupyRegion(Occupator &occupator, double x, double y, double z);
 

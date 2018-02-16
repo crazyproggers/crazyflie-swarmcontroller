@@ -1,5 +1,11 @@
+#include <memory>
 #include "goals_publisher.h"
 #include "paths_creator.h"
+
+template<typename T, typename ...Args>
+std::unique_ptr<T> make_unique( Args&& ...args ) {
+    return std::unique_ptr<T>(new T( std::forward<Args>(args)... ));
+}
 
 
 int main(int argc, char **argv) {
@@ -42,7 +48,7 @@ int main(int argc, char **argv) {
                               regWidth,   regLength,   regHeight,
                               offsetOX,   offsetOY,    offsetOZ);
 
-    GoalsPublisher *publishers[frames.size()];
+    std::vector<std::unique_ptr<GoalsPublisher>> publishers;
 
     if (!pathToMap.empty()) {
         bool splinesMode = false;
@@ -54,15 +60,15 @@ int main(int argc, char **argv) {
             return -1;
 
         for (size_t i = 0; i < frames.size(); ++i)
-            publishers[i] = new GoalsPublisher(worldFrame, frames[i], rate, creator.genPath(frames[i]));
+            publishers.push_back(make_unique<GoalsPublisher>(worldFrame, frames[i], rate, creator.genPath(frames[i])));
     }
     else {
         for (size_t i = 0; i < frames.size(); ++i)
-            publishers[i] = new GoalsPublisher(worldFrame, frames[i], rate);
+            publishers.push_back(make_unique<GoalsPublisher>(worldFrame, frames[i], rate));
     }
 
-    for (size_t i = 0; i < frames.size(); ++i)
-        delete publishers[i];
+    while (ros::ok())
+        ros::Rate(1).sleep();
 
     return 0;
 }

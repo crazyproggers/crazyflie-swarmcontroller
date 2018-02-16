@@ -179,6 +179,13 @@ bool World::addOccupator(Occupator &occupator) {
 }
 
 
+void World::delOccupator(Occupator &occupator) {
+    std::lock_guard<std::mutex> locker(m_globalMutex);
+    m_occupators[occupator.id()] = nullptr;
+    m_occupators.erase(occupator.id());
+}
+
+
 bool World::safeDistances(const Occupator &occupator, double x, double y, double z, double eps) const {
     x = moveX(x);
     y = moveY(y);
