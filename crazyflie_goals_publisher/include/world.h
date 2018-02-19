@@ -1,11 +1,8 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include <mutex>
-#include <map>
-#include <vector>
 #include <tf/tf.h>
-
+#include <mutex>
 
 class Region;
 class World;

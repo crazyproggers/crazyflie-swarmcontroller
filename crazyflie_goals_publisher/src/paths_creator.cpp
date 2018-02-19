@@ -1,7 +1,6 @@
 #include <tf/transform_listener.h>
 #include <fstream>
-#include <iostream>
-#include <cmath>
+
 #include "paths_creator.h"
 #include "interpolations.h"
 
@@ -48,7 +47,7 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
         return degree;
     };
 
-    auto degToRad = [](double degree) {
+    auto degToRad = [](double degree) -> double {
         return degree / 180.0 * M_PI;
     };
 

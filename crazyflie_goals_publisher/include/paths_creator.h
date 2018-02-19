@@ -12,9 +12,9 @@ class PathsCreator {
     bool readTable(const std::string &pathToMap);
 
 public:
-    PathsCreator() = delete;
-    PathsCreator(const PathsCreator &) = delete;
-    PathsCreator & operator=(const PathsCreator &) = delete;
+    PathsCreator()                                  = delete;
+    PathsCreator(const PathsCreator &)              = delete;
+    PathsCreator & operator=(const PathsCreator &)  = delete;
 
     PathsCreator(const std::string &pathToMap,
                  const std::string &worldFrame,

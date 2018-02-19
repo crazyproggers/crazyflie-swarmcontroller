@@ -1,9 +1,7 @@
 #ifndef INTERPOLATION_H
 #define INTERPOLATION_H
 
-#include <list>
-#include "goal.h"
-
+class Goal;
 
 /*
  * Linear interpolation between two goals

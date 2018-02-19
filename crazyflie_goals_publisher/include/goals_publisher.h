@@ -5,8 +5,9 @@
 #include <std_srvs/Empty.h>
 #include <std_msgs/Byte.h>
 #include <thread>
-#include "world.h"
 
+class World;
+class Occupator;
 class Pose;
 class Goal;
 

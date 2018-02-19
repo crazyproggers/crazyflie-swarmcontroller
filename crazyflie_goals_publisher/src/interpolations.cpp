@@ -1,5 +1,4 @@
-#include <cmath>
-#include <array>
+#include "goal.h"
 #include "interpolations.h"
 
 

@@ -1,4 +1,3 @@
-#include <memory>
 #include "goals_publisher.h"
 #include "paths_creator.h"
 
