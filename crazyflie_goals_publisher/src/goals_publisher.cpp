@@ -125,8 +125,6 @@ bool GoalsPublisher::startPublishing(
 }
 
 
-
-
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {    
     Pose pose   = getPose();
     m_occupator = make_unique<Occupator>(m_frame, pose.x(), pose.y(), pose.z());
@@ -182,7 +180,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
             loop.sleep();
         }
 
-        if (tmpGoal.empty()) {
+        if (tmpGoal.isNull()) {
             while (ros::ok()) {
                 m_publisher.publish(goal->msg());
 

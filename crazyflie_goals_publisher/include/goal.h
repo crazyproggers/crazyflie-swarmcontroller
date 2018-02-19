@@ -7,17 +7,17 @@
 // This class provides a wrapper over geometry_msgs::PoseStamped
 class Pose: protected geometry_msgs::PoseStamped {
 protected:
-    double m_roll;   // angle around OX (in radians)
-    double m_pitch;  // angle around OY (in radians)
-    double m_yaw;    // angle around OZ (in radians)
-    bool   m_empty;  // true if pose is not denoted
+    double m_roll;    // angle around OX (in radians)
+    double m_pitch;   // angle around OY (in radians)
+    double m_yaw;     // angle around OZ (in radians)
+    bool   m_isNull;  // true if was called default constuctor
 
     // Copy original to *this
     void copy(const Pose &original) noexcept {
         m_roll             = original.m_roll;
         m_pitch            = original.m_pitch;
         m_yaw              = original.m_yaw;
-        m_empty            = original.m_empty;
+        m_isNull           = original.m_isNull;
         header.seq         = original.header.seq;
         header.stamp       = original.header.stamp;
         pose.position.x    = original.pose.position.x;
@@ -33,13 +33,13 @@ protected:
     void move(Pose &original) noexcept {
         copy(original);
 
-        original.m_empty        = true;
+        original.m_isNull       = true;
         original.header.seq     = 0;
         original.header.stamp   = ros::Time(0);
     }
 
 public:
-    Pose(): m_empty             (true)
+    Pose(): m_isNull            (true)
     {
         header.seq              = 0;
         header.stamp            = ros::Time(0);
@@ -55,7 +55,7 @@ public:
         : m_roll                (roll)
         , m_pitch               (pitch)
         , m_yaw                 (yaw)
-        , m_empty               (false)
+        , m_isNull              (false)
     {
         tf::Quaternion quaternion = tf::createQuaternionFromRPY(roll, pitch, yaw);
 
@@ -98,7 +98,7 @@ public:
     double roll()     const noexcept  { return m_roll;          }
     double pitch()    const noexcept  { return m_pitch;         }
     double yaw()      const noexcept  { return m_yaw;           }
-    bool   empty()    const noexcept  { return m_empty;         }
+    bool   isNull()   const noexcept  { return m_isNull;        }
 
     geometry_msgs::PoseStamped msg() {
         ++header.seq;
@@ -115,7 +115,7 @@ class Goal: public Pose {
     void move(Goal &goal) {
         copy(static_cast<Pose>(goal));
 
-        goal.m_empty        = true;
+        goal.m_isNull       = true;
         goal.m_delay        = 0.0;
         goal.header.seq     = 0;
         goal.header.stamp   = ros::Time(0);
@@ -177,9 +177,6 @@ public:
 
         return *this;
     }
-
-    Goal(Pose &&pose)               = delete;
-    Goal & operator=(Pose &&pose)   = delete;
 
     double delay() const noexcept { return m_delay; }
 };
