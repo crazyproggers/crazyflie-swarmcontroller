@@ -4,8 +4,14 @@
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float32.h>
 #include <thread>
+#include <memory>
 
 #include "pid.hpp"
+
+template<typename T, typename ...Args>
+std::unique_ptr<T> make_unique( Args&& ...args ) {
+    return std::unique_ptr<T>(new T( std::forward<Args>(args)... ));
+}
 
 double get(
     const ros::NodeHandle &node,
@@ -269,13 +275,13 @@ int main(int argc, char **argv) {
     double frequency;
     node.param("frequency", frequency, 50.0);
 
-    Controller *controllers[frames.size()];
+    std::vector<std::unique_ptr<Controller>> controllers;
 
     for (size_t i = 0; i < frames.size(); ++i)
-        controllers[i] = new Controller(worldFrame, frames[i], node, frequency);
+        controllers.push_back(make_unique<Controller>(worldFrame, frames[i], node, frequency));
 
-    for (size_t i = 0; i < frames.size(); ++i)
-        delete controllers[i];
+    while (ros::ok())
+        ros::Rate(1).sleep();
 
     return 0;
 }
