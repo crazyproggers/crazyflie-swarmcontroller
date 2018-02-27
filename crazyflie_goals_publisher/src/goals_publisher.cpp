@@ -218,14 +218,13 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         }
         else {
             // Interpolate from pose to tmpGoal and backward
-            std::list<Goal> tmpPath  = interpolate(pose, tmpGoal);
+            std::list<Goal> tmpPath  = interpolate(static_cast<Goal&>(pose), tmpGoal);
             std::list<Goal> backPath = interpolate(tmpGoal, *goal);
 
             auto position = std::next(goal);
 
             path.splice(position, tmpPath);
             path.splice(position, backPath);
-
         }
     } // for (goal = path.begin(); goal != path.end(); ++goal)
 

@@ -109,12 +109,12 @@ public:
 
 
 class Goal: public Pose {
-    double m_delay;  // waiting at point (by default is zero)
+    double m_delay = 0.0;  // waiting at point (by default is zero)
 
     // Move goal to *this
-    void move(Goal &goal) {
+    void move(Goal &goal) noexcept {
         copy(static_cast<Pose>(goal));
-
+        m_delay             = goal.m_delay;
         goal.m_isNull       = true;
         goal.m_delay        = 0.0;
         goal.header.seq     = 0;
@@ -136,44 +136,29 @@ public:
         , m_delay   (delay)
     {}
 
-    Goal(const Goal &goal)
-        : Pose    (goal.x(), goal.y(), goal.z(), goal.roll(), goal.pitch(), goal.yaw())
-        , m_delay (goal.m_delay)
-    {}
+    Goal(const Goal &goal) {
+        if (this != &goal) {
+            copy(static_cast<Pose>(goal));
+            m_delay = goal.m_delay;
+        }
+    }
 
     Goal & operator=(const Goal &goal) {
         if (this != &goal) {
-            Pose pose(goal.x(), goal.y(), goal.z(), goal.roll(), goal.pitch(), goal.yaw());
-            copy(pose);
+            copy(static_cast<Pose>(goal));
             m_delay = goal.m_delay;
         }
 
         return *this;
     }
 
-    Goal(Goal &&goal): m_delay (goal.m_delay) {
+    Goal(Goal &&goal) {
         move(goal);
     }
 
     Goal & operator=(Goal &&goal) {
-        if (this != &goal) {
-            m_delay = goal.m_delay;
+        if (this != &goal)
             move(goal);
-        }
-
-        return *this;
-    }
-
-    Goal(const Pose &pose)
-        : Pose    (pose.x(), pose.y(), pose.z(), pose.roll(), pose.pitch(), pose.yaw())
-        , m_delay (0.0)
-    {}
-
-    Goal & operator=(const Pose &pose) {
-        if (this != &pose) {
-            copy(pose);
-            m_delay = 0.0;
-        }
 
         return *this;
     }
