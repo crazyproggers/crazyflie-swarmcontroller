@@ -13,12 +13,11 @@ std::list<Goal> interpolate(const Goal &goal1, const Goal &goal2, double distanc
 
     intermediateGoals.push_back(goal1);
     for (size_t k = 1; k < intermediateGoalsAmount; ++k) {
-
         double current_x = goal1.x() + k * (goal2.x() - goal1.x()) / intermediateGoalsAmount;
         double current_y = goal1.y() + k * (goal2.y() - goal1.y()) / intermediateGoalsAmount;
         double current_z = goal1.z() + k * (goal2.z() - goal1.z()) / intermediateGoalsAmount;
 
-        intermediateGoals.push_back(Goal(current_x, current_y, current_z, 0.0, 0.0, 0.0));
+        intermediateGoals.emplace_back(current_x, current_y, current_z, 0.0, 0.0, 0.0);
     }
 
     return intermediateGoals;
@@ -80,7 +79,7 @@ std::list<Goal> createSpline(std::list<Goal> goals, double step) {
             double Cz = ((t[2] - T) / (t[2] - t[1]) * Bz[0] +
                      (T - t[0]) / (t[2] - t[1]) * Bz[1]) / 2;
 
-            intermediateGoals.push_back(Goal(Cx, Cy, Cz, 0.0, 0.0, 0.0));
+            intermediateGoals.emplace_back(Cx, Cy, Cz, 0.0, 0.0, 0.0);
         }
     }
 
