@@ -252,13 +252,12 @@ void GoalsPublisher::directionChanged(const std_msgs::Byte::ConstPtr &direction)
 
 
 inline Goal GoalsPublisher::getGoal() {
-    Pose pose       = getPose();
-    double x        = pose.x();
-    double y        = pose.y();
-    double z        = pose.z();
-    double roll     = pose.roll();
-    double pitch    = pose.pitch();
-    double yaw      = pose.yaw();
+    double x     = prev.x;
+    double y     = prev.y;
+    double z     = prev.z;
+    double roll  = prev.roll;
+    double pitch = prev.pitch;
+    double yaw   = prev.yaw;
 
     constexpr double movingStep   = 0.1; // meters
     constexpr double eps          = 0.2; // meters
@@ -267,6 +266,7 @@ inline Goal GoalsPublisher::getGoal() {
         double shiftX = x + slope * movingStep;
         x = (shiftX < m_world->getOXMax() - eps)? shiftX : x;
         x = (shiftX > m_world->getOXMin() + eps)? shiftX : x;
+        prev.x = x;
 
         return x;
     };
@@ -275,6 +275,7 @@ inline Goal GoalsPublisher::getGoal() {
         double shiftY = y + slope * movingStep;
         y = (shiftY < m_world->getOYMax() - eps)? shiftY : y;
         y = (shiftY > m_world->getOYMin() + eps)? shiftY : y;
+        prev.y = y;
 
         return y;
     };
@@ -283,20 +284,21 @@ inline Goal GoalsPublisher::getGoal() {
         double shiftZ = z + shift;
         z = (shiftZ < m_world->getOZMax() - eps)? shiftZ : z;
         z = (shiftZ > m_world->getOZMin() + eps)? shiftZ : z;
+        prev.z = z;
 
         return z;
     };
 
-    auto rotate = [](double currAngle, double shift) -> double {
+    auto rotate = [=](double currAngle, double shift) -> double {
         double minAngle = degToRad(-180);
         double maxAngle = degToRad( 180);
 
         currAngle += (currAngle + shift > maxAngle)? shift - 2 * maxAngle : shift;
         currAngle += (currAngle + shift < minAngle)? shift - 2 * minAngle : shift;
+        prev.yaw = currAngle;
 
         return currAngle;
     };
-
 
     if (m_direction == commands::forward) {
         x = moveByX(x, std::cos(yaw));
@@ -331,7 +333,7 @@ inline Goal GoalsPublisher::getGoal() {
         z = moveByZ(z, -movingStep);
 
     else if (m_direction == commands::takeoff)
-        z += 0.5;
+        z = moveByZ(z, 1.0);
 
     m_direction = 0;
     
@@ -342,6 +344,10 @@ inline Goal GoalsPublisher::getGoal() {
 void GoalsPublisher::goToGoal() {
     Pose pose   = getPose();
     m_occupator = make_unique<Occupator>(m_frame, pose.x(), pose.y(), pose.z());
+    prev.x      = pose.x();
+    prev.y      = pose.y();
+    prev.z      = pose.z();
+    prev.yaw    = pose.yaw();
 
     if (!m_world->addOccupator(*m_occupator))
         return;
