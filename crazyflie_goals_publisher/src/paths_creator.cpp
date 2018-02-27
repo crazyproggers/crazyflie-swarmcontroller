@@ -80,7 +80,7 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
             double last_pitch = 0.0;
             double last_yaw   = 0.0;
 
-            path.push_back(Goal(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw));
+            path.emplace_back(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw);
             m_paths.push_back(path);
             path.clear();
         }
@@ -120,7 +120,7 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
 
                 yaw = degToRad(fixAngle(yaw));
 
-                path.push_back(Goal(x, y, z, roll, pitch, yaw, delay));
+                path.emplace_back(x, y, z, roll, pitch, yaw, delay);
                 if (repeat_number) ++repeated_goals_amount;
             }
             else {
@@ -142,7 +142,7 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
         double last_pitch = 0.0;
         double last_yaw   = 0.0;
 
-        path.push_back(Goal(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw));
+        path.emplace_back(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw);
         m_paths.push_back(path);
     }
 
@@ -156,6 +156,8 @@ bool PathsCreator::canGenPaths() const noexcept {
 
 
 std::list<Goal> PathsCreator::genPath(const std::string &frame) {
+    if (!m_canGenPaths) return std::list<Goal>();
+
     // #########################################################
     // ########## FIND THE STARTING POINT OF ROBOT #############
     // #########################################################
@@ -169,6 +171,7 @@ std::list<Goal> PathsCreator::genPath(const std::string &frame) {
     catch (tf::TransformException &exc) {
         ROS_ERROR("%s%s", frame.c_str(), ": could not get current position!");
         ROS_ERROR("An exception was caught: %s", exc.what());
+        return std::list<Goal>();
     }
 
     double x0 = startPoint.getOrigin().x();
@@ -201,7 +204,7 @@ std::list<Goal> PathsCreator::genPath(const std::string &frame) {
     // #########################################################
     // ############## INTREPOLATE SELECTED PATH ################
     // #########################################################
-    selectedPath.push_front(Goal(x0, y0, z0, 0.0, 0.0, 0.0));
+    selectedPath.emplace_back(x0, y0, z0, 0.0, 0.0, 0.0);
 
     if (m_splinesMode)
         selectedPath = createSpline(std::move(selectedPath));

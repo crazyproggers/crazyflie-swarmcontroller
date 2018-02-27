@@ -16,9 +16,12 @@ public:
     PathsCreator(const PathsCreator &)              = delete;
     PathsCreator & operator=(const PathsCreator &)  = delete;
 
+    PathsCreator(PathsCreator &&)                   = default;
+    PathsCreator & operator=(PathsCreator &&)       = default;
+
     PathsCreator(const std::string &pathToMap,
                  const std::string &worldFrame,
-                 bool  splinesMode = false);
+                 bool splinesMode = false);
     ~PathsCreator();
 
     bool canGenPaths() const noexcept;

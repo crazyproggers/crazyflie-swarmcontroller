@@ -1,7 +1,6 @@
 #include "goals_publisher.h"
 #include "paths_creator.h"
 
-#include "goal.h"
 
 template<typename T, typename ...Args>
 std::unique_ptr<T> make_unique( Args&& ...args ) {
@@ -60,8 +59,12 @@ int main(int argc, char **argv) {
         if (!creator.canGenPaths())
             return -1;
 
-        for (size_t i = 0; i < frames.size(); ++i)
-            publishers.push_back(make_unique<GoalsPublisher>(worldFrame, frames[i], rate, creator.genPath(frames[i])));
+        for (size_t i = 0; i < frames.size(); ++i) {
+            auto path = creator.genPath(frames[i]);
+
+            if (!path.empty())
+                publishers.push_back(make_unique<GoalsPublisher>(worldFrame, frames[i], rate, std::move(path)));
+        }
     }
     else {
         for (size_t i = 0; i < frames.size(); ++i)
