@@ -67,14 +67,15 @@ public:
             get(node, "PIDs/Yaw/integratorMin"),
             get(node, "PIDs/Yaw/integratorMax"),
             "yaw")
-        , m_state           (Idle)
-        , m_goal            ()
-        , m_subscribeGoal   ()
-        , m_subscribeBattery()
-        , m_serviceTakeoff  ()
-        , m_serviceLand     ()
-        , m_thrust          (0)
-        , m_startZ          (0)
+        , m_state                  (Idle)
+        , m_goal                   ()
+        , m_subscribeGoal          ()
+        , m_subscribeBattery       ()
+        , m_serviceTakeoff         ()
+        , m_serviceLand            ()
+        , m_thrust                 (0)
+        , m_startZ                 (0)
+        , m_goalsPublisherIsWorking(false)
     {
         ros::NodeHandle nh;
         m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
@@ -169,8 +170,11 @@ private:
                     m_pubNav.publish(msg);
                 }
 
-                std_srvs::Empty empty_srv;
-                ros::service::call(m_frame + "/start_publishing", empty_srv);
+                if (!m_goalsPublisherIsWorking) {
+                    std_srvs::Empty empty_srv;
+                    ros::service::call(m_frame + "/start_publishing", empty_srv);
+                    m_goalsPublisherIsWorking = true;
+                }
             } // case TakingOff:
             break;
 
@@ -184,8 +188,11 @@ private:
                     geometry_msgs::Twist msg;
                     m_pubNav.publish(msg);
 
-                    std_srvs::Empty empty_srv;
-                    ros::service::call(m_frame + "/stop_publishing", empty_srv);
+                    if (m_goalsPublisherIsWorking) {
+                        std_srvs::Empty empty_srv;
+                        ros::service::call(m_frame + "/stop_publishing", empty_srv);
+                        m_goalsPublisherIsWorking = false;
+                    }
                 }
             }
 
@@ -253,6 +260,7 @@ private:
     ros::ServiceServer          m_serviceLand;
     float                       m_thrust;
     float                       m_startZ;
+    bool                        m_goalsPublisherIsWorking;
 };
 
 int main(int argc, char **argv) {

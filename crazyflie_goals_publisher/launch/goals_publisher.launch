@@ -14,12 +14,12 @@
       <!--World sizes-->
       <param name="worldWidth" value="2.4" />
       <param name="worldLength" value="2.4" />
-      <param name="worldHeight" value="2.4" />
+      <param name="worldHeight" value="1.8" />
 
       <!--Region sizes-->
       <param name="regWidth" value="0.4" />
       <param name="regLength" value="0.4" />
-      <param name="regHeight" value="1.2" />
+      <param name="regHeight" value="0.9" />
 
       <!--If there are negative coordinates then fix them-->
       <param name="offsetOX" value="0.0" />

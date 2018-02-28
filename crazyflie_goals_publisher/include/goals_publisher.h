@@ -5,11 +5,10 @@
 #include <std_srvs/Empty.h>
 #include <std_msgs/Byte.h>
 #include <thread>
+#include "goal.h"
 
 class World;
 class Occupator;
-class Pose;
-class Goal;
 
 
 class GoalsPublisher {
@@ -27,15 +26,7 @@ class GoalsPublisher {
     ros::Rate                     m_publishRate;
 
     int8_t                        m_direction;
-
-    struct {
-        double x     = 0.0;
-        double y     = 0.0;
-        double z     = 0.0;
-        double yaw   = 0.0;
-        double roll  = 0.0;
-        double pitch = 0.0;
-    } prev;
+    Pose                          m_prevPose;
 
     // class World realize synchronization mode
     static std::unique_ptr<World> m_world;

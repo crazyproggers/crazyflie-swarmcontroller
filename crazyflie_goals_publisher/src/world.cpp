@@ -20,8 +20,10 @@ void Occupator::updateXYZ(double x, double y, double z) noexcept {
 
 
 void Occupator::freeRegion() noexcept {
-    region->free();
-    region = nullptr;
+    if (region) {
+        region->free();
+        region = nullptr;
+    }
 }
 
 
@@ -277,7 +279,8 @@ bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
 
     if (selectedReg->isFree() && areSafeDistances) {
         // free old region of ocuppator
-        occupator.region->owner = nullptr;
+        if (occupator.region)
+            occupator.region->owner = nullptr;
 
         // occupy new region
         occupator.region   = selectedReg;

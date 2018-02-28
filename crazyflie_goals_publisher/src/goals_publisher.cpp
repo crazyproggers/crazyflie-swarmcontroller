@@ -1,7 +1,6 @@
 #include <tf/transform_listener.h>
 
 #include "world.h"
-#include "goal.h"
 #include "goals_publisher.h"
 #include "interpolations.h"
 #include "commands.h"
@@ -252,39 +251,37 @@ void GoalsPublisher::directionChanged(const std_msgs::Byte::ConstPtr &direction)
 
 
 inline Goal GoalsPublisher::getGoal() {
-    double x     = prev.x;
-    double y     = prev.y;
-    double z     = prev.z;
-    double roll  = prev.roll;
-    double pitch = prev.pitch;
-    double yaw   = prev.yaw;
+    double x     = m_prevPose.x();
+    double y     = m_prevPose.y();
+    double z     = m_prevPose.z();
+    double roll  = m_prevPose.roll();
+    double pitch = m_prevPose.pitch();
+    double yaw   = m_prevPose.yaw();
 
-    constexpr double movingStep   = 0.1; // meters
-    constexpr double eps          = 0.2; // meters
+    // all parameters are measured in meters
+    constexpr double movingStep = 0.1;
+    constexpr double eps        = 0.2;
 
     auto moveByX = [=](double x, double slope) -> double {
         double shiftX = x + slope * movingStep;
-        x = (shiftX < m_world->getOXMax() - eps)? shiftX : x;
-        x = (shiftX > m_world->getOXMin() + eps)? shiftX : x;
-        prev.x = x;
+        if (shiftX < (m_world->getOXMax() - eps) && shiftX > (m_world->getOXMin() + eps))
+            x = shiftX;
 
         return x;
     };
 
     auto moveByY = [=](double y, double slope) -> double {
         double shiftY = y + slope * movingStep;
-        y = (shiftY < m_world->getOYMax() - eps)? shiftY : y;
-        y = (shiftY > m_world->getOYMin() + eps)? shiftY : y;
-        prev.y = y;
+        if (shiftY < (m_world->getOYMax() - eps) && shiftY > (m_world->getOYMin() + eps))
+            y = shiftY;
 
         return y;
     };
 
     auto moveByZ = [=](double z, double shift) -> double {
         double shiftZ = z + shift;
-        z = (shiftZ < m_world->getOZMax() - eps)? shiftZ : z;
-        z = (shiftZ > m_world->getOZMin() + eps)? shiftZ : z;
-        prev.z = z;
+        if (shiftZ < (m_world->getOZMax() - eps) && shiftZ > (m_world->getOZMin() + eps))
+            z = shiftZ;
 
         return z;
     };
@@ -295,7 +292,6 @@ inline Goal GoalsPublisher::getGoal() {
 
         currAngle += (currAngle + shift > maxAngle)? shift - 2 * maxAngle : shift;
         currAngle += (currAngle + shift < minAngle)? shift - 2 * minAngle : shift;
-        prev.yaw = currAngle;
 
         return currAngle;
     };
@@ -324,7 +320,7 @@ inline Goal GoalsPublisher::getGoal() {
         yaw = rotate(yaw, degToRad(-10));
 
     else if (m_direction == commands::yawleft)
-        yaw = rotate(yaw, degToRad(10));
+        yaw = rotate(yaw, degToRad( 10));
 
     else if (m_direction == commands::upward)
         z = moveByZ(z,  movingStep);
@@ -336,19 +332,19 @@ inline Goal GoalsPublisher::getGoal() {
         z = moveByZ(z, 1.0);
 
     m_direction = 0;
+
+    if (x != m_prevPose.x() || y != m_prevPose.y() || z != m_prevPose.z() || yaw != m_prevPose.yaw())
+        m_prevPose = Pose(x, y, z, roll, pitch, yaw);
     
     return Goal(x, y, z, roll, pitch, yaw);
 }
 
 
 void GoalsPublisher::goToGoal() {
-    Pose pose   = getPose();
-    m_occupator = make_unique<Occupator>(m_frame, pose.x(), pose.y(), pose.z());
-    prev.x      = pose.x();
-    prev.y      = pose.y();
-    prev.z      = pose.z();
-    prev.yaw    = pose.yaw();
+    Pose pose  = getPose();
+    m_prevPose = Pose(pose.x(), pose.y(), pose.z(), 0.0, 0.0, pose.yaw());
 
+    m_occupator = make_unique<Occupator>(m_frame, pose.x(), pose.y(), pose.z());
     if (!m_world->addOccupator(*m_occupator))
         return;
 
@@ -361,22 +357,19 @@ void GoalsPublisher::goToGoal() {
         m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
 
         ros::Rate loop(2);
-        while (m_publishingIsStopped) {
-            ros::spinOnce();
+        while (m_publishingIsStopped)
             loop.sleep();
-        }
 
         // If m_direction != 0 then it is meant that we have got interrupt from the world
         while ((!m_direction) && !m_world->occupyRegion(*m_occupator, goal.x(), goal.y(), goal.z())) {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(pose.msg());
 
-             {
+            {
                 Pose exactPose = getPose();
                 m_occupator->updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
             }
 
-            ros::spinOnce();
             if (m_publishingIsStopped) break;
             loop.sleep();
         }
@@ -387,7 +380,6 @@ void GoalsPublisher::goToGoal() {
             pose = getPose();
             m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
 
-            ros::spinOnce();
             if (m_publishingIsStopped) break;
             m_publishRate.sleep();
         }
