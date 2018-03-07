@@ -15,7 +15,7 @@ class GoalsPublisher {
     ros::NodeHandle               m_node;
     std::string                   m_worldFrame;
     std::string                   m_frame;
-    std::unique_ptr<Occupator>    m_occupator;
+    std::shared_ptr<Occupator>    m_occupator;
     ros::Publisher                m_publisher;
     tf::TransformListener         m_listener;
     std::thread                   m_runThread;

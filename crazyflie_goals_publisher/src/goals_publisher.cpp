@@ -126,9 +126,9 @@ bool GoalsPublisher::startPublishing(
 
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {    
     Pose pose   = getPose();
-    m_occupator = make_unique<Occupator>(m_frame, pose.x(), pose.y(), pose.z());
+    m_occupator = std::make_shared<Occupator>(m_frame, pose.x(), pose.y(), pose.z());
 
-    if (!m_world->addOccupator(*m_occupator))
+    if (!m_world->addOccupator(m_occupator))
         return;
 
     bool exactMoving = false;
@@ -344,8 +344,8 @@ void GoalsPublisher::goToGoal() {
     Pose pose  = getPose();
     m_prevPose = Pose(pose.x(), pose.y(), pose.z(), 0.0, 0.0, pose.yaw());
 
-    m_occupator = make_unique<Occupator>(m_frame, pose.x(), pose.y(), pose.z());
-    if (!m_world->addOccupator(*m_occupator))
+    m_occupator = std::make_shared<Occupator>(m_frame, pose.x(), pose.y(), pose.z());
+    if (!m_world->addOccupator(m_occupator))
         return;
 
     while (ros::ok()) {

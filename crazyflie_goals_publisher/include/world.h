@@ -14,6 +14,7 @@ class Occupator {
     std::string     m_name;
     size_t          m_id;
     Region         *region;
+    double          x, y, z;
 
 public:
     Occupator(const std::string &name, double x0, double y0, double z0);
@@ -28,7 +29,6 @@ public:
     std::string     name() const noexcept;
     size_t          id()   const noexcept;
     void            freeRegion() noexcept;
-    double          x, y, z;
     double          extraWaitingTime;
     void            updateXYZ(double x, double y, double z) noexcept;
 };
@@ -76,7 +76,7 @@ class World {
      * key:   id
      * value: occupator
      */
-    std::map<size_t, Occupator*> m_occupators;
+    std::map<size_t, std::weak_ptr<Occupator>> m_occupators;
 
     // Fixes coordinates if they are negative
     double moveX(double x) const noexcept;
@@ -98,10 +98,10 @@ public:
     World & operator=(World &&)         = delete;
 
     // Try to register occupator
-    bool addOccupator(Occupator &occupator);
+    bool addOccupator(std::shared_ptr<Occupator> occupator);
 
     // Delete occupator from world
-    void delOccupator(Occupator &occupator);
+    void delOccupator(size_t occupatorId);
 
     // Try occupy a region that contains point (x, y, z)
     bool occupyRegion(Occupator &occupator, double x, double y, double z);

@@ -110,9 +110,6 @@ World::~World() {
                 delete m_regions[i][j][k];
                 m_regions[i][j][k] = nullptr;
             }
-
-    for (auto occupator: m_occupators)
-        occupator.second = nullptr;
 }
 
 
@@ -129,12 +126,12 @@ inline double World::moveZ(double z) const noexcept {
 }
 
 
-bool World::addOccupator(Occupator &occupator) {
+bool World::addOccupator(std::shared_ptr<Occupator> occupator) {
     std::lock_guard<std::mutex> locker(m_globalMutex);
 
-    double movedX = moveX(occupator.x);
-    double movedY = moveY(occupator.y);
-    double movedZ = moveZ(occupator.z);
+    double movedX = moveX(occupator->x);
+    double movedY = moveY(occupator->y);
+    double movedZ = moveZ(occupator->z);
 
     // Get region that containes occupator position
     size_t xNum = movedX / m_regWidth;
@@ -146,7 +143,7 @@ bool World::addOccupator(Occupator &occupator) {
         yNum >= dimOY || movedY < 0 ||
         zNum >= dimOZ || movedZ < 0)
     {
-        ROS_ERROR("%s%s", occupator.name().c_str(), " is outside of the world!");
+        ROS_ERROR("%s%s", occupator->name().c_str(), " is outside of the world!");
         return false;
     }
 
@@ -156,34 +153,37 @@ bool World::addOccupator(Occupator &occupator) {
     bool distancesAreOk = true;
     constexpr double eps = 0.4;
 
-    for (auto checked: m_occupators)
-        if (std::sqrt(std::pow(movedX - moveX(checked.second->x), 2) +
-                      std::pow(movedY - moveY(checked.second->y), 2)) < eps)
+    for (auto pair: m_occupators) {
+        if (pair.second.expired()) continue;
+        std::shared_ptr<Occupator> checked(pair.second);
+
+        if (std::sqrt(std::pow(movedX - moveX(checked->x), 2) +
+                      std::pow(movedY - moveY(checked->y), 2)) < eps)
         {
             distancesAreOk = false;
             break;
         }
+    }
 
     if (!currReg->isFree() || !distancesAreOk) {
-        ROS_ERROR("Could not register %s%s", occupator.name().c_str(),
+        ROS_ERROR("Could not register %s%s", occupator->name().c_str(),
                   ": is too close to other occupator!");
         return false;
     }
 
     // Occupy starting region
-    currReg->owner   = &occupator;
-    occupator.region = currReg;
+    currReg->owner    = occupator.get();
+    occupator->region = currReg;
 
-    m_occupators[occupator.id()] = &occupator;
+    m_occupators[occupator->id()] = occupator;
 
     return true;
 }
 
 
-void World::delOccupator(Occupator &occupator) {
+void World::delOccupator(size_t occupatorId) {
     std::lock_guard<std::mutex> locker(m_globalMutex);
-    m_occupators[occupator.id()] = nullptr;
-    m_occupators.erase(occupator.id());
+    m_occupators.erase(occupatorId);
 }
 
 
@@ -201,15 +201,16 @@ bool World::safeDistances(const Occupator &occupator, double x, double y, double
     };
 
     if (m_occupators.size() <= 15) {
-        for (auto checked: m_occupators) {
-            if (checked.second == &occupator)
+        for (auto pair: m_occupators) {
+            if (pair.second.expired())
                 continue;
 
-            double checked_x = checked.second->x;
-            double checked_y = checked.second->y;
-            double checked_z = checked.second->z;
+            std::shared_ptr<Occupator> checked(pair.second);
 
-            if (dist(x, y, z, checked_x, checked_y, checked_z) < eps)
+            if (checked.get() == &occupator)
+                continue;
+
+            if (dist(x, y, z, checked->x, checked->y, checked->z) < eps)
                 return false;
         }
 
