@@ -17,6 +17,8 @@
   </include>
 
   <node name="keyboard" pkg="crazyflie_input_devices" type="keyboard" output="screen" />
+  
+  <node name="perception_neuron_tf_broadcaster" pkg="perception_neuron_tf_broadcaster_node" type="perception_neuron_tf_broadcaster_node" output="screen" />
 
   <include file="$(find crazyflie_controller)/launch/controller.launch" />
 
