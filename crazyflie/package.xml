@@ -17,6 +17,7 @@
   <run_depend>crazyflie_run</run_depend>
   <run_depend>crazyflie_tools</run_depend>
   <run_depend>crazyflie_input_devices</run_depend>
+  <run_depend>perception_neuron_tf_broadcaster</run_depend>
 
   <export>
     <metapackage/>
