@@ -88,20 +88,6 @@ inline Pose GoalsPublisher::getPose() const {
 }
 
 
-inline bool GoalsPublisher::isFarFromGoal(const Pose &pose, const Goal &goal, double eps) const noexcept {
-    auto dist = [](const Pose &pose, const Goal &goal) -> double {
-        return std::sqrt(std::pow(pose.x() - goal.x(), 2) +
-                         std::pow(pose.y() - goal.y(), 2) +
-                         std::pow(pose.z() - goal.z(), 2));
-    };
-
-    if (dist(pose, goal) < eps)
-        return false;
-
-    return true;
-}
-
-
 bool GoalsPublisher::stopPublishing(
         std_srvs::Empty::Request  &req,
         std_srvs::Empty::Response &res)
