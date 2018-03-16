@@ -73,14 +73,6 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
             if (repeat_number)
                 repeat(path);
 
-            // Add the finishing goal in the table
-            Goal   last       = path.back();
-            double last_z     = 0.1;
-            double last_roll  = 0.0;
-            double last_pitch = 0.0;
-            double last_yaw   = 0.0;
-
-            path.emplace_back(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw);
             m_paths.push_back(path);
             path.clear();
         }
@@ -134,15 +126,6 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
     if (!path.empty()) {
         if (repeat_number > 0)
             repeat(path);
-        
-        // Add the finishing goal in the table
-        Goal   last       = path.back();
-        double last_z     = 0.1;
-        double last_roll  = 0.0;
-        double last_pitch = 0.0;
-        double last_yaw   = 0.0;
-
-        path.emplace_back(last.x(), last.y(), last_z, last_roll, last_pitch, last_yaw);
         m_paths.push_back(path);
     }
 
@@ -202,10 +185,17 @@ std::list<Goal> PathsCreator::genPath(const std::string &frame) {
     m_paths.erase(std::next(m_paths.begin(), pathNum));
 
     // #########################################################
-    // ############## INTREPOLATE SELECTED PATH ################
+    // ################ ADD FIRST AND LAST GOAL ################
     // #########################################################
     selectedPath.emplace_back(x0, y0, z0, 0.0, 0.0, 0.0);
 
+    Goal   last   = selectedPath.back();
+    double last_z = startPoint.getOrigin().z() + 0.2;
+    selectedPath.emplace_back(last.x(), last.y(), last_z, 0.0, 0.0, 0.0);
+
+    // #########################################################
+    // ############## INTREPOLATE SELECTED PATH ################
+    // #########################################################
     if (m_splinesMode)
         selectedPath = createSpline(std::move(selectedPath));
     else {
