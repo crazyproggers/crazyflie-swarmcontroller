@@ -29,13 +29,25 @@ protected:
         pose.orientation.w = original.pose.orientation.w;
     }
 
+    void setNull(Pose &pose) noexcept {
+        pose.m_isNull      = true;
+        pose.header.seq    = 0;
+        pose.header.stamp  = ros::Time(0);
+    }
+
     // Move original to *this
     void move(Pose &original) noexcept {
         copy(original);
+        setNull(original);
+    }
 
-        original.m_isNull       = true;
-        original.header.seq     = 0;
-        original.header.stamp   = ros::Time(0);
+    bool isEqual(const Pose &pose1, const Pose &pose2) const noexcept {
+        return (pose1.x()     == pose2.x())     &&
+               (pose1.y()     == pose2.y())     &&
+               (pose1.z()     == pose2.z())     &&
+               (pose1.m_roll  == pose2.m_roll)  &&
+               (pose1.m_pitch == pose2.m_pitch) &&
+               (pose1.m_yaw   == pose2.m_yaw);
     }
 
 public:
@@ -71,25 +83,43 @@ public:
     }
 
     Pose(const Pose &pose) {
-        copy(pose);
+        if (this != &pose) {
+            if (!pose.m_isNull) copy(pose);
+            else setNull(*this);
+        }
     }
 
     Pose & operator=(const Pose &pose) {
-        if (this != &pose)
-            copy(pose);
+        if (this != &pose) {
+            if (!pose.m_isNull) copy(pose);
+            else setNull(*this);
+        }
 
         return *this;
     }
 
     Pose(Pose &&pose) {
-        move(pose);
+        if (this != &pose) {
+            if (!pose.m_isNull) move(pose);
+            else setNull(*this);
+        }
     }
 
     Pose & operator=(Pose &&pose) {
-        if (this != &pose)
-            move(pose);
+        if (this != &pose) {
+            if (!pose.m_isNull) move(pose);
+            else setNull(*this);
+        }
 
         return *this;
+    }
+
+    bool operator==(const Pose &pose) const noexcept {
+        return isEqual(*this, pose);
+    }
+
+    bool operator!=(const Pose &pose) const noexcept {
+        return !isEqual(*this, pose);
     }
 
     double x()        const noexcept  { return pose.position.x; }
@@ -103,7 +133,7 @@ public:
     geometry_msgs::PoseStamped msg() {
         ++header.seq;
         header.stamp = ros::Time::now();
-        return static_cast<geometry_msgs::PoseStamped>(*this);
+        return *this;
     }
 };
 
@@ -113,12 +143,9 @@ class Goal: public Pose {
 
     // Move goal to *this
     void move(Goal &goal) noexcept {
-        copy(static_cast<Pose>(goal));
-        m_delay             = goal.m_delay;
-        goal.m_isNull       = true;
-        goal.m_delay        = 0.0;
-        goal.header.seq     = 0;
-        goal.header.stamp   = ros::Time(0);
+        copy(goal);
+        m_delay = goal.m_delay;
+        setNull(goal);
     }
 
 public:
@@ -138,29 +165,48 @@ public:
 
     Goal(const Goal &goal) {
         if (this != &goal) {
-            copy(static_cast<Pose>(goal));
-            m_delay = goal.m_delay;
+            if (!goal.m_isNull) {
+                copy(goal);
+                m_delay = goal.m_delay;
+            }
+            else setNull(*this);
         }
     }
 
     Goal & operator=(const Goal &goal) {
         if (this != &goal) {
-            copy(static_cast<Pose>(goal));
-            m_delay = goal.m_delay;
+            if (!goal.m_isNull) {
+                copy(goal);
+                m_delay = goal.m_delay;
+            }
+            else setNull(*this);
         }
 
         return *this;
     }
 
     Goal(Goal &&goal) {
-        move(goal);
+        if (this != &goal) {
+            if (!goal.m_isNull) move(goal);
+            else setNull(*this);
+        }
     }
 
     Goal & operator=(Goal &&goal) {
-        if (this != &goal)
-            move(goal);
+        if (this != &goal) {
+            if (!goal.m_isNull) move(goal);
+            else setNull(*this);
+        }
 
         return *this;
+    }
+
+    bool operator==(const Goal &goal) const {
+        return isEqual(*this, goal);
+    }
+
+    bool operator!=(const Goal &goal) const {
+        return !isEqual(*this, goal);
     }
 
     double delay() const noexcept { return m_delay; }
