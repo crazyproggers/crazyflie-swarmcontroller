@@ -203,7 +203,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         }
         else {
             // Interpolate from pose to tmpGoal and backward
-            std::list<Goal> tmpPath  = interpolate(static_cast<Goal&>(pose), tmpGoal);
+            std::list<Goal> tmpPath  = interpolate(static_cast<const Goal&>(pose), tmpGoal);
             std::list<Goal> backPath = interpolate(tmpGoal, *goal);
 
             auto position = std::next(goal);
