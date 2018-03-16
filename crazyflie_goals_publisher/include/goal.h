@@ -42,6 +42,11 @@ protected:
     }
 
     bool isEqual(const Pose &pose1, const Pose &pose2) const noexcept {
+        if (pose1.m_isNull && pose2.m_isNull)
+            return true;
+        else if ((pose1.m_isNull && !pose2.m_isNull) || (!pose1.m_isNull && pose2.m_isNull))
+            return false;
+
         return (pose1.x()     == pose2.x())     &&
                (pose1.y()     == pose2.y())     &&
                (pose1.z()     == pose2.z())     &&
