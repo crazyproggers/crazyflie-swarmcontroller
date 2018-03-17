@@ -127,87 +127,84 @@ bool GoalsPublisher::startPublishing(
 
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {    
     bool exactMoving = false;
-    ros::Rate loop(2);
+    ros::Rate loop   = 2;
+    Goal retreatGoal;
 
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
         Pose pose = getPose();
-        m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
 
-        Goal tmpGoal;
-
-        ros::Duration duration(3.0);
-        ros::Time begin = ros::Time::now();
-
-        while (m_publishingIsStopped) {
+        while (m_publishingIsStopped || pose.isNull()) {
             ros::spinOnce();
             loop.sleep();
         }
+        m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
 
-        while (!m_world->occupyRegion(*m_occupator, goal->x(), goal->y(), goal->z())) {
+        Goal tmpGoal;
+        ros::Duration duration(3.0);
+        ros::Time begin = ros::Time::now();
+
+        while (!m_publishingIsStopped && !m_world->occupyRegion(*m_occupator, goal->x(), goal->y(), goal->z())) {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(pose.msg());
 
-            {
-                Pose exactPose = getPose();
+            Pose exactPose = getPose();
+            if (!exactPose.isNull()) {
                 m_occupator->updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
-            }
 
-            // If happened deadlock or we wait too long
-            if ((ros::Time::now() - begin) >= duration) {
-                // Retreat into the nearest free region
-                tf::Vector3 safe = m_world->retreat(*m_occupator);
-                tmpGoal = Goal(safe.x(), safe.y(), safe.z(), 0.0, 0.0, 0.0, 1.0);
+                // If a lock happened or we wait too long
+                if ((ros::Time::now() - begin) >= duration) {
+                    // Retreat into the nearest free region
+                    tf::Vector3 safe = m_world->retreat(*m_occupator);
+                    retreatGoal = tmpGoal = Goal(safe.x(), safe.y(), safe.z(), 0.0, 0.0, 0.0, 1.0);
 
-                if (!m_occupator->extraWaitingTime)
-                    break;
-                else {
-                    duration += ros::Duration(m_occupator->extraWaitingTime);
-                    m_occupator->extraWaitingTime = 0.0;
-                    exactMoving = true;
+                    if (!m_occupator->extraWaitingTime)
+                        break;
+                    else {
+                        duration += ros::Duration(m_occupator->extraWaitingTime);
+                        m_occupator->extraWaitingTime = 0.0;
+                        exactMoving = true;
+                    }
                 }
-            }
+            } // if (!exactPose.isNull())
 
             ros::spinOnce();
-            if (m_publishingIsStopped) break;
             loop.sleep();
         }
 
         if (tmpGoal.isNull()) {
-            while (ros::ok()) {
+            auto isCloseEnough = [exactMoving](const Pose& pose, const Goal& goal) -> bool {
+                double eps = (exactMoving)? 0.05 : 0.2;
+
+                return (fabs(pose.x()     - goal.x()) < eps) &&
+                       (fabs(pose.y()     - goal.y()) < eps) &&
+                       (fabs(pose.z()     - goal.z()) < eps) &&
+                       (fabs(pose.roll()  - goal.roll())  < degToRad(10)) &&
+                       (fabs(pose.pitch() - goal.pitch()) < degToRad(10)) &&
+                       (fabs(pose.yaw()   - goal.yaw())   < degToRad(10));
+            };
+
+            while (!m_publishingIsStopped && ros::ok()) {
                 m_publisher.publish(goal->msg());
 
                 pose = getPose();
-                m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
+                if (!pose.isNull()) {
+                    m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
 
-                // Check that |pose - goal| < E
-                if (!exactMoving) {
-                    if ((fabs(pose.x()     - goal->x()) < 0.2) &&
-                        (fabs(pose.y()     - goal->y()) < 0.2) &&
-                        (fabs(pose.z()     - goal->z()) < 0.2) &&
-                        (fabs(pose.roll()  - goal->roll())  < degToRad(10)) &&
-                        (fabs(pose.pitch() - goal->pitch()) < degToRad(10)) &&
-                        (fabs(pose.yaw()   - goal->yaw())   < degToRad(10)))
-                    {
+                    if (isCloseEnough(pose, *goal)) {
                         ros::Duration(goal->delay()).sleep();
+
+                        if (*goal == retreatGoal) {
+                            retreatGoal = Goal();
+                            exactMoving = false;
+                        }
                         break; // go to next goal
                     }
-                }
-                else {
-                    if ((fabs(pose.x() - goal->x()) < 0.05) &&
-                        (fabs(pose.y() - goal->y()) < 0.05) &&
-                        (fabs(pose.z() - goal->z()) < 0.05))
-                    {
-                        ros::Duration(goal->delay()).sleep();
-                        exactMoving = false;
-                        break; // go to next goal
-                    }
-                }
+                } // if (!pose.isNull())
 
                 ros::spinOnce();
-                if (m_publishingIsStopped) break;
                 m_publishRate.sleep();
             }
-        }
+        } // if (tmpGoal.isNull())
         else {
             // Interpolate from pose to tmpGoal and backward
             std::list<Goal> tmpPath  = interpolate(static_cast<const Goal&>(pose), tmpGoal);
