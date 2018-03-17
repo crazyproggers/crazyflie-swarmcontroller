@@ -27,6 +27,7 @@ class GoalsPublisher {
 
     int8_t                        m_direction;
     Pose                          m_prevPose;
+    Pose                          m_startPose;
 
     // class World realize synchronization mode
     static std::unique_ptr<World> m_world;

@@ -34,12 +34,25 @@ GoalsPublisher::GoalsPublisher(
     , m_publishingIsStopped       (false)
     , m_publishRate               (publishRate)
     , m_direction                 (0)
-
 {
     m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
     m_publisher       = m_node.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
     m_stopPublishing  = m_node.advertiseService(m_frame + "/stop_publishing",  &GoalsPublisher::stopPublishing,  this);
     m_startPublishing = m_node.advertiseService(m_frame + "/start_publishing", &GoalsPublisher::startPublishing, this);
+
+    m_startPose = getPose();
+    if (m_startPose.isNull())
+        return;
+
+    m_occupator = std::make_shared<Occupator>(m_frame, m_startPose.x(), m_startPose.y(), m_startPose.z());
+
+    if (m_world == nullptr) {
+        ROS_FATAL("You should to call initWorld!");
+        return;
+    }
+
+    if (!m_world->addOccupator(m_occupator))
+        return;
 
     if (!path.empty())
         m_runThread = std::thread(&GoalsPublisher::runAutomatic,  this, path);
@@ -49,7 +62,9 @@ GoalsPublisher::GoalsPublisher(
 
 
 GoalsPublisher::~GoalsPublisher() {
-    m_runThread.join();
+    m_world->delOccupator(m_occupator->id());
+    if (m_runThread.joinable())
+        m_runThread.join();
 }
 
 
@@ -111,22 +126,16 @@ bool GoalsPublisher::startPublishing(
 
 
 void GoalsPublisher::runAutomatic(std::list<Goal> path) {    
-    Pose pose   = getPose();
-    m_occupator = std::make_shared<Occupator>(m_frame, pose.x(), pose.y(), pose.z());
-
-    if (!m_world->addOccupator(m_occupator))
-        return;
-
     bool exactMoving = false;
+    ros::Rate loop(2);
 
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
-        pose = getPose();
+        Pose pose = getPose();
         m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
 
         Goal tmpGoal;
 
         ros::Duration duration(3.0);
-        ros::Rate loop(2);
         ros::Time begin = ros::Time::now();
 
         while (m_publishingIsStopped) {
@@ -143,10 +152,8 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 m_occupator->updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
             }
 
-            ros::Time end = ros::Time::now();
-
             // If happened deadlock or we wait too long
-            if ((end - begin) >= duration) {
+            if ((ros::Time::now() - begin) >= duration) {
                 // Retreat into the nearest free region
                 tf::Vector3 safe = m_world->retreat(*m_occupator);
                 tmpGoal = Goal(safe.x(), safe.y(), safe.z(), 0.0, 0.0, 0.0, 1.0);
@@ -227,7 +234,9 @@ void GoalsPublisher::runControlled() {
         ros::spinOnce();
         loop.sleep();
     }
-    goingToGoalThr.join();
+
+    if (goingToGoalThr.joinable())
+        goingToGoalThr.join();
 }
 
 
@@ -327,46 +336,41 @@ inline Goal GoalsPublisher::getGoal() {
 
 
 void GoalsPublisher::goToGoal() {
-    Pose pose  = getPose();
-    m_prevPose = Pose(pose.x(), pose.y(), pose.z(), 0.0, 0.0, pose.yaw());
+    m_prevPose = Pose(m_startPose.x(), m_startPose.y(), m_startPose.z(), 0.0, 0.0, 0.0);
+    ros::Rate loop = 2;
 
-    m_occupator = std::make_shared<Occupator>(m_frame, pose.x(), pose.y(), pose.z());
-    if (!m_world->addOccupator(m_occupator))
-        return;
+    // If m_direction != 0 then it is meant that we have got interrupt from the world
+    #define stopped (!m_direction ||  m_publishingIsStopped)
+    #define working (!m_direction && !m_publishingIsStopped)
 
     while (ros::ok()) {
-        if (!m_direction) continue;
+        Pose pose = getPose();
+
+        if (stopped || pose.isNull()) {
+            loop.sleep();
+            continue;
+        }
 
         Goal goal = getGoal();
-
-        pose = getPose();
         m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
 
-        ros::Rate loop(2);
-        while (m_publishingIsStopped)
-            loop.sleep();
-
         // If m_direction != 0 then it is meant that we have got interrupt from the world
-        while ((!m_direction) && !m_world->occupyRegion(*m_occupator, goal.x(), goal.y(), goal.z())) {
+        while (working && !m_world->occupyRegion(*m_occupator, goal.x(), goal.y(), goal.z())) {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(pose.msg());
 
-            {
-                Pose exactPose = getPose();
+            Pose exactPose = getPose();
+            if (!exactPose.isNull())
                 m_occupator->updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
-            }
-
-            if (m_publishingIsStopped) break;
             loop.sleep();
         }
 
-        while (!m_direction) {
+        while (working) {
             m_publisher.publish(goal.msg());
 
             pose = getPose();
-            m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
-
-            if (m_publishingIsStopped) break;
+            if (!pose.isNull())
+                m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
             m_publishRate.sleep();
         }
     } // while (ros::ok())
