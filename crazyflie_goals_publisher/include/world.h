@@ -13,6 +13,7 @@ class Occupator {
 
     std::string     m_name;
     size_t          m_id;
+    double          extraWaitingTime;
     Region         *region;
     double          x, y, z;
 
@@ -29,7 +30,7 @@ public:
     std::string     name() const noexcept;
     size_t          id()   const noexcept;
     void            freeRegion() noexcept;
-    double          extraWaitingTime;
+    double          ejectExtraWaitingTime()                 noexcept;
     void            updateXYZ(double x, double y, double z) noexcept;
 };
 

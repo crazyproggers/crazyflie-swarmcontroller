@@ -26,8 +26,7 @@ class GoalsPublisher {
     ros::Rate                     m_publishRate;
 
     int8_t                        m_direction;
-    Pose                          m_prevPose;
-    Pose                          m_startPose;
+    Pose                          m_currPose;
 
     // class World realize synchronization mode
     static std::unique_ptr<World> m_world;

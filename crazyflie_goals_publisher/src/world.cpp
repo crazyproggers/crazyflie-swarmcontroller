@@ -19,6 +19,13 @@ void Occupator::updateXYZ(double x, double y, double z) noexcept {
 }
 
 
+double Occupator::ejectExtraWaitingTime() noexcept {
+    double tmp = extraWaitingTime;
+    extraWaitingTime = 0.0;
+    return tmp;
+}
+
+
 void Occupator::freeRegion() noexcept {
     if (region) {
         region->free();

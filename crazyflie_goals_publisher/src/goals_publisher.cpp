@@ -40,11 +40,11 @@ GoalsPublisher::GoalsPublisher(
     m_stopPublishing  = m_node.advertiseService(m_frame + "/stop_publishing",  &GoalsPublisher::stopPublishing,  this);
     m_startPublishing = m_node.advertiseService(m_frame + "/start_publishing", &GoalsPublisher::startPublishing, this);
 
-    m_startPose = getPose();
-    if (m_startPose.isNull())
+    m_currPose = getPose();
+    if (m_currPose.isNull())
         return;
 
-    m_occupator = std::make_shared<Occupator>(m_frame, m_startPose.x(), m_startPose.y(), m_startPose.z());
+    m_occupator = std::make_shared<Occupator>(m_frame, m_currPose.x(), m_currPose.y(), m_currPose.z());
 
     if (m_world == nullptr) {
         ROS_FATAL("You should to call initWorld!");
@@ -130,6 +130,19 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     ros::Rate loop   = 2;
     Goal retreatGoal;
 
+    // Return true if |pose - goal| < E
+    auto isCloseEnough = [exactMoving](const Pose& pose, const Goal& goal) -> bool {
+        double eps = (exactMoving)? 0.05 : 0.2;
+
+        return (fabs(pose.x()     - goal.x()) < eps) &&
+               (fabs(pose.y()     - goal.y()) < eps) &&
+               (fabs(pose.z()     - goal.z()) < eps) &&
+               (fabs(pose.roll()  - goal.roll())  < degToRad(10)) &&
+               (fabs(pose.pitch() - goal.pitch()) < degToRad(10)) &&
+               (fabs(pose.yaw()   - goal.yaw())   < degToRad(10));
+    };
+
+
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
         Pose pose = getPose();
 
@@ -143,6 +156,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
         ros::Duration duration(3.0);
         ros::Time begin = ros::Time::now();
 
+        // Try to occupy current region
         while (!m_publishingIsStopped && !m_world->occupyRegion(*m_occupator, goal->x(), goal->y(), goal->z())) {
             ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(pose.msg());
@@ -155,15 +169,14 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                 if ((ros::Time::now() - begin) >= duration) {
                     // Retreat into the nearest free region
                     tf::Vector3 safe = m_world->retreat(*m_occupator);
-                    retreatGoal = tmpGoal = Goal(safe.x(), safe.y(), safe.z(), 0.0, 0.0, 0.0, 1.0);
 
-                    if (!m_occupator->extraWaitingTime)
-                        break;
-                    else {
-                        duration += ros::Duration(m_occupator->extraWaitingTime);
-                        m_occupator->extraWaitingTime = 0.0;
+                    if (exactPose.x() != safe.x() || exactPose.y() != safe.y() || exactPose.z() != safe.z()) {
+                        retreatGoal = tmpGoal = Goal(safe.x(), safe.y(), safe.z(), 0.0, 0.0, 0.0, 2.0);
                         exactMoving = true;
+                        break;
                     }
+
+                    duration += ros::Duration(m_occupator->ejectExtraWaitingTime());
                 }
             } // if (!exactPose.isNull())
 
@@ -171,41 +184,8 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
             loop.sleep();
         }
 
-        if (tmpGoal.isNull()) {
-            auto isCloseEnough = [exactMoving](const Pose& pose, const Goal& goal) -> bool {
-                double eps = (exactMoving)? 0.05 : 0.2;
-
-                return (fabs(pose.x()     - goal.x()) < eps) &&
-                       (fabs(pose.y()     - goal.y()) < eps) &&
-                       (fabs(pose.z()     - goal.z()) < eps) &&
-                       (fabs(pose.roll()  - goal.roll())  < degToRad(10)) &&
-                       (fabs(pose.pitch() - goal.pitch()) < degToRad(10)) &&
-                       (fabs(pose.yaw()   - goal.yaw())   < degToRad(10));
-            };
-
-            while (!m_publishingIsStopped && ros::ok()) {
-                m_publisher.publish(goal->msg());
-
-                pose = getPose();
-                if (!pose.isNull()) {
-                    m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
-
-                    if (isCloseEnough(pose, *goal)) {
-                        ros::Duration(goal->delay()).sleep();
-
-                        if (*goal == retreatGoal) {
-                            retreatGoal = Goal();
-                            exactMoving = false;
-                        }
-                        break; // go to next goal
-                    }
-                } // if (!pose.isNull())
-
-                ros::spinOnce();
-                m_publishRate.sleep();
-            }
-        } // if (tmpGoal.isNull())
-        else {
+        // If need to reatreat
+        if (!tmpGoal.isNull()) {
             // Interpolate from pose to tmpGoal and backward
             std::list<Goal> tmpPath  = interpolate(static_cast<const Goal&>(pose), tmpGoal);
             std::list<Goal> backPath = interpolate(tmpGoal, *goal);
@@ -214,7 +194,32 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
             path.splice(position, tmpPath);
             path.splice(position, backPath);
+
+            continue; // go to next goal
         }
+
+        // Adjust the pose to the goal
+        while (!m_publishingIsStopped && ros::ok()) {
+            m_publisher.publish(goal->msg());
+
+            pose = getPose();
+            if (!pose.isNull()) {
+                m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
+
+                if (isCloseEnough(pose, *goal)) {
+                    ros::Duration(goal->delay()).sleep();
+
+                    if (*goal == retreatGoal) {
+                        retreatGoal = Goal();
+                        exactMoving = false;
+                    }
+                    break; // go to next goal
+                }
+            } // if (!pose.isNull())
+
+            ros::spinOnce();
+            m_publishRate.sleep();
+        } // while (!m_publishingIsStopped && ros::ok())
     } // for (goal = path.begin(); goal != path.end(); ++goal)
 
     std_srvs::Empty empty_srv;
@@ -243,12 +248,12 @@ void GoalsPublisher::directionChanged(const std_msgs::Byte::ConstPtr &direction)
 
 
 inline Goal GoalsPublisher::getGoal() {
-    double x     = m_prevPose.x();
-    double y     = m_prevPose.y();
-    double z     = m_prevPose.z();
-    double roll  = m_prevPose.roll();
-    double pitch = m_prevPose.pitch();
-    double yaw   = m_prevPose.yaw();
+    double x     = m_currPose.x();
+    double y     = m_currPose.y();
+    double z     = m_currPose.z();
+    double roll  = m_currPose.roll();
+    double pitch = m_currPose.pitch();
+    double yaw   = m_currPose.yaw();
 
     // all parameters are measured in meters
     constexpr double movingStep = 0.1;
@@ -325,15 +330,15 @@ inline Goal GoalsPublisher::getGoal() {
 
     m_direction = 0;
 
-    if (x != m_prevPose.x() || y != m_prevPose.y() || z != m_prevPose.z() || yaw != m_prevPose.yaw())
-        m_prevPose = Pose(x, y, z, roll, pitch, yaw);
+    if (x != m_currPose.x() || y != m_currPose.y() || z != m_currPose.z() || yaw != m_currPose.yaw())
+        m_currPose = Pose(x, y, z, roll, pitch, yaw);
     
     return Goal(x, y, z, roll, pitch, yaw);
 }
 
 
 void GoalsPublisher::goToGoal() {
-    m_prevPose = Pose(m_startPose.x(), m_startPose.y(), m_startPose.z(), 0.0, 0.0, 0.0);
+    m_currPose = Pose(m_currPose.x(), m_currPose.y(), m_currPose.z(), 0.0, 0.0, 0.0);
     ros::Rate loop = 2;
 
     // If m_direction != 0 then it is meant that we have got interrupt from the world
@@ -362,6 +367,7 @@ void GoalsPublisher::goToGoal() {
             loop.sleep();
         }
 
+        // Adjust the pose to the goal
         while (working) {
             m_publisher.publish(goal.msg());
 
