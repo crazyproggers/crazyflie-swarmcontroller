@@ -314,57 +314,57 @@ tf::Vector3 World::retreat(const Occupator &occupator) {
     if (occupator.extraWaitingTime)
         return tf::Vector3(x, y, z);
 
-    /*
-     * Adding extra waiting time to neighbours
-     *
-     * If there is deadlock then check ways to step back like in picture
-     *    |----|----|----|
-     *    |    |    |    |
-     *    |    | 1  |    |
-     *    |----|----|----|
-     *    |    |    |    |
-     *    |  2 | X  | 4  |
-     *    |----|----|----|
-     *    |    |    |    |
-     *    |    | 3  |    |
-     *    |----|----|----|
-     * If there are no ways to step back then check upward way
-     * If it is not free then return point (x, y, z) itself
-     */
+    struct Step {
+        long long i;
+        long long j;
+    };
+    Step steps[4] = {Step{2, 0}, Step{0, 2}, Step{-2, 0}, Step{0, -2}};
 
     long long currX = moveX(x) / m_regWidth;
     long long currY = moveY(y) / m_regLength;
     long long currZ = moveZ(z) / m_regHeight;
 
+    auto firstZ = currZ - 1;
+    auto lastZ  = currZ + 2;
+
+    auto inRangeOX = [this](double indexX) -> bool { return (indexX < dimOX && indexX >= 0); };
+    auto inRangeOY = [this](double indexY) -> bool { return (indexY < dimOY && indexY >= 0); };
+    auto inRangeOZ = [this](double indexZ) -> bool { return (indexZ < dimOZ && indexZ >= 0); };
+
     constexpr double extraTime = 3.0;
 
-    for (short stepX = -1; stepX <= 1; ++stepX)
-        for (short stepY = -1; stepY <= 1; ++stepY) {
-            bool positionIsOk = true;
-            long long newX = currX + stepX;
-            long long newY = currY + stepY;
+    for (Step step: steps) {
+        bool positionIsOk = true;
+        auto firstX = currX  + step.i - 1;
+        auto lastX  = firstX + 3;
 
-            for (short stepZ = -1; stepZ <= 1; ++stepZ) {
-                long long newZ = currZ + stepZ;
+        for (auto indexX = firstX; indexX < lastX; ++indexX) {
+            auto firstY = currY  + step.j - 1;
+            auto lastY  = firstY + 3;
 
-                if (newX >= dimOX || newX < 0 || newY >= dimOY || newY < 0 || newZ >= dimOZ || newZ < 0)
-                    continue;
+            for (auto indexY = firstY; indexY < lastY; ++indexY)
+                for (auto indexZ = firstZ; indexZ < lastZ; ++indexZ) {
 
-                Region *reg = m_regions[newZ][newY][newX];
+                    if (!(inRangeOX(indexX) && inRangeOY(indexY) && inRangeOZ(indexZ)))
+                        continue;
 
-                if (!reg->isFree() && reg != occupator.region)
-                    reg->owner->extraWaitingTime = extraTime;
+                    Region *reg = m_regions[indexZ][indexY][indexX];
 
-                if (!(abs(stepX + stepY) == 1) || !reg->isFree())
-                    positionIsOk = false;
-            }
+                    if (!reg->isFree()) {
+                        positionIsOk = false;
 
-            if (positionIsOk) {
-                x = (newX + 0.5) * m_regWidth  - m_offsetOX;
-                y = (newY + 0.5) * m_regLength - m_offsetOY;
-            }
+                        if (reg != occupator.region)
+                            reg->owner->extraWaitingTime = extraTime;
+                    }
+                } // for (indexZ = ...)
+        } // for (indexX = ...)
 
-        } // for (short stepY = -1; stepY <= 1; ++stepY)
+        if (positionIsOk) {
+            x = ((double) (currX + step.i) + 0.5) * m_regWidth  - m_offsetOX;
+            y = ((double) (currY + step.j) + 0.5) * m_regLength - m_offsetOY;
+            break;
+        }
+    } // for (Step step: steps)
 
     return tf::Vector3(x, y, z);
 }
