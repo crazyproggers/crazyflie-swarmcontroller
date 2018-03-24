@@ -14,6 +14,7 @@ class Occupator {
     std::string     m_name;
     size_t          m_id;
     double          extraWaitingTime;
+    const Region   *prevRegion;
     Region         *region;
     double          x, y, z;
 
@@ -85,7 +86,7 @@ class World {
     double moveZ(double z) const noexcept;
 
     // Checks if distances from point (x, y, z) to occupators in nearest regions are safe
-    bool safeDistances(const Occupator &occupator, double x, double y, double z, double eps = 0.4) const;
+    bool safeDistances(const Occupator &occupator, double x, double y, double z, double eps = 0.4) const noexcept;
 
 public:
     World(double worldWidth, double worldLenght, double worldHeight,
@@ -105,13 +106,13 @@ public:
     void delOccupator(size_t occupatorId);
 
     // Try occupy a region that contains point (x, y, z)
-    bool occupyRegion(Occupator &occupator, double x, double y, double z);
+    bool occupyRegion(Occupator &occupator, double x, double y, double z) noexcept;
 
     /* 
      * Return the center of the nearest free region
      * If there is no free center then return current position of occupator
      */
-    tf::Vector3 retreat(const Occupator &occupator);
+    tf::Vector3 retreat(const Occupator &occupator) noexcept;
 
     // Return min/max value of the world at one of the axis
     double getOXMin() const noexcept;

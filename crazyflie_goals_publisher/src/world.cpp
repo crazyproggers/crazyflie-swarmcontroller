@@ -4,6 +4,7 @@
 Occupator::Occupator(const std::string &name, double x0, double y0, double z0)
     : m_name            (name)
     , m_id              (std::hash<std::string>()(name))
+    , prevRegion        (nullptr)
     , region            (nullptr)
     , extraWaitingTime  (0.0)
     , x                 (x0)
@@ -30,6 +31,7 @@ void Occupator::freeRegion() noexcept {
     if (region) {
         region->free();
         region = nullptr;
+        prevRegion = nullptr;
     }
 }
 
@@ -194,7 +196,7 @@ void World::delOccupator(size_t occupatorId) {
 }
 
 
-bool World::safeDistances(const Occupator &occupator, double x, double y, double z, double eps) const {
+bool World::safeDistances(const Occupator &occupator, double x, double y, double z, double eps) const noexcept {
     x = moveX(x);
     y = moveY(y);
     z = moveZ(z);
@@ -274,7 +276,7 @@ bool World::safeDistances(const Occupator &occupator, double x, double y, double
 }
 
 
-bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
+bool World::occupyRegion(Occupator &occupator, double x, double y, double z) noexcept {
     bool areSafeDistances = safeDistances(occupator, x, y, z);
 
     // Get region that containes occupator position
@@ -290,9 +292,10 @@ bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
         if (occupator.region)
             occupator.region->owner = nullptr;
 
-        // occupy new region
-        occupator.region   = selectedReg;
-        selectedReg->owner = &occupator;
+        // occupy new region and memorize old one
+        occupator.prevRegion = occupator.region;
+        occupator.region     = selectedReg;
+        selectedReg->owner   = &occupator;
 
         return true;
     }
@@ -304,7 +307,7 @@ bool World::occupyRegion(Occupator &occupator, double x, double y, double z) {
 }
 
 
-tf::Vector3 World::retreat(const Occupator &occupator) {
+tf::Vector3 World::retreat(const Occupator &occupator) noexcept {
     std::lock_guard<std::mutex> locker(m_globalMutex);
 
     double x = occupator.x;
@@ -315,17 +318,14 @@ tf::Vector3 World::retreat(const Occupator &occupator) {
         return tf::Vector3(x, y, z);
 
     struct Step {
-        long long i;
-        long long j;
+        long long x;
+        long long y;
     };
     Step steps[4] = {Step{2, 0}, Step{0, 2}, Step{-2, 0}, Step{0, -2}};
 
-    long long currX = moveX(x) / m_regWidth;
-    long long currY = moveY(y) / m_regLength;
-    long long currZ = moveZ(z) / m_regHeight;
-
-    auto firstZ = currZ - 1;
-    auto lastZ  = currZ + 2;
+    long long currRegionX = moveX(x) / m_regWidth;
+    long long currRegionY = moveY(y) / m_regLength;
+    long long currRegionZ = moveZ(z) / m_regHeight;
 
     auto inRangeOX = [this](double indexX) -> bool { return (indexX < dimOX && indexX >= 0); };
     auto inRangeOY = [this](double indexY) -> bool { return (indexY < dimOY && indexY >= 0); };
@@ -333,37 +333,73 @@ tf::Vector3 World::retreat(const Occupator &occupator) {
 
     constexpr double extraTime = 3.0;
 
+    auto startX  = currRegionX - 2;
+    auto finishX = currRegionX + 3;
+
+    auto startY  = currRegionY - 2;
+    auto finishY = currRegionY + 3;
+
+    auto startZ  = currRegionZ - 1;
+    auto finishZ = currRegionZ + 2;
+
+    for (short indexX = startX; indexX < finishX; ++indexX)
+        for (short indexY = startY; indexY < finishY; ++indexY)
+            for (short indexZ = startZ; indexZ < finishZ; ++indexZ)
+            {
+                if (!(inRangeOX(indexX) && inRangeOY(indexY) && inRangeOZ(indexZ)))
+                    continue;
+
+                Region *reg = m_regions[indexZ][indexY][indexX];
+                if (!reg->isFree() && reg != occupator.region)
+                    reg->owner->extraWaitingTime = extraTime;
+            }
+
     for (Step step: steps) {
         bool positionIsOk = true;
-        auto firstX = currX  + step.i - 1;
-        auto lastX  = firstX + 3;
+        startX  = currRegionX  + step.x - 1;
+        finishX = startX + 3;
+        startY  = currRegionY  + step.y - 1;
+        finishY = startY + 3;
 
-        for (auto indexX = firstX; indexX < lastX; ++indexX) {
-            auto firstY = currY  + step.j - 1;
-            auto lastY  = firstY + 3;
-
-            for (auto indexY = firstY; indexY < lastY; ++indexY)
-                for (auto indexZ = firstZ; indexZ < lastZ; ++indexZ) {
-
+        for (auto indexX = startX; indexX < finishX; ++indexX)
+            for (auto indexY = startY; indexY < finishY; ++indexY)
+                for (auto indexZ = startZ; indexZ < finishZ; ++indexZ)
+                {
                     if (!(inRangeOX(indexX) && inRangeOY(indexY) && inRangeOZ(indexZ)))
                         continue;
 
-                    Region *reg = m_regions[indexZ][indexY][indexX];
-
-                    if (!reg->isFree()) {
+                    if (!m_regions[indexZ][indexY][indexX]->isFree())
                         positionIsOk = false;
-
-                        if (reg != occupator.region)
-                            reg->owner->extraWaitingTime = extraTime;
-                    }
                 } // for (indexZ = ...)
-        } // for (indexX = ...)
 
         if (positionIsOk) {
-            x = ((double) (currX + step.i) + 0.5) * m_regWidth  - m_offsetOX;
-            y = ((double) (currY + step.j) + 0.5) * m_regLength - m_offsetOY;
-            break;
-        }
+            auto chekingIndexX = currRegionX + step.x;
+            auto chekingIndexY = currRegionY + step.y;
+
+            if (!(inRangeOX(chekingIndexX)) || !(inRangeOY(chekingIndexY)))
+                continue;
+
+            startX  = std::min(chekingIndexX, currRegionX);
+            finishX = std::max(chekingIndexX, currRegionX) + 1;
+
+            startY  = std::min(chekingIndexY, currRegionY);
+            finishY = std::max(chekingIndexY, currRegionY) + 1;
+
+            bool isHeadingBack = false;
+
+            for (auto indexX = startX; indexX < finishX; ++indexX)
+                for (auto indexY = startY; indexY < finishY; ++indexY)
+                    if (m_regions[currRegionZ][indexY][indexX] == occupator.prevRegion) {
+                        isHeadingBack = true;
+                        goto end;
+                    }
+            end:
+
+            x = ((double) chekingIndexX + 0.5) * m_regWidth  - m_offsetOX;
+            y = ((double) chekingIndexY + 0.5) * m_regLength - m_offsetOY;
+
+            if (!isHeadingBack) break;
+        } // if (positionIsOk)
     } // for (Step step: steps)
 
     return tf::Vector3(x, y, z);
