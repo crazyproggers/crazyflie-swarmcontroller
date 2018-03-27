@@ -30,7 +30,7 @@ double Occupator::ejectExtraWaitingTime() noexcept {
 void Occupator::freeRegion() noexcept {
     if (region) {
         region->free();
-        region = nullptr;
+        region     = nullptr;
         prevRegion = nullptr;
     }
 }
@@ -43,6 +43,11 @@ std::string Occupator::name() const noexcept {
 
 size_t Occupator::id() const noexcept {
     return m_id;
+}
+
+
+bool Occupator::isActive() const noexcept {
+    return (region != nullptr);
 }
 
 
@@ -216,7 +221,7 @@ bool World::safeDistances(const Occupator &occupator, double x, double y, double
 
             std::shared_ptr<Occupator> checked(pair.second);
 
-            if (checked.get() == &occupator)
+            if (checked.get() == &occupator || !checked->isActive())
                 continue;
 
             if (dist(x, y, z, checked->x, checked->y, checked->z) < eps)
@@ -291,6 +296,7 @@ bool World::occupyRegion(Occupator &occupator, double x, double y, double z) noe
         // free old region of ocuppator
         if (occupator.region)
             occupator.region->owner = nullptr;
+        occupator.extraWaitingTime = 0.0;
 
         // occupy new region and memorize old one
         occupator.prevRegion = occupator.region;

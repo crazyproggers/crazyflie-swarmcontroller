@@ -28,9 +28,11 @@ public:
     Occupator & operator=(const Occupator &)    = delete;
     Occupator & operator=(Occupator &&)         = delete;
 
-    std::string     name() const noexcept;
-    size_t          id()   const noexcept;
-    void            freeRegion() noexcept;
+    std::string     name()     const noexcept;
+    size_t          id()       const noexcept;
+    bool            isActive() const noexcept;
+
+    void            freeRegion()                            noexcept;
     double          ejectExtraWaitingTime()                 noexcept;
     void            updateXYZ(double x, double y, double z) noexcept;
 };
