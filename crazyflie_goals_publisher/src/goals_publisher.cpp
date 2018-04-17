@@ -55,16 +55,9 @@ GoalsPublisher::GoalsPublisher(
         return;
 
     if (!path.empty())
-        m_runThread = std::thread(&GoalsPublisher::runAutomatic,  this, path);
+        std::thread { &GoalsPublisher::runAutomatic,  this, path }.detach();
     else
-        m_runThread = std::thread(&GoalsPublisher::runControlled, this);
-}
-
-
-GoalsPublisher::~GoalsPublisher() {
-    m_world->delOccupator(m_occupator->id());
-    if (m_runThread.joinable())
-        m_runThread.join();
+        std::thread { &GoalsPublisher::runControlled, this       }.detach();
 }
 
 
@@ -158,7 +151,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
         // Try to occupy current region
         while (!m_publishingIsStopped && !m_world->occupyRegion(*m_occupator, goal->x(), goal->y(), goal->z())) {
-            ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
+            //ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(pose.msg());
 
             Pose exactPose = getPose();
@@ -223,7 +216,8 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     } // for (goal = path.begin(); goal != path.end(); ++goal)
 
     std_srvs::Empty empty_srv;
-    ros::service::call(m_frame + "/land", empty_srv);
+    ros::service::call(m_frame + "/finish", empty_srv);
+    m_occupator->freeRegion();
 } // run(std::vector<Goal> path)
 
 
@@ -284,11 +278,11 @@ inline Goal GoalsPublisher::getGoal() {
     };
 
     auto rotate = [=](double currAngle, double shift) -> double {
-        double minAngle = degToRad(-180);
-        double maxAngle = degToRad( 180);
+        constexpr double minAngle = degToRad(-180);
+        constexpr double maxAngle = degToRad( 180);
 
-        currAngle += (currAngle + shift > maxAngle)? shift - 2 * maxAngle : shift;
-        currAngle += (currAngle + shift < minAngle)? shift - 2 * minAngle : shift;
+        currAngle += ((currAngle + shift > maxAngle)? shift - 2 * maxAngle : shift);
+        currAngle += ((currAngle + shift < minAngle)? shift - 2 * minAngle : shift);
 
         return currAngle;
     };
@@ -339,17 +333,13 @@ inline Goal GoalsPublisher::getGoal() {
 
 void GoalsPublisher::goToGoal() {
     m_currPose = Pose(m_currPose.x(), m_currPose.y(), m_currPose.z(), 0.0, 0.0, 0.0);
-    ros::Rate loop = 2;
-
-    // If m_direction != 0 then it is meant that we have got interrupt from the world
-    #define stopped (!m_direction ||  m_publishingIsStopped)
-    #define working (!m_direction && !m_publishingIsStopped)
 
     while (ros::ok()) {
         Pose pose = getPose();
 
-        if (stopped || pose.isNull()) {
-            loop.sleep();
+        // If m_direction != 0 then it is meant that we have got interrupt from the world
+        if ((m_direction == 0) || m_publishingIsStopped || pose.isNull()) {
+            m_publishRate.sleep();
             continue;
         }
 
@@ -357,18 +347,20 @@ void GoalsPublisher::goToGoal() {
         m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
 
         // If m_direction != 0 then it is meant that we have got interrupt from the world
-        while (working && !m_world->occupyRegion(*m_occupator, goal.x(), goal.y(), goal.z())) {
-            ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
+        while (((m_direction == 0) && !m_publishingIsStopped) &&
+               !m_world->occupyRegion(*m_occupator, goal.x(), goal.y(), goal.z()))
+        {
+            //ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
             m_publisher.publish(pose.msg());
 
             Pose exactPose = getPose();
             if (!exactPose.isNull())
                 m_occupator->updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
-            loop.sleep();
+            m_publishRate.sleep();
         }
 
         // Adjust the pose to the goal
-        while (working) {
+        while ((m_direction == 0) && !m_publishingIsStopped) {
             m_publisher.publish(goal.msg());
 
             pose = getPose();

@@ -5,6 +5,7 @@
 #include <std_srvs/Empty.h>
 #include <std_msgs/Byte.h>
 #include <thread>
+#include <atomic>
 #include "goal.h"
 
 class World;
@@ -18,7 +19,6 @@ class GoalsPublisher {
     std::shared_ptr<Occupator>    m_occupator;
     ros::Publisher                m_publisher;
     tf::TransformListener         m_listener;
-    std::thread                   m_runThread;
 
     ros::ServiceServer            m_stopPublishing;
     ros::ServiceServer            m_startPublishing;
@@ -64,8 +64,6 @@ public:
                    const std::string &frame,
                    size_t             publishRate,
                    std::list<Goal>    path = {});
-
-    ~GoalsPublisher();
 
     static void initWorld(double worldWidth, double worldLength, double worldHeight,
                           double regWidth,   double regLength,   double regHeight,

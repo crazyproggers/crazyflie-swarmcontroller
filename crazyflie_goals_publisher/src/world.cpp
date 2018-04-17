@@ -240,14 +240,23 @@ bool World::safeDistances(const Occupator &occupator, double x, double y, double
      * calculate distances from their owners to point (x, y, z)
      */
 
-    long long startX  = (x > m_regWidth * (regionX + 0.5)) ?  -1 : -2;
-    long long finishX = (x > m_regWidth * (regionX + 0.5)) ?   2 :  1;
+    long long startX = -1, finishX = 2;
+    if (m_regWidth * (regionX + 0.5) > x) {
+        startX  = -2;
+        finishX =  1;
+    }
 
-    long long startY  = (y > m_regLength * (regionY + 0.5)) ? -1 : -2;
-    long long finishY = (y > m_regLength * (regionY + 0.5)) ?  2 :  1;
+    long long startY = -1, finishY = 2;
+    if (m_regLength * (regionY + 0.5) > y) {
+        startY  = -2;
+        finishY =  1;
+    }
 
-    long long startZ  = (z > m_regHeight * (regionZ + 0.5)) ?  0 :  1;
-    long long finishZ = (z > m_regHeight * (regionZ + 0.5)) ?  1 :  0;
+    long long startZ = 0, finishZ = 1;
+    if (m_regHeight * (regionZ + 0.5) > z) {
+        startZ  = 1;
+        finishZ = 0;
+    }
 
     for (long long i = startX; i <= finishX; ++i) {
         long long X = regionX + i;

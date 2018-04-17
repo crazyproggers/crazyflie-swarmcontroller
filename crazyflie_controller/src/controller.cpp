@@ -73,6 +73,7 @@ public:
         , m_subscribeBattery       ()
         , m_serviceTakeoff         ()
         , m_serviceLand            ()
+        , m_serviceFinish          ()
         , m_thrust                 (0)
         , m_startZ                 (0)
         , m_goalsPublisherIsWorking(false)
@@ -85,12 +86,9 @@ public:
         m_subscribeBattery = nh.subscribe       (m_frame + "/battery", 1, &Controller::checkBattery, this);
         m_serviceTakeoff   = nh.advertiseService(m_frame + "/takeoff",    &Controller::takeoff,      this);
         m_serviceLand      = nh.advertiseService(m_frame + "/land",       &Controller::land,         this);
+        m_serviceFinish    = nh.advertiseService(m_frame + "/finish",     &Controller::finish,       this);
 
-        m_runThread = std::thread(&Controller::run, this, frequency);
-    }
-
-    ~Controller() {
-        m_runThread.join();
+        std::thread { &Controller::run, this, frequency }.detach();
     }
 
 private:
@@ -113,7 +111,7 @@ private:
         float cur_lvl = msg->data;
         float low_lvl = 2.6;
 
-        if (cur_lvl <= low_lvl) {
+        if (cur_lvl <= low_lvl && m_state != Landing && m_state != Idle) {
             ROS_WARN("%s%s", m_frame.c_str(), " have too low battery charge level! You should to charge it.");
             m_state = Landing;
         }
@@ -122,7 +120,10 @@ private:
     bool takeoff(
         std_srvs::Empty::Request  &req,
         std_srvs::Empty::Response &res)
-    {
+    {  
+        if (m_state != Idle)
+            return false;
+
         ROS_INFO("%s%s", m_frame.c_str(), ": takeoff requested!");
         m_state = TakingOff;
 
@@ -137,9 +138,25 @@ private:
         std_srvs::Empty::Request  &req,
         std_srvs::Empty::Response &res)
     {
+        if (m_state != Automatic)
+            return false;
+
         ROS_INFO("%s%s", m_frame.c_str(), ": landing requested!");
         m_state = Landing;
 
+        return true;
+    }
+
+    bool finish(
+        std_srvs::Empty::Request  &req,
+        std_srvs::Empty::Response &res)
+    {
+        if (m_state != Automatic)
+            return false;
+
+        ROS_INFO("%s%s", m_frame.c_str(), ": is finished!");
+        m_goalsPublisherIsWorking = false;
+        m_state = Landing;
         return true;
     }
 
@@ -247,7 +264,6 @@ private:
     std::string                 m_frame;
     ros::Publisher              m_pubNav;
     tf::TransformListener       m_listener;
-    std::thread                 m_runThread;
     PID                         m_pidX;
     PID                         m_pidY;
     PID                         m_pidZ;
@@ -258,6 +274,7 @@ private:
     ros::Subscriber             m_subscribeBattery;
     ros::ServiceServer          m_serviceTakeoff;
     ros::ServiceServer          m_serviceLand;
+    ros::ServiceServer          m_serviceFinish;
     float                       m_thrust;
     float                       m_startZ;
     bool                        m_goalsPublisherIsWorking;
