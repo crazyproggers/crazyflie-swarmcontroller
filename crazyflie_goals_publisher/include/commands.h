@@ -5,7 +5,7 @@
 #include <cstdint>
 
 
-class Command: private std_msgs::Byte {
+class Command: public std_msgs::Byte {
 public:
     Command(int8_t value) {
         data = value;
@@ -24,21 +24,10 @@ public:
         return value != data;
     }
 
-    friend bool operator==(int8_t value, Command command);
-    friend bool operator!=(int8_t value, Command command);
-
     std_msgs::Byte msg() const {
         return static_cast<std_msgs::Byte>(*this);
     }
 };
-
-bool operator==(int8_t value, Command command) {
-    return value == command.data;
-}
-
-bool operator!=(int8_t value, Command command) {
-    return value != command.data;
-}
 
 
 // Write other commands here
@@ -52,6 +41,8 @@ namespace commands {
     const Command yawright  = 7;
     const Command yawleft   = 8;
     const Command takeoff   = 9;
+    const Command landing   = 10;
+    const Command empty     = 11;
 }
 
 #endif // COMMANDS_H

@@ -287,40 +287,48 @@ inline Goal GoalsPublisher::getGoal() {
         return currAngle;
     };
 
-    if (m_direction == commands::forward) {
+    if (commands::forward == m_direction) {
         x = moveByX(x, std::cos(yaw));
         y = moveByY(y, std::sin(yaw));
     }
 
-    else if (m_direction == commands::backward) {
+    else if (commands::backward == m_direction) {
         x = moveByX(x, -std::cos(yaw));
         y = moveByY(y, -std::sin(yaw));
     }
 
-    else if (m_direction == commands::rightward) {
+    else if (commands::rightward == m_direction) {
         x = moveByX(x,  std::sin(yaw));
         y = moveByY(y, -std::cos(yaw));
     }
 
-    else if (m_direction == commands::leftward) {
+    else if (commands::leftward == m_direction) {
         x = moveByX(x, -std::sin(yaw));
         y = moveByY(y,  std::cos(yaw));
     }
 
-    else if (m_direction == commands::yawright)
+    else if (commands::yawright == m_direction)
         yaw = rotate(yaw, degToRad(-10));
 
-    else if (m_direction == commands::yawleft)
+    else if (commands::yawleft == m_direction)
         yaw = rotate(yaw, degToRad( 10));
 
-    else if (m_direction == commands::upward)
+    else if (commands::upward == m_direction)
         z = moveByZ(z,  movingStep);
 
-    else if (m_direction == commands::downward)
+    else if (commands::downward == m_direction)
         z = moveByZ(z, -movingStep);
 
-    else if (m_direction == commands::takeoff)
+    else if (commands::takeoff == m_direction) {
+        std_srvs::Empty empty_srv;
+        ros::service::call(m_frame + "/takeoff", empty_srv);
         z = moveByZ(z, 1.0);
+    }
+
+    else if (commands::landing == m_direction) {
+        std_srvs::Empty empty_srv;
+        ros::service::call(m_frame + "/land", empty_srv);
+    }
 
     m_direction = 0;
 

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package>
+  <name>crazyflie_test_input_devices</name>
+  <version>0.0.1</version>
+  <maintainer email="somemail@somemail.com">Crazyprogers</maintainer>
+  <license>MIT</license>
+
+  <description>Tools for control crazyflies services</description>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>std_srvs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>crazyflie_goals_publisher</build_depend>
+
+  <run_depend>std_srvs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>crazyflie_goals_publisher</run_depend>
+</package>
