@@ -14,9 +14,9 @@ double Gesture::recognize(const bones_t &bones) const noexcept {
         double delta_y = std::fabs(q.y() - sb.mean.y);
         double delta_w = std::fabs(q.w() - sb.mean.w);
 
-        if (delta_x < 0.02) delta_x = 0.0;
-        if (delta_y < 0.02) delta_y = 0.0;
-        if (delta_w < 0.02) delta_w = 0.0;
+        if (delta_x < 0.03) delta_x = 0.0;
+        if (delta_y < 0.03) delta_y = 0.0;
+        if (delta_w < 0.03) delta_w = 0.0;
 
         result += std::max(1.0 - (delta_x) / (4.0 * sb.std.x), 0.0);
         result += std::max(1.0 - (delta_y) / (4.0 * sb.std.y), 0.0);
@@ -135,8 +135,8 @@ Command Rightward::getCommand() const noexcept {
 // ################################################
 Forward::Forward() {
     m_standardBones.push_back({.mean = { 0.0913,  0.4433, 0.8733}, .std = {0.0155, 0.0123, 0.0093}});
-    m_standardBones.push_back({.mean = { 0.0228,  0.1285, 0.9762}, .std = {0.0052, 0.0007, 0.0054}});
-    m_standardBones.push_back({.mean = { 0.0000,  0.0000, 0.7597}, .std = {0.0001, 0.0001, 0.0320}});
+    m_standardBones.push_back({.mean = { 0.0248,  0.1285, 0.9762}, .std = {0.0052, 0.0007, 0.0054}});
+    m_standardBones.push_back({.mean = { 0.0000,  0.0000, 0.7597}, .std = {0.0001, 0.0001, 0.0920}});
     m_standardBones.push_back({.mean = {-0.0913, -0.0933, 0.7572}, .std = {0.0031, 0.0026, 0.0200}});
     m_standardBones.push_back({.mean = {-0.1222, -0.1786, 0.8056}, .std = {0.0128, 0.0087, 0.0392}});
 
@@ -151,11 +151,11 @@ Command Forward::getCommand() const noexcept {
 // ################## BACKWARD ####################
 // ################################################
 Backward::Backward() {
-    m_standardBones.push_back({.mean = { 0.0935,  0.4340, 0.8758}, .std = {0.0127, 0.0221, 0.0111}});
-    m_standardBones.push_back({.mean = { 0.0274,  0.1276, 0.9694}, .std = {0.0072, 0.0007, 0.0057}});
-    m_standardBones.push_back({.mean = { 0.0000,  0.0000, 0.9994}, .std = {0.0001, 0.0001, 0.0012}});
-    m_standardBones.push_back({.mean = {-0.0900, -0.0945, 0.7707}, .std = {0.0034, 0.0027, 0.0206}});
-    m_standardBones.push_back({.mean = {-0.1345, -0.1695, 0.7647}, .std = {0.0096, 0.0064, 0.0289}});
+    m_standardBones.push_back({.mean = { 0.1442,  0.3022, 0.8505}, .std = {0.0127, 0.0151, 0.0111}});
+    m_standardBones.push_back({.mean = { 0.0131,  0.1298, 0.9862}, .std = {0.0072, 0.0007, 0.0057}});
+    m_standardBones.push_back({.mean = { 0.0000,  0.0000, 0.9994}, .std = {0.0001, 0.0001, 0.0053}});
+    m_standardBones.push_back({.mean = {-0.0842, -0.0997, 0.8269}, .std = {0.0047, 0.0031, 0.0234}});
+    m_standardBones.push_back({.mean = {-0.1461, -0.1596, 0.7201}, .std = {0.0155, 0.0118, 0.0532}});
 }
 
 Command Backward::getCommand() const noexcept {

@@ -120,7 +120,7 @@ private:
     bool takeoff(
         std_srvs::Empty::Request  &req,
         std_srvs::Empty::Response &res)
-    {  
+    {
         if (m_state != Idle)
             return false;
 

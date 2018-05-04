@@ -187,13 +187,12 @@ std::list<Goal> PathsCreator::genPath(const std::string &frame) {
     // #########################################################
     // ################ ADD FIRST AND LAST GOAL ################
     // #########################################################
-    /*
+
     selectedPath.emplace_front(x0, y0, z0, 0.0, 0.0, 0.0);
 
     Goal   last   = selectedPath.back();
     double last_z = startPoint.getOrigin().z() + 0.2;
     selectedPath.emplace_back(last.x(), last.y(), last_z, 0.0, 0.0, 0.0);
-    */
 
     // #########################################################
     // ############## INTREPOLATE SELECTED PATH ################

@@ -291,7 +291,7 @@ bool World::safeDistances(const Occupator &occupator, double x, double y, double
 
 
 bool World::occupyRegion(Occupator &occupator, double x, double y, double z) noexcept {
-    bool areSafeDistances = safeDistances(occupator, x, y, z);
+    bool areSafeDistances = safeDistances(occupator, x, y, z, 0.6);
 
     // Get region that containes occupator position
     size_t xNum = moveX(x) / m_regWidth;

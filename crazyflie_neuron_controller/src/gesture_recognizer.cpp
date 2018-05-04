@@ -65,7 +65,7 @@ void GestureRecognizer::update() {
      * and we have 10 same gestures in sequence
      * then we can publish command into topic
      */
-    constexpr double eps = 0.7;
+    constexpr double eps = 0.6;
     constexpr size_t minSameGesturesForCommand = 7;
 
     if (maxCoincidence > eps && gestureIdx != m_emptyGestureIdx) {

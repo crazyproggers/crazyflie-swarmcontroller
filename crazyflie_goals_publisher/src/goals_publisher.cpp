@@ -1,4 +1,5 @@
 #include <tf/transform_listener.h>
+#include <thread>
 
 #include "world.h"
 #include "goals_publisher.h"
@@ -31,20 +32,21 @@ GoalsPublisher::GoalsPublisher(
     , m_occupator                 ()
     , m_publisher                 ()
     , m_listener                  ()
-    , m_publishingIsStopped       (false)
+    , m_publishingIsStopped       (true)
     , m_publishRate               (publishRate)
     , m_direction                 (0)
+    , m_prevDirection             (0)
 {
     m_listener.waitForTransform(m_worldFrame, m_frame, ros::Time(0), ros::Duration(5.0));
     m_publisher       = m_node.advertise<geometry_msgs::PoseStamped>(m_frame + "/goal", 1);
     m_stopPublishing  = m_node.advertiseService(m_frame + "/stop_publishing",  &GoalsPublisher::stopPublishing,  this);
     m_startPublishing = m_node.advertiseService(m_frame + "/start_publishing", &GoalsPublisher::startPublishing, this);
 
-    m_currPose = getPose();
-    if (m_currPose.isNull())
+    m_stablePose = getPose();
+    if (m_stablePose.isNull())
         return;
 
-    m_occupator = std::make_shared<Occupator>(m_frame, m_currPose.x(), m_currPose.y(), m_currPose.z());
+    m_occupator = std::make_shared<Occupator>(m_frame, m_stablePose.x(), m_stablePose.y(), m_stablePose.z());
 
     if (m_world == nullptr) {
         ROS_FATAL("You should to call initWorld!");
@@ -124,8 +126,8 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     Goal retreatGoal;
 
     // Return true if |pose - goal| < E
-    auto isCloseEnough = [exactMoving](const Pose& pose, const Goal& goal) -> bool {
-        double eps = (exactMoving)? 0.05 : 0.2;
+    auto isCloseEnough = [exactMoving](const Pose &pose, const Goal &goal) -> bool {
+        double eps = (exactMoving? 0.05 : 0.2);
 
         return (fabs(pose.x()     - goal.x()) < eps) &&
                (fabs(pose.y()     - goal.y()) < eps) &&
@@ -134,7 +136,6 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
                (fabs(pose.pitch() - goal.pitch()) < degToRad(10)) &&
                (fabs(pose.yaw()   - goal.yaw())   < degToRad(10));
     };
-
 
     for (auto goal = path.begin(); goal != path.end(); ++goal) {
         Pose pose = getPose();
@@ -242,15 +243,15 @@ void GoalsPublisher::directionChanged(const std_msgs::Byte::ConstPtr &direction)
 
 
 inline Goal GoalsPublisher::getGoal() {
-    double x     = m_currPose.x();
-    double y     = m_currPose.y();
-    double z     = m_currPose.z();
-    double roll  = m_currPose.roll();
-    double pitch = m_currPose.pitch();
-    double yaw   = m_currPose.yaw();
+    double x     = m_stablePose.x();
+    double y     = m_stablePose.y();
+    double z     = m_stablePose.z();
+    double roll  = m_stablePose.roll();
+    double pitch = m_stablePose.pitch();
+    double yaw   = m_stablePose.yaw();
 
     // all parameters are measured in meters
-    constexpr double movingStep = 0.1;
+    constexpr double movingStep = 0.2;
     constexpr double eps        = 0.2;
 
     auto moveByX = [=](double x, double slope) -> double {
@@ -287,94 +288,97 @@ inline Goal GoalsPublisher::getGoal() {
         return currAngle;
     };
 
-    if (commands::forward == m_direction) {
+    if (m_direction != commands::takeoff && m_publishingIsStopped)
+        return Goal(x, y, z, roll, pitch, yaw);
+
+    if (m_direction == commands::forward) {
         x = moveByX(x, std::cos(yaw));
         y = moveByY(y, std::sin(yaw));
     }
 
-    else if (commands::backward == m_direction) {
+    else if (m_direction == commands::backward) {
         x = moveByX(x, -std::cos(yaw));
         y = moveByY(y, -std::sin(yaw));
     }
 
-    else if (commands::rightward == m_direction) {
+    else if (m_direction == commands::rightward) {
         x = moveByX(x,  std::sin(yaw));
         y = moveByY(y, -std::cos(yaw));
     }
 
-    else if (commands::leftward == m_direction) {
+    else if (m_direction == commands::leftward) {
         x = moveByX(x, -std::sin(yaw));
         y = moveByY(y,  std::cos(yaw));
     }
 
-    else if (commands::yawright == m_direction)
+    else if (m_direction == commands::yawright)
         yaw = rotate(yaw, degToRad(-10));
 
-    else if (commands::yawleft == m_direction)
+    else if (m_direction == commands::yawleft)
         yaw = rotate(yaw, degToRad( 10));
 
-    else if (commands::upward == m_direction)
+    else if (m_direction == commands::upward)
         z = moveByZ(z,  movingStep);
 
-    else if (commands::downward == m_direction)
+    else if (m_direction == commands::downward)
         z = moveByZ(z, -movingStep);
 
-    else if (commands::takeoff == m_direction) {
+    else if (m_direction == commands::takeoff) {
         std_srvs::Empty empty_srv;
         ros::service::call(m_frame + "/takeoff", empty_srv);
         z = moveByZ(z, 1.0);
     }
 
-    else if (commands::landing == m_direction) {
+    else if (m_direction == commands::landing) {
         std_srvs::Empty empty_srv;
         ros::service::call(m_frame + "/land", empty_srv);
     }
 
+    m_prevDirection = m_direction;
     m_direction = 0;
 
-    if (x != m_currPose.x() || y != m_currPose.y() || z != m_currPose.z() || yaw != m_currPose.yaw())
-        m_currPose = Pose(x, y, z, roll, pitch, yaw);
-    
     return Goal(x, y, z, roll, pitch, yaw);
 }
 
 
 void GoalsPublisher::goToGoal() {
-    m_currPose = Pose(m_currPose.x(), m_currPose.y(), m_currPose.z(), 0.0, 0.0, 0.0);
+    m_stablePose = Pose(m_stablePose.x(), m_stablePose.y(), m_stablePose.z(), 0.0, 0.0, 0.0);
 
     while (ros::ok()) {
-        Pose pose = getPose();
-
-        // If m_direction != 0 then it is meant that we have got interrupt from the world
-        if ((m_direction == 0) || m_publishingIsStopped || pose.isNull()) {
-            m_publishRate.sleep();
-            continue;
-        }
-
         Goal goal = getGoal();
-        m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
 
-        // If m_direction != 0 then it is meant that we have got interrupt from the world
-        while (((m_direction == 0) && !m_publishingIsStopped) &&
-               !m_world->occupyRegion(*m_occupator, goal.x(), goal.y(), goal.z()))
-        {
+        // Try to occupy current region
+        while (!m_world->occupyRegion(*m_occupator, goal.x(), goal.y(), goal.z())) {
             //ROS_INFO("%s%s", m_frame.c_str(), " is waiting");
-            m_publisher.publish(pose.msg());
+            m_publisher.publish(m_stablePose.msg());
 
-            Pose exactPose = getPose();
-            if (!exactPose.isNull())
-                m_occupator->updateXYZ(exactPose.x(), exactPose.y(), exactPose.z());
-            m_publishRate.sleep();
-        }
+            // If m_direction != 0 then it is meant that we have got interrupt from the world
+            if ((m_direction && m_direction != m_prevDirection) || m_publishingIsStopped)
+                break;
 
-        // Adjust the pose to the goal
-        while ((m_direction == 0) && !m_publishingIsStopped) {
-            m_publisher.publish(goal.msg());
-
-            pose = getPose();
+            Pose pose = getPose();
             if (!pose.isNull())
                 m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
             m_publishRate.sleep();
         }
+
+        // Adjust the pose to the goal
+        bool stablePoseUpdated = false;
+        while (!m_direction && !m_publishingIsStopped) {
+            m_publisher.publish(goal.msg());
+
+            Pose pose = getPose();
+            if (!pose.isNull())
+                m_occupator->updateXYZ(pose.x(), pose.y(), pose.z());
+
+            if (!stablePoseUpdated) {
+                m_stablePose = goal;
+                stablePoseUpdated = true;
+            }
+
+            m_publishRate.sleep();
+        }
+
+        m_publishRate.sleep();
     } // while (ros::ok())
 }

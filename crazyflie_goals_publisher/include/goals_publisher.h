@@ -4,7 +4,6 @@
 #include <tf/transform_listener.h>
 #include <std_srvs/Empty.h>
 #include <std_msgs/Byte.h>
-#include <thread>
 #include <atomic>
 #include "goal.h"
 
@@ -25,8 +24,9 @@ class GoalsPublisher {
     bool                          m_publishingIsStopped;
     ros::Rate                     m_publishRate;
 
-    int8_t                        m_direction;
-    Pose                          m_currPose;
+    std::atomic<int>              m_direction;
+    int                           m_prevDirection;
+    Pose                          m_stablePose;
 
     // class World realize synchronization mode
     static std::unique_ptr<World> m_world;

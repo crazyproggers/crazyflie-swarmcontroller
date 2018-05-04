@@ -3,7 +3,7 @@
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "neuron_controller_node");
-    ros::NodeHandle node("~");
+    ros::NodeHandle node;
 
     GestureRecognizer gr(node);
 

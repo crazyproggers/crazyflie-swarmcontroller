@@ -5,7 +5,7 @@
 #include <cstdint>
 
 
-class Command: public std_msgs::Byte {
+class Command: private std_msgs::Byte {
 public:
     Command(int8_t value) {
         data = value;
@@ -24,10 +24,25 @@ public:
         return value != data;
     }
 
-    std_msgs::Byte msg() const {
-        return static_cast<std_msgs::Byte>(*this);
+    std_msgs::Byte msg() const noexcept {
+        return *this;
+    }
+
+    int8_t value() const noexcept {
+        return data;
     }
 };
+
+
+namespace {
+    bool operator==(int8_t value, Command command) {
+        return command.value() == value;
+    }
+
+    bool operator!=(int8_t value, Command command) {
+        return command.value() != value;
+    }
+}
 
 
 // Write other commands here
