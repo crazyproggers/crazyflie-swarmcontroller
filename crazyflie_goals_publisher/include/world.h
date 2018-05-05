@@ -69,6 +69,14 @@ class World {
     double m_offsetOY;
     double m_offsetOZ;
 
+    // Ranges of the world
+    double m_OXmin;
+    double m_OYmin;
+    double m_OZmin;
+    double m_OXmax;
+    double m_OYmax;
+    double m_OZmax;
+
     // Filling of the world
     std::vector<std::vector<std::vector<Region*>>> m_regions;
 

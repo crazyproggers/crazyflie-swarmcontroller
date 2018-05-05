@@ -288,9 +288,6 @@ inline Goal GoalsPublisher::getGoal() {
         return currAngle;
     };
 
-    if (m_direction != commands::takeoff && m_publishingIsStopped)
-        return Goal(x, y, z, roll, pitch, yaw);
-
     if (m_direction == commands::forward) {
         x = moveByX(x, std::cos(yaw));
         y = moveByY(y, std::sin(yaw));
@@ -323,13 +320,12 @@ inline Goal GoalsPublisher::getGoal() {
     else if (m_direction == commands::downward)
         z = moveByZ(z, -movingStep);
 
-    else if (m_direction == commands::takeoff) {
+    else if (m_direction == commands::takeoff && m_publishingIsStopped) {
         std_srvs::Empty empty_srv;
         ros::service::call(m_frame + "/takeoff", empty_srv);
-        z = moveByZ(z, 1.0);
     }
 
-    else if (m_direction == commands::landing) {
+    else if (m_direction == commands::landing && !m_publishingIsStopped) {
         std_srvs::Empty empty_srv;
         ros::service::call(m_frame + "/land", empty_srv);
     }
@@ -342,9 +338,14 @@ inline Goal GoalsPublisher::getGoal() {
 
 
 void GoalsPublisher::goToGoal() {
-    m_stablePose = Pose(m_stablePose.x(), m_stablePose.y(), m_stablePose.z(), 0.0, 0.0, 0.0);
+    m_stablePose = Pose(m_stablePose.x(), m_stablePose.y(), m_stablePose.z() + 1.0, 0.0, 0.0, 0.0);
 
     while (ros::ok()) {
+        while (m_direction != commands::takeoff && m_publishingIsStopped) {
+            m_publisher.publish(m_stablePose.msg());
+            m_publishRate.sleep();
+        }
+
         Goal goal = getGoal();
 
         // Try to occupy current region
@@ -378,7 +379,5 @@ void GoalsPublisher::goToGoal() {
 
             m_publishRate.sleep();
         }
-
-        m_publishRate.sleep();
     } // while (ros::ok())
 }

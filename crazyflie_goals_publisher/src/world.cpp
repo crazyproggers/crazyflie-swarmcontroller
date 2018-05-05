@@ -77,12 +77,6 @@ Region::~Region() {
 }
 
 
-// Amount of blocks on each of axis
-#define dimOZ m_regions.size()
-#define dimOY m_regions[0].size()
-#define dimOX m_regions[0][0].size()
-
-
 World::World(
     double worldWidth, double worldLength, double worldHeight,
     double regWidth,   double regLength,   double regHeight,
@@ -93,6 +87,9 @@ World::World(
     , m_offsetOX            (offsetOX)
     , m_offsetOY            (offsetOY)
     , m_offsetOZ            (offsetOZ)
+    , m_OXmin               (-offsetOX)
+    , m_OYmin               (-offsetOY)
+    , m_OZmin               (-offsetOZ)
     , m_globalMutex         ()
     , m_occupators          ()
 {
@@ -114,7 +111,17 @@ World::World(
 
         m_regions.push_back(vecOY);
     }
+
+    m_OXmax = _dimOX * m_regWidth  - m_offsetOX;
+    m_OYmax = _dimOY * m_regLength - m_offsetOY;
+    m_OZmax = _dimOZ * m_regHeight - m_offsetOZ;
 }
+
+
+// Amount of blocks on each of axis
+#define dimOZ m_regions.size()
+#define dimOY m_regions[0].size()
+#define dimOX m_regions[0][0].size()
 
 
 World::~World() {
@@ -422,25 +429,25 @@ tf::Vector3 World::retreat(const Occupator &occupator) noexcept {
 
 
 double World::getOXMin() const noexcept {
-    return -m_offsetOX;
+    return m_OXmin;
 }
 
 double World::getOYMin() const noexcept {
-    return -m_offsetOY;
+    return m_OYmin;
 }
 
 double World::getOZMin() const noexcept {
-    return -m_offsetOZ;
+    return m_OZmin;
 }
 
 double World::getOXMax() const noexcept {
-    return dimOX * m_regWidth - m_offsetOX;
+    return m_OXmax;
 }
 
 double World::getOYMax() const noexcept {
-    return dimOY * m_regLength - m_offsetOY;
+    return m_OYmax;
 }
 
 double World::getOZMax() const noexcept {
-    return dimOZ * m_regHeight - m_offsetOZ;
+    return m_OZmax;
 }
