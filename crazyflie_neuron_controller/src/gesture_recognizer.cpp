@@ -66,7 +66,7 @@ void GestureRecognizer::update() {
      * then we can publish command into topic
      */
     constexpr double eps = 0.6;
-    constexpr size_t minSameGesturesForCommand = 7;
+    constexpr size_t minSameGesturesForCommand = 5;
 
     if (maxCoincidence > eps && gestureIdx != m_emptyGestureIdx) {
         if (gestureIdx == m_prevGestureIdx)
@@ -77,7 +77,7 @@ void GestureRecognizer::update() {
         if (m_sameGesturesCounter < minSameGesturesForCommand)
             return;
 
-        std::cout << typeid(*m_gestures[gestureIdx]).name() << "   " << maxCoincidence << std::endl;
+        //std::cout << typeid(*m_gestures[gestureIdx]).name() << "   " << maxCoincidence << std::endl;
         m_sameGesturesCounter = 0;
         m_commandsPublisher.publish(m_gestures[gestureIdx]->getCommand().msg());
     }
