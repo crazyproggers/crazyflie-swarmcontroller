@@ -151,11 +151,11 @@ Command Forward::getCommand() const noexcept {
 // ################## BACKWARD ####################
 // ################################################
 Backward::Backward() {
-    m_standardBones.push_back({.mean = { 0.1442,  0.3022, 0.8505}, .std = {0.0127, 0.0151, 0.0111}});
-    m_standardBones.push_back({.mean = { 0.0131,  0.1298, 0.9862}, .std = {0.0072, 0.0007, 0.0057}});
-    m_standardBones.push_back({.mean = { 0.0000,  0.0000, 0.9994}, .std = {0.0001, 0.0001, 0.0053}});
-    m_standardBones.push_back({.mean = {-0.0842, -0.0997, 0.8269}, .std = {0.0047, 0.0031, 0.0234}});
-    m_standardBones.push_back({.mean = {-0.1461, -0.1596, 0.7201}, .std = {0.0155, 0.0118, 0.0532}});
+    m_standardBones.push_back({.mean = { 0.1925,  0.4029, 0.8073}, .std = {0.0364, 0.0531, 0.0371}});
+    m_standardBones.push_back({.mean = { 0.0079,  0.1303, 0.9894}, .std = {0.0099, 0.0010, 0.0077}});
+    m_standardBones.push_back({.mean = { 0.0000,  0.0000, 0.9909}, .std = {0.0001, 0.0001, 0.0216}});
+    m_standardBones.push_back({.mean = {-0.0820, -0.1016, 0.7934}, .std = {0.0028, 0.0020, 0.0155}});
+    m_standardBones.push_back({.mean = {-0.0203, -0.2155, 0.9720}, .std = {0.0197, 0.0016, 0.0072}});
 }
 
 Command Backward::getCommand() const noexcept {

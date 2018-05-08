@@ -16,8 +16,8 @@
     <arg name="enable_logging" value="True" />
   </include>
 
-  <node name="keyboard" pkg="crazyflie_test_input_devices" type="keyboard" output="screen" />
-  <!--node name="neuron_controller_node" pkg="crazyflie_neuron_controller" type="neuron_controller_node" output="screen" /-->
+  <!--node name="keyboard" pkg="crazyflie_test_input_devices" type="keyboard" output="screen" /-->
+  <node name="neuron_controller_node" pkg="crazyflie_neuron_controller" type="neuron_controller_node" output="screen" />
  
   <node name="perception_neuron_tf_broadcaster_node" pkg="perception_neuron_tf_broadcaster" type="perception_neuron_tf_broadcaster_node" output="screen" />
 
