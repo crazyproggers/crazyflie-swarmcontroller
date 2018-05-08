@@ -5,12 +5,12 @@
 
   <arg name="roll_trim" default="0" />
   <arg name="pitch_trim" default="0" />
-  <arg name="enable_logging" default="True" />
+  <arg name="enable_logging" default="False" />
   <arg name="use_ros_time" default="True" />
-  <arg name="enable_logging_imu" default="True" />
-  <arg name="enable_logging_temperature" default="True" />
-  <arg name="enable_logging_magnetic_field" default="True" />
-  <arg name="enable_logging_pressure" default="True" />
+  <arg name="enable_logging_imu" default="False" />
+  <arg name="enable_logging_temperature" default="False" />
+  <arg name="enable_logging_magnetic_field" default="False" />
+  <arg name="enable_logging_pressure" default="False" />
   <arg name="enable_logging_battery" default="True" />
 
   <node pkg="crazyflie_driver" type="crazyflie_add_group" name="crazyflie_add_group" output="screen">
