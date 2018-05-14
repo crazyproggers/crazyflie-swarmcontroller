@@ -32,7 +32,7 @@ GoalsPublisher::GoalsPublisher(
     , m_occupator                 ()
     , m_publisher                 ()
     , m_listener                  ()
-    , m_publishingIsStopped       (true)
+    , m_publishingIsStopped       (false)
     , m_publishRate               (publishRate)
     , m_direction                 (0)
     , m_prevDirection             (0)
@@ -225,6 +225,7 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 void GoalsPublisher::runControlled() {
     ros::Subscriber subscriber = m_node.subscribe("/swarm/commands", 1, &GoalsPublisher::directionChanged, this);
     std::thread goingToGoalThr(&GoalsPublisher::goToGoal, this);
+    m_publishingIsStopped = true;
 
     ros::Rate loop(10);
     while (ros::ok()) {

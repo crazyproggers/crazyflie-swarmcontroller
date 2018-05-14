@@ -27,9 +27,14 @@ std::list<Goal> interpolate(const Goal &goal1, const Goal &goal2, double distanc
 std::list<Goal> createSpline(std::list<Goal> goals, double step) {
     std::list<Goal> intermediateGoals;
 
-    goals.push_front(goals.front());
-    goals.push_front(goals.front());
-    goals.push_back(goals.back());
+    Goal front = goals.front();
+    Goal back  = goals.back();
+
+    for (size_t i = 0; i < 4; ++i)
+        goals.push_front(front);
+
+    for (size_t i = 0; i < 2; ++i)
+        goals.push_back(back);
 
     std::array<double, 3> Ax, Ay, Az;
     std::array<double, 2> Bx, By, Bz;

@@ -185,16 +185,6 @@ std::list<Goal> PathsCreator::genPath(const std::string &frame) {
     m_paths.erase(std::next(m_paths.begin(), pathNum));
 
     // #########################################################
-    // ################ ADD FIRST AND LAST GOAL ################
-    // #########################################################
-
-    selectedPath.emplace_front(x0, y0, z0, 0.0, 0.0, 0.0);
-
-    Goal   last   = selectedPath.back();
-    double last_z = startPoint.getOrigin().z() + 0.2;
-    selectedPath.emplace_back(last.x(), last.y(), last_z, 0.0, 0.0, 0.0);
-
-    // #########################################################
     // ############## INTREPOLATE SELECTED PATH ################
     // #########################################################
     if (m_splinesMode)
@@ -216,6 +206,15 @@ std::list<Goal> PathsCreator::genPath(const std::string &frame) {
         path.push_back(selectedPath.back());
         selectedPath = std::move(path);
     }
+
+    // #########################################################
+    // ################ ADD FIRST AND LAST GOAL ################
+    // #########################################################
+    selectedPath.emplace_front(x0, y0, z0, 0.0, 0.0, 0.0);
+
+    Goal   last   = selectedPath.back();
+    double last_z = startPoint.getOrigin().z() + 0.2;
+    selectedPath.emplace_back(last.x(), last.y(), last_z, 0.0, 0.0, 0.0);
 
     return selectedPath;
 }
