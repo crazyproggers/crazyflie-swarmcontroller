@@ -214,7 +214,7 @@ std::list<Goal> PathsCreator::genPath(const std::string &frame) {
 
     Goal   last   = selectedPath.back();
     double last_z = startPoint.getOrigin().z() + 0.2;
-    selectedPath.emplace_back(last.x(), last.y(), last_z, 0.0, 0.0, 0.0);
+    selectedPath.emplace_back(last.x(), last.y(), last_z, 0.0, 0.0, 0.0, 0.5);
 
     return selectedPath;
 }

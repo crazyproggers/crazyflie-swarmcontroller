@@ -15,8 +15,8 @@ GestureRecognizer::~GestureRecognizer() {}
 
 GestureRecognizer::GestureRecognizer(ros::NodeHandle &node)
     : m_sameGesturesCounter(0)
-    , m_prevGestureIdx     (0)  // index of Takeoff gesture
-    , m_emptyGestureIdx    (10) // index of Empty gesture
+    , m_prevGestureIdx     (0) // index of Takeoff gesture
+    , m_emptyGestureIdx    (8) // index of Empty gesture
 {
     m_commandsPublisher = node.advertise<std_msgs::Byte>("/swarm/commands", 1);
 
@@ -29,17 +29,15 @@ GestureRecognizer::GestureRecognizer(ros::NodeHandle &node)
     auto wptr = std::shared_ptr<GestureRecognizer>(this, [](GestureRecognizer*) {});
     m_hand->attach(shared_from_this());
 
-    m_gestures[0]  = make_unique<Takeoff>  ();
-    m_gestures[1]  = make_unique<Landing>  ();
-    m_gestures[2]  = make_unique<Upward>   ();
-    m_gestures[3]  = make_unique<Downward> ();
-    m_gestures[4]  = make_unique<Leftward> ();
-    m_gestures[5]  = make_unique<Rightward>();
-    m_gestures[6]  = make_unique<Forward>  ();
-    m_gestures[7]  = make_unique<Backward> ();
-    m_gestures[8]  = make_unique<Yawleft>  ();
-    m_gestures[9]  = make_unique<Yawright> ();
-    m_gestures[10] = make_unique<Empty>    ();
+    m_gestures[0] = make_unique<Takeoff>  ();
+    m_gestures[1] = make_unique<Landing>  ();
+    m_gestures[2] = make_unique<Upward>   ();
+    m_gestures[3] = make_unique<Downward> ();
+    m_gestures[4] = make_unique<Leftward> ();
+    m_gestures[5] = make_unique<Rightward>();
+    m_gestures[6] = make_unique<Forward>  ();
+    m_gestures[7] = make_unique<Backward> ();
+    m_gestures[8] = make_unique<Empty>    ();
 }
 
 

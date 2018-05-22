@@ -90,18 +90,4 @@ public:
     Command getCommand() const noexcept;
 };
 
-
-class Yawright: public Gesture {
-public:
-    Yawright();
-    Command getCommand() const noexcept;
-};
-
-
-class Yawleft: public Gesture {
-public:
-    Yawleft();
-    Command getCommand() const noexcept;
-};
-
 #endif // GESTURE_H

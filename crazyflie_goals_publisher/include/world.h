@@ -96,7 +96,7 @@ class World {
     double moveZ(double z) const noexcept;
 
     // Checks if distances from point (x, y, z) to occupators in nearest regions are safe
-    bool safeDistances(const Occupator &occupator, double x, double y, double z, double eps = 0.4) const noexcept;
+    bool safeDistances(const Occupator &occupator, double x, double y, double z, double eps = 0.6) const noexcept;
 
 public:
     World(double worldWidth, double worldLenght, double worldHeight,

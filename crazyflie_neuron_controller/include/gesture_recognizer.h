@@ -17,7 +17,7 @@ public:
    ~GestureRecognizer();
 
 private:
-    std::array<std::unique_ptr<Gesture>, 11> m_gestures;
+    std::array<std::unique_ptr<Gesture>, 9>  m_gestures;
     std::unique_ptr<Hand>                    m_hand;
     ros::Publisher                           m_commandsPublisher;
     size_t                                   m_sameGesturesCounter;

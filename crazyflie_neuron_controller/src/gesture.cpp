@@ -79,6 +79,11 @@ Command Landing::getCommand() const noexcept {
 // #################### UPWARD ####################
 // ################################################
 Upward::Upward() {
+    m_standardBones.push_back({.mean = { 0.0513,  0.4355, 0.8923}, .std = {0.0075, 0.0113, 0.0053}});
+    m_standardBones.push_back({.mean = { 0.0871,  0.0962, 0.7313}, .std = {0.0103, 0.0090, 0.0640}});
+    m_standardBones.push_back({.mean = {-0.0001, -0.0001, 0.7488}, .std = {0.0031, 0.0028, 0.0428}});
+    m_standardBones.push_back({.mean = {-0.0936, -0.0906, 0.6882}, .std = {0.0056, 0.0055, 0.0421}});
+    m_standardBones.push_back({.mean = {-0.1430, -0.1611, 0.7266}, .std = {0.0159, 0.0137, 0.0617}});
 }
 
 Command Upward::getCommand() const noexcept {
@@ -90,6 +95,11 @@ Command Upward::getCommand() const noexcept {
 // ################### DOWNWARD ###################
 // ################################################
 Downward::Downward() {
+    m_standardBones.push_back({.mean = { 0.0625,  0.3442, 0.9218}, .std = {0.0156, 0.0388, 0.0150}});
+    m_standardBones.push_back({.mean = { 0.0549,  0.1184, 0.8995}, .std = {0.0089, 0.0056, 0.0315}});
+    m_standardBones.push_back({.mean = { 0.0000,  0.0000, 0.9733}, .std = {0.0016, 0.0039, 0.0325}});
+    m_standardBones.push_back({.mean = {-0.0521, -0.1197, 0.9189}, .std = {0.0049, 0.0020, 0.0150}});
+    m_standardBones.push_back({.mean = {-0.1386, -0.1663, 0.7500}, .std = {0.0274, 0.0143, 0.0644}});
 }
 
 Command Downward::getCommand() const noexcept {
@@ -160,26 +170,4 @@ Backward::Backward() {
 
 Command Backward::getCommand() const noexcept {
     return commands::backward;
-}
-
-
-// ################################################
-// ################## YAWRIGHT ####################
-// ################################################
-Yawright::Yawright() {
-}
-
-Command Yawright::getCommand() const noexcept {
-    return commands::yawright;
-}
-
-
-// ################################################
-// ################### YAWLEFT ####################
-// ################################################
-Yawleft::Yawleft() {
-}
-
-Command Yawleft::getCommand() const noexcept {
-    return commands::yawleft;
 }

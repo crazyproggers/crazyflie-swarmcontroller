@@ -120,7 +120,7 @@ bool GoalsPublisher::startPublishing(
 }
 
 
-void GoalsPublisher::runAutomatic(std::list<Goal> path) {    
+void GoalsPublisher::runAutomatic(std::list<Goal> path) {
     bool exactMoving = false;
     ros::Rate loop   = 2;
     Goal retreatGoal;
