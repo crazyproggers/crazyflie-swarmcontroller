@@ -127,7 +127,8 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
     // Return true if |pose - goal| < E
     auto isCloseEnough = [exactMoving](const Pose &pose, const Goal &goal) -> bool {
-        double eps = (exactMoving? 0.05 : 0.2);
+        double eps = (goal.isAnchor()? 0.2 : 0.3);
+        if (exactMoving) eps = 0.05;
 
         return (fabs(pose.x()     - goal.x()) < eps) &&
                (fabs(pose.y()     - goal.y()) < eps) &&
@@ -180,6 +181,8 @@ void GoalsPublisher::runAutomatic(std::list<Goal> path) {
 
         // If need to reatreat
         if (!tmpGoal.isNull()) {
+            //while (!goal->isAnchor()) ++goal;
+
             // Interpolate from pose to tmpGoal and backward
             std::list<Goal> tmpPath  = interpolate(static_cast<const Goal&>(pose), tmpGoal);
             std::list<Goal> backPath = interpolate(tmpGoal, *goal);

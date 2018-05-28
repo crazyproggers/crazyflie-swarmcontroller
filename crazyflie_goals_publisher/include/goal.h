@@ -144,7 +144,8 @@ public:
 
 
 class Goal: public Pose {
-    double m_delay = 0.0;  // waiting at point (by default is zero)
+    double m_delay; // waiting at point (by default is zero)
+    bool   m_isAnchor;
 
     // Move goal to *this
     void move(Goal &goal) noexcept {
@@ -163,9 +164,11 @@ public:
         double roll,
         double pitch,
         double yaw,
-        double delay = 0.0)
+        double delay = 0.0,
+        bool   isAnchor = false)
         : Pose      (x, y, z, roll, pitch, yaw)
         , m_delay   (delay)
+        , m_isAnchor(isAnchor)
     {}
 
     Goal(const Goal &goal) {
@@ -214,7 +217,8 @@ public:
         return !isEqual(*this, goal);
     }
 
-    double delay() const noexcept { return m_delay; }
+    double delay()    const noexcept { return m_delay;    }
+    bool   isAnchor() const noexcept { return m_isAnchor; }
 };
 
 #endif // GOAL_H

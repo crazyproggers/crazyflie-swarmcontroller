@@ -102,17 +102,18 @@ bool PathsCreator::readTable(const std::string &pathToMap) {
                  }
             }
             else if (words.size() == AMOUNT::PARAMETERS) {
-                double x     = std::stod(words[0]);
-                double y     = std::stod(words[1]);
-                double z     = std::stod(words[2]);
-                double yaw   = std::stod(words[3]);
-                double delay = std::stod(words[4]);
-                double roll  = 0.0;
-                double pitch = 0.0;
+                double x        = std::stod(words[0]);
+                double y        = std::stod(words[1]);
+                double z        = std::stod(words[2]);
+                double yaw      = std::stod(words[3]);
+                double delay    = std::stod(words[4]);
+                double roll     = 0.0;
+                double pitch    = 0.0;
+                bool   isAnchor = true;
 
                 yaw = degToRad(fixAngle(yaw));
 
-                path.emplace_back(x, y, z, roll, pitch, yaw, delay);
+                path.emplace_back(x, y, z, roll, pitch, yaw, delay, isAnchor);
                 if (repeat_number) ++repeated_goals_amount;
             }
             else {
